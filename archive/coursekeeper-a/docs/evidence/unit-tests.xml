@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="com.coursekeeper.a.DemoHomeGatewayTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-08T06:58:45.642Z" time="0.126">
+  <properties />
+  <testcase name="localActionsWorkInAllFailureStates" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.105" />
+  <testcase name="invalidTitleAndImpossibleDateAreRejected" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.003" />
+  <testcase name="nextWeekTaskDoesNotChangeThisWeeksDenominator" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.003" />
+  <testcase name="completionIsIdempotentAndCanBeUndone" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.001" />
+  <testcase name="connectingSchoolRetainsManualTasks" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.004" />
+  <testcase name="unknownTaskDoesNotMutateState" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.001" />
+  <testcase name="reloginPreservesExistingUserChanges" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.001" />
+  <testcase name="initialCountsAndDailyFiltersAgree" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.001" />
+  <testcase name="emptyStateAcceptsTasksWithDistinctIds" classname="com.coursekeeper.a.DemoHomeGatewayTest" time="0.002" />
+  <system-out />
+  <system-err />
+</testsuite>

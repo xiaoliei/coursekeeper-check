@@ -1,0 +1,5 @@
+com.coursekeeper.a.NavigationTest:...
+
+Time: 8.989
+
+OK (3 tests)
