@@ -169,7 +169,7 @@ class TaskViewModel(
 
     private suspend fun <T> safely(onResult: ((String?) -> Unit)? = null, block: suspend () -> T): T? =
         try {
-            block()
+            block().also { onResult?.invoke(null) }
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (error: DataException) {

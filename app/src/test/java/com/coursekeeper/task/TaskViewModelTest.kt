@@ -142,8 +142,11 @@ class TaskViewModelTest {
         val events = mutableListOf<TaskEvent>()
         backgroundScope.launch { vm.events.collect { events += it } }
         backgroundScope.launch { vm.uiState.collect { } }
+        val results = mutableListOf<String?>()
 
-        vm.create(TaskDraft(title = "写报告", type = TaskType.LAB_REPORT))
+        vm.create(TaskDraft(title = "写报告", type = TaskType.LAB_REPORT)) { results += it }
+        // 成功路径必须回调 onResult(null)，界面据此关闭表单（真机曾因此卡住对话框）
+        assertEquals(listOf<String?>(null), results)
         assertTrue(events.filterIsInstance<TaskEvent.Saved>().single().receipt.changed)
         assertEquals("create:写报告", gateway.calls.first())
 
