@@ -1,0 +1,198 @@
+{
+  "date": "2026-11-09",
+  "branch": "main",
+  "baseCommit": "f5c03730f5357b3b4ca821295e2a376bfc427748",
+  "validationDirectory": "C:\\tmp\\coursekeeper-e-build",
+  "verifiedSourceConfigSchemaFiles": 32,
+  "requiredChecks": {
+    "tasks": [
+      ":app:assembleDebug",
+      ":app:testDebugUnitTest"
+    ],
+    "result": "BUILD SUCCESSFUL",
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "suites": [
+      {
+        "name": "com.coursekeeper.data.RepositoryTest",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.coursekeeper.data.SettingsStoreTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.coursekeeper.data.StorageRecoveryTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.coursekeeper.data.SyncCoordinatorTest",
+        "tests": "15",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.coursekeeper.DemoHomeGatewayTest",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  "lint": {
+    "task": ":app:lintDebug --rerun-tasks",
+    "result": "FAILED_EXISTING_HOME_PREVIEW_ERROR",
+    "errors": 1,
+    "warnings": 8,
+    "eModuleErrors": 0,
+    "issues": [
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "message": "A newer version of androidx.compose:compose-bom than 2026.02.01 is available: 2026.09.00",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "34",
+            "column": "29"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "message": "A newer version of androidx.activity:activity-compose than 1.11.0 is available: 1.13.0",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "35",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "message": "A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.4 is available: 2.11.0",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "39",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "message": "A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.9.4 is available: 2.11.0",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "40",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "message": "A newer version of androidx.compose:compose-bom than 2026.02.01 is available: 2026.09.00",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "46",
+            "column": "40"
+          }
+        ]
+      },
+      {
+        "id": "NewerVersionAvailable",
+        "severity": "Warning",
+        "message": "A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-test than 1.10.2 is available: 1.11.0",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "43",
+            "column": "24"
+          }
+        ]
+      },
+      {
+        "id": "NewerVersionAvailable",
+        "severity": "Warning",
+        "message": "A newer version of org.robolectric:robolectric than 4.16.1 is available: 4.17",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "44",
+            "column": "24"
+          }
+        ]
+      },
+      {
+        "id": "StateFlowValueCalledInComposition",
+        "severity": "Error",
+        "message": "StateFlow.value should not be called within composition",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/ui/HomeScreen.kt",
+            "line": "100",
+            "column": "44"
+          }
+        ]
+      },
+      {
+        "id": "DataExtractionRules",
+        "severity": "Warning",
+        "message": "The attribute `android:allowBackup` is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures cloud backups and device transfers on Android 12 and higher.",
+        "locations": [
+          {
+            "file": "app/src/main/AndroidManifest.xml",
+            "line": "3",
+            "column": "39"
+          }
+        ]
+      }
+    ]
+  },
+  "apk": {
+    "path": "app/build/outputs/apk/debug/app-debug.apk",
+    "sha256": "ac3b9a433bad7d96c5a843f42bef11a60e81f2ce9103e0772f1ac2b85f7ca564"
+  },
+  "notExecuted": [
+    "connectedDebugAndroidTest",
+    "physical-device performance tests",
+    "real-school integration",
+    "post-base-acceptance Agent stage"
+  ],
+  "evidenceScope": "pre-push validation; remote delivery is recorded by Git",
+  "prePushVerification": {
+    "mainCommit": "f5c03730f5357b3b4ca821295e2a376bfc427748",
+    "codeCommit": "95a33cc3bd575f48fa35e8c69a64793f5993ffe2",
+    "command": ":app:assembleDebug :app:testDebugUnitTest --rerun-tasks",
+    "result": "BUILD SUCCESSFUL",
+    "executedTasks": 48,
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "matchingFiles": 32
+  },
+  "delivery": {
+    "targetBranch": "main",
+    "method": "direct push authorized by user",
+    "pullRequestRequired": false
+  }
+}
