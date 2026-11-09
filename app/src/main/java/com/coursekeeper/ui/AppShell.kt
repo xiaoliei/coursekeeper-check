@@ -31,6 +31,8 @@ fun AppShell(
     onSkipLogin: () -> Unit,
     onSimulateLogin: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    // D 的任务模块接入点：为空时使用 A 的导航占位页，便于 A 的演示工程独立运行。
+    taskScreen: (@Composable (Modifier) -> Unit)? = null,
 ) {
     var selected by rememberSaveable { mutableStateOf(Destination.Home) }
     var filter by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
@@ -61,8 +63,11 @@ fun AppShell(
         } }) },
         snackbarHost={SnackbarHost(snackbarHostState)},
         bottomBar={ if(!state.onboarding) Column {
-            Button(onClick={add=true},modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
-                Text("＋ 手动添加任务")
+            // 任务页自带新建入口，避免与 A 的演示表单重复
+            if (taskScreen == null || selected != Destination.Tasks) {
+                Button(onClick={add=true},modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
+                    Text("＋ 手动添加任务")
+                }
             }
             NavigationBar(containerColor=MaterialTheme.colorScheme.surface) {
                 Destination.entries.forEach { dest ->
@@ -81,7 +86,7 @@ fun AppShell(
             Destination.Home -> HomeScreen(state,{selected=Destination.Courses},::goTasks,
                 {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},{login=true},{add=true},area)
             Destination.Courses -> DemoCourses(state,area,{courseDetailId=it.id})
-            Destination.Tasks -> DemoTasks(state,filter,{filter=it},onTaskToggle,{taskDetailId=it.id},area)
+            Destination.Tasks -> if (taskScreen != null) taskScreen(area) else DemoTasks(state,filter,{filter=it},onTaskToggle,{taskDetailId=it.id},area)
             Destination.Statistics -> DemoStatistics(state,area)
         }
     }
