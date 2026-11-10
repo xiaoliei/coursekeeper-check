@@ -65,47 +65,57 @@ fun TaskScreen(
         if (pendingDeleteId != null && state.tasks.none { it.record.id == pendingDeleteId }) pendingDeleteId = null
     }
 
-    Column(modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = 18.dp).padding(top = 12.dp)) {
-            Text("任务清单", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-            Text(
-                if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} 项 · 已完成 ${state.doneCount} 项",
-                fontSize = 12.sp, color = KeeperMuted,
-            )
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TaskStatusFilter.entries.forEach { filter ->
-                        FilterChip(
-                            selected = state.statusFilter == filter,
-                            onClick = { onStatusFilter(filter) },
-                            label = { Text(filter.label, fontSize = 12.sp) },
-                        )
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                TypeFilterMenu(state.typeFilter, onTypeFilter)
-            }
-            Spacer(Modifier.height(6.dp))
-        }
+    // 横屏/短屏只 ~230dp 可用高度，大标题与固定按钮会把列表压到看不见；此时改用紧凑头部 + 行内新建入口。
+    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
 
-        if (state.tasks.isEmpty()) {
-            Box(Modifier.weight(1f).padding(18.dp), contentAlignment = Alignment.TopCenter) {
-                Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp))
-                    .border(1.dp, Color(0xFFEBEFF6), RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    if (state.totalCount == 0) {
-                        EmptyState("还没有任务", "点击下方按钮新建；截止待定的任务会排在最前面。")
-                    } else {
-                        EmptyState("当前筛选下没有任务", "可以切换状态或类型筛选。")
+    Column(modifier.fillMaxSize()) {
+        // 页头作为列表首项一起滚动：横屏内容区仅约 200dp，固定页头会把列表挤到不可见。
+        LazyColumn(
+            Modifier.weight(1f),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            item(key = "header") {
+                Column(Modifier.padding(top = 6.dp)) {
+                    if (!compact) {
+                        Text("任务清单", fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} 项 · 已完成 ${state.doneCount} 项",
+                            fontSize = 12.sp, color = KeeperMuted,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TaskStatusFilter.entries.forEach { filter ->
+                                FilterChip(
+                                    selected = state.statusFilter == filter,
+                                    onClick = { onStatusFilter(filter) },
+                                    label = { Text(filter.label, fontSize = 12.sp) },
+                                )
+                            }
+                        }
+                        Spacer(Modifier.weight(1f))
+                        TypeFilterMenu(state.typeFilter, onTypeFilter)
+                        if (compact) {
+                            TextButton(onClick = { editorNew = true; editorTarget = null }) { Text("＋ 新建", fontSize = 13.sp) }
+                        }
                     }
                 }
             }
-        } else {
-            LazyColumn(
-                Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+
+            if (state.tasks.isEmpty()) {
+                item(key = "empty") {
+                    Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp))
+                        .border(1.dp, Color(0xFFEBEFF6), RoundedCornerShape(16.dp)).padding(16.dp)) {
+                        if (state.totalCount == 0) {
+                            EmptyState("还没有任务", "点击下方按钮新建；截止待定的任务会排在最前面。")
+                        } else {
+                            EmptyState("当前筛选下没有任务", "可以切换状态或类型筛选。")
+                        }
+                    }
+                }
+            } else {
                 items(state.tasks, key = { it.record.id }) { view ->
                     TaskCard(
                         view = view,
@@ -124,10 +134,12 @@ fun TaskScreen(
             }
         }
 
-        Button(
-            onClick = { editorNew = true; editorTarget = null },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp).heightIn(min = 48.dp),
-        ) { Text("＋ 新建任务") }
+        if (!compact) {
+            Button(
+                onClick = { editorNew = true; editorTarget = null },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp).heightIn(min = 48.dp),
+            ) { Text("＋ 新建任务") }
+        }
     }
 
     val editing = state.tasks.firstOrNull { it.record.id == editorTarget }?.let { view ->
