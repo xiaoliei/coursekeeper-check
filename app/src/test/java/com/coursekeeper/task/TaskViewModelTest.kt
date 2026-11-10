@@ -171,6 +171,38 @@ class TaskViewModelTest {
     }
 
     @Test
+    fun `update success also reports onResult null`() = runTest(dispatcher) {
+        val gateway = FakeTaskGateway()
+        gateway.emit(record("t1", version = 2))
+        val vm = TaskViewModel(gateway) { now }
+        val events = mutableListOf<TaskEvent>()
+        backgroundScope.launch { vm.events.collect { events += it } }
+        val results = mutableListOf<String?>()
+
+        vm.update(view(gateway.record("t1")), TaskDraft(title = "新标题", type = TaskType.HOMEWORK)) { results += it }
+
+        assertEquals(listOf<String?>(null), results)
+        assertEquals("update:t1:2", gateway.calls.single())
+        assertTrue(events.filterIsInstance<TaskEvent.Saved>().single().receipt.changed)
+    }
+
+    @Test
+    fun `callback exception must not be reported as write failure`() = runTest(dispatcher) {
+        val gateway = FakeTaskGateway()
+        val vm = TaskViewModel(gateway) { now }
+        val events = mutableListOf<TaskEvent>()
+        backgroundScope.launch { vm.events.collect { events += it } }
+        val results = mutableListOf<String?>()
+
+        // 回调自身抛错（例如界面已销毁）不得把成功的写库报成失败，也不得吞掉 Saved 事件
+        vm.create(TaskDraft(title = "写报告", type = TaskType.LAB_REPORT)) { results += it; error("ui boom") }
+
+        assertEquals(listOf<String?>(null), results)
+        assertTrue(events.filterIsInstance<TaskEvent.Saved>().isNotEmpty())
+        assertFalse(events.any { it is TaskEvent.Message })
+    }
+
+    @Test
     fun `filters drive the visible list`() = runTest(dispatcher) {
         val gateway = FakeTaskGateway()
         gateway.emit(

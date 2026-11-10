@@ -75,7 +75,7 @@ fun TaskScreen(
             contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(key = "header") {
+            item(key = "section:header") {
                 Column(Modifier.padding(top = 6.dp)) {
                     if (!compact) {
                         Text("任务清单", fontSize = 25.sp, fontWeight = FontWeight.Bold)
@@ -86,7 +86,11 @@ fun TaskScreen(
                         Spacer(Modifier.height(10.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // 筛选 chips 可横向滚动并让出宽度：compact 下行内"＋ 新建"是唯一入口，不能被挤成 0 宽
+                        Row(
+                            Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             TaskStatusFilter.entries.forEach { filter ->
                                 FilterChip(
                                     selected = state.statusFilter == filter,
@@ -95,17 +99,22 @@ fun TaskScreen(
                                 )
                             }
                         }
-                        Spacer(Modifier.weight(1f))
                         TypeFilterMenu(state.typeFilter, onTypeFilter)
                         if (compact) {
                             TextButton(onClick = { editorNew = true; editorTarget = null }) { Text("＋ 新建", fontSize = 13.sp) }
                         }
                     }
+                    if (compact) {
+                        Text(
+                            if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} · 已完成 ${state.doneCount}",
+                            fontSize = 11.sp, color = KeeperMuted,
+                        )
+                    }
                 }
             }
 
             if (state.tasks.isEmpty()) {
-                item(key = "empty") {
+                item(key = "section:empty") {
                     Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp))
                         .border(1.dp, Color(0xFFEBEFF6), RoundedCornerShape(16.dp)).padding(16.dp)) {
                         if (state.totalCount == 0) {
@@ -257,6 +266,8 @@ private fun TaskEditorDialog(
         )
     }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    // 提交中禁用按钮：防止双击在建库里产生两条任务（create 无版本号兜底）
+    var submitting by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -313,17 +324,22 @@ private fun TaskEditorDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                buildTaskDraft(title, type, courseId.ifBlank { null }, undated, dueText).fold(
-                    onSuccess = { draft ->
-                        error = null
-                        onSubmit(draft) { result ->
-                            if (result == null) onDismiss() else error = result
-                        }
-                    },
-                    onFailure = { error = it.message },
-                )
-            }) { Text("保存") }
+            TextButton(
+                enabled = !submitting,
+                onClick = {
+                    buildTaskDraft(title, type, courseId.ifBlank { null }, undated, dueText).fold(
+                        onSuccess = { draft ->
+                            error = null
+                            submitting = true
+                            onSubmit(draft) { result ->
+                                submitting = false
+                                if (result == null) onDismiss() else error = result
+                            }
+                        },
+                        onFailure = { error = it.message },
+                    )
+                },
+            ) { Text("保存") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )

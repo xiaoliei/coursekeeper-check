@@ -123,15 +123,16 @@ class TaskViewModel(
 
     fun setTypeFilter(value: TaskType?) { typeFilter.value = value }
 
-    /** onResult 在协程内回调：null = 成功；非 null = 用户文案（表单保持打开、草稿不丢）。 */
-    fun create(draft: TaskDraft, requestId: String? = null, onResult: (String?) -> Unit = {}) =
+    /** onResult 在协程内回调：null = 成功；非 null = 用户文案（表单保持打开、草稿不丢）。
+     *  不传回调时失败会回落到事件通道提示，不会被静默吞掉。 */
+    fun create(draft: TaskDraft, requestId: String? = null, onResult: ((String?) -> Unit)? = null) =
         viewModelScope.launch {
             safely(onResult) { gateway.create(draft, requestId) }?.let {
                 eventChannel.send(TaskEvent.Saved(it))
             }
         }
 
-    fun update(view: TaskView, draft: TaskDraft, onResult: (String?) -> Unit = {}) =
+    fun update(view: TaskView, draft: TaskDraft, onResult: ((String?) -> Unit)? = null) =
         viewModelScope.launch {
             safely(onResult) { gateway.update(view.record.id, view.record.version, draft) }?.let {
                 eventChannel.send(TaskEvent.Saved(it))
@@ -167,18 +168,23 @@ class TaskViewModel(
         }
     }
 
-    private suspend fun <T> safely(onResult: ((String?) -> Unit)? = null, block: suspend () -> T): T? =
-        try {
-            block().also { onResult?.invoke(null) }
+    private suspend fun <T> safely(onResult: ((String?) -> Unit)? = null, block: suspend () -> T): T? {
+        val value = try {
+            block()
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (error: DataException) {
             report(error.code.userMessage, onResult)
-            null
+            return null
         } catch (error: Exception) {
             report(WRITE_FAILED, onResult)
-            null
+            return null
         }
+        // 成功回调放在 try 之外并隔离异常：回调自身抛错不得被当成写失败，
+        // 否则会把一次成功的写库报成"操作失败"并丢掉 Saved 事件。
+        runCatching { onResult?.invoke(null) }
+        return value
+    }
 
     private suspend fun report(text: String, onResult: ((String?) -> Unit)?) {
         if (onResult != null) onResult(text) else eventChannel.send(TaskEvent.Message(text))
