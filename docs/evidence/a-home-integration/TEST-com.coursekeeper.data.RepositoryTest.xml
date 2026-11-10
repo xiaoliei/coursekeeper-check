@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.data.RepositoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-10T14:52:40.695Z" hostname="LAPTOP-CJQ77CDT" time="7.83">
+  <properties/>
+  <testcase name="completionUsesLocalInstantAndUndoIncrementsVersion" classname="com.coursekeeper.data.RepositoryTest" time="7.15"/>
+  <testcase name="manualTasksUseUuidNullableDatesAndAllFiveTypes" classname="com.coursekeeper.data.RepositoryTest" time="0.054"/>
+  <testcase name="semesterAndPeriodsUpdateAsOneVersionedAggregate" classname="com.coursekeeper.data.RepositoryTest" time="0.06"/>
+  <testcase name="requestReceiptsReplayCreateUpdateAndDeleteWithoutAnotherWrite" classname="com.coursekeeper.data.RepositoryTest" time="0.061"/>
+  <testcase name="snapshotFlowPublishesCommittedData" classname="com.coursekeeper.data.RepositoryTest" time="0.077"/>
+  <testcase name="deletingCourseRemovesSchedulesButRetainsTaskAssociation" classname="com.coursekeeper.data.RepositoryTest" time="0.049"/>
+  <testcase name="invalidWritesDoNotConsumeRequestIdAndReturnAgreedErrors" classname="com.coursekeeper.data.RepositoryTest" time="0.045"/>
+  <testcase name="concurrentWritersOnlyOneCanUseTheSameVersion" classname="com.coursekeeper.data.RepositoryTest" time="0.044"/>
+  <testcase name="staleVersionFailsWithoutPartialWrite" classname="com.coursekeeper.data.RepositoryTest" time="0.048"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

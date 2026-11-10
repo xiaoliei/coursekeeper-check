@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.data.SyncCoordinatorTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-10T14:52:50.028Z" hostname="LAPTOP-CJQ77CDT" time="0.726">
+  <properties/>
+  <testcase name="retriesStopAfterTwoAndOnlyFailedModuleIsFetchedNextTime" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.037"/>
+  <testcase name="eachFetchTimeoutIsBoundedAndParseFailuresNeverRetry" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.054"/>
+  <testcase name="resyncAfterDeletingImportedCourseRetainsItsTaskAssociation" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.053"/>
+  <testcase name="throttleBoundaryForcedRefreshAndSessionChecksAreIndependent" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.049"/>
+  <testcase name="switchingSchoolCannotMergeIntoExistingSchoolCache" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.035"/>
+  <testcase name="changedRemoteFieldsIncrementVersionsAndEmptySuccessNeverClearsCache" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.053"/>
+  <testcase name="networkFailurePreservesDataAndLastSuccessfulTime" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.046"/>
+  <testcase name="conflictingRemoteIdentitiesRejectWholeModuleAndMissingIdentityIsDeferred" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.046"/>
+  <testcase name="staleSyncBaselineRejectsALateResponseAfterAnotherSyncCommitted" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.063"/>
+  <testcase name="expiryWithinThrottleShowsBannerAndManualWritesStillWork" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.046"/>
+  <testcase name="manualWriteDuringNetworkRequestIsNeverOverwritten" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.047"/>
+  <testcase name="overlappingRefreshIsCoalescedAndCancellationLeavesNoSyncingState" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.053"/>
+  <testcase name="duplicateImportsAndUnchangedRefreshKeepIdsVersionsAndSchedulesStable" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.052"/>
+  <testcase name="malformedModuleRollsBackAllRowsWhileOtherModuleCommits" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.04"/>
+  <testcase name="userEditsCompletionsAndDeletedImportedTasksAreProtected" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.048"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

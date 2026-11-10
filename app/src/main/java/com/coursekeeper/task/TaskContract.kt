@@ -18,6 +18,8 @@ import java.time.format.DateTimeFormatter
 enum class TaskStatus { PENDING, COMPLETED, OVERDUE }
 
 enum class TaskStatusFilter(val label: String) { OPEN("待办"), DONE("已完成"), ALL("全部") }
+enum class TaskDateFilter(val label: String) { ALL("全部日期"), DUE_TODAY("今日截止"), COMPLETED_TODAY("今日完成") }
+data class TaskQuery(val status: TaskStatusFilter = TaskStatusFilter.OPEN, val type: TaskType? = null, val date: TaskDateFilter = TaskDateFilter.ALL)
 
 /** 一行任务在界面上的全部信息；record 保留原始版本号供写入校验。 */
 data class TaskView(
@@ -83,11 +85,16 @@ fun List<TaskRecord>.sortedForDisplay(): List<TaskRecord> {
 }
 
 /** 状态与类型是"与"关系；类型为 null 表示不限。 */
-fun List<TaskView>.visible(status: TaskStatusFilter, type: TaskType?): List<TaskView> = filter { view ->
+fun List<TaskView>.visible(status: TaskStatusFilter, type: TaskType?, date: TaskDateFilter = TaskDateFilter.ALL, now: LocalDateTime = LocalDateTime.now()): List<TaskView> = filter { view ->
     val statusMatched = when (status) {
         TaskStatusFilter.OPEN -> view.status != TaskStatus.COMPLETED
         TaskStatusFilter.DONE -> view.status == TaskStatus.COMPLETED
         TaskStatusFilter.ALL -> true
     }
-    statusMatched && (type == null || view.record.type == type)
+    val dateMatched = when(date) {
+        TaskDateFilter.ALL -> true
+        TaskDateFilter.DUE_TODAY -> view.record.dueAt?.toLocalDate() == now.toLocalDate()
+        TaskDateFilter.COMPLETED_TODAY -> view.record.completedAt?.toLocalDate() == now.toLocalDate()
+    }
+    statusMatched && dateMatched && (type == null || view.record.type == type)
 }

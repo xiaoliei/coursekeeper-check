@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.DemoHomeGatewayTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-10T14:52:40.332Z" hostname="LAPTOP-CJQ77CDT" time="0.181">
+  <properties/>
+  <testcase name="localActionsWorkInAllFailureStates" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.159"/>
+  <testcase name="invalidTitleAndImpossibleDateAreRejected" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.004"/>
+  <testcase name="nextWeekTaskDoesNotChangeThisWeeksDenominator" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002"/>
+  <testcase name="completionIsIdempotentAndCanBeUndone" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002"/>
+  <testcase name="connectingSchoolRetainsManualTasks" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.005"/>
+  <testcase name="unknownTaskDoesNotMutateState" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002"/>
+  <testcase name="reloginPreservesExistingUserChanges" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002"/>
+  <testcase name="initialCountsAndDailyFiltersAgree" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.001"/>
+  <testcase name="emptyStateAcceptsTasksWithDistinctIds" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

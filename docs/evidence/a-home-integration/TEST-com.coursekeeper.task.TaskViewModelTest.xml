@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.task.TaskViewModelTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-10T14:52:51.032Z" hostname="LAPTOP-CJQ77CDT" time="0.117">
+  <properties/>
+  <testcase name="version conflict surfaces repository message and creates no undo" classname="com.coursekeeper.task.TaskViewModelTest" time="0.032"/>
+  <testcase name="create failure reports through onResult without saved event" classname="com.coursekeeper.task.TaskViewModelTest" time="0.014"/>
+  <testcase name="update success also reports onResult null" classname="com.coursekeeper.task.TaskViewModelTest" time="0.008"/>
+  <testcase name="create and delete report saved and deleted events with receipts" classname="com.coursekeeper.task.TaskViewModelTest" time="0.02"/>
+  <testcase name="toggle submits current version and offers undo with receipt version" classname="com.coursekeeper.task.TaskViewModelTest" time="0.013"/>
+  <testcase name="filters drive the visible list" classname="com.coursekeeper.task.TaskViewModelTest" time="0.006"/>
+  <testcase name="callback exception must not be reported as write failure" classname="com.coursekeeper.task.TaskViewModelTest" time="0.006"/>
+  <testcase name="generic failure surfaces generic text not internal message" classname="com.coursekeeper.task.TaskViewModelTest" time="0.004"/>
+  <testcase name="undo submits the receipt version not the latest version in data" classname="com.coursekeeper.task.TaskViewModelTest" time="0.008"/>
+  <testcase name="toggle on completed task reopens it" classname="com.coursekeeper.task.TaskViewModelTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

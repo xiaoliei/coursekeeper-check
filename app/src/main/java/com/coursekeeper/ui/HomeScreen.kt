@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import com.coursekeeper.demo.DemoHomeGateway
 import com.coursekeeper.home.*
 import com.coursekeeper.ui.components.*
@@ -32,12 +34,12 @@ fun HomeScreen(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(modifier.fillMaxSize().testTag("home_list"), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (state.status != SyncStatus.Ready) item { StatusBanner(state.status, onLogin, onAdd) }
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(7.dp)) {
-                    Text("上午好，同学", fontSize=25.sp, fontWeight=FontWeight.Bold)
+                    Text(state.greeting, fontSize=25.sp, fontWeight=FontWeight.Bold)
                     Text(state.dateLabel, color=KeeperMuted, fontSize=12.sp)
                 }
                 Text(state.weekLabel, fontSize=11.sp, color=KeeperBlue,
@@ -46,16 +48,26 @@ fun HomeScreen(
         }
         item {
             Row(Modifier.fillMaxWidth().background(KeeperBlue, RoundedCornerShape(17.dp)).padding(vertical=18.dp)) {
-                Metric(state.todayCourseCount,"今日课程",Modifier.weight(1f),onCourses)
-                Metric(state.todayDueCount,"今日截止",Modifier.weight(1f)) { onTasks(TaskFilter.Today) }
-                Metric(state.todayCompletedCount,"今日已完成",Modifier.weight(1f)) { onTasks(TaskFilter.CompletedToday) }
+                Metric(when(state.courseAvailability) {
+                    CourseAvailability.Ready -> state.todayCourseCount.toString()
+                    CourseAvailability.NoSemester -> "待设置学期"
+                    CourseAvailability.NotInTerm -> "非教学周"
+                    CourseAvailability.Unavailable -> "暂无数据"
+                },"今日课程",Modifier.weight(1f),"home_course_count",onCourses)
+                Metric(state.todayDueCount.toString(),"今日截止",Modifier.weight(1f),"home_due_count") { onTasks(TaskFilter.Today) }
+                Metric(state.todayCompletedCount.toString(),"今日已完成",Modifier.weight(1f),"home_completed_count") { onTasks(TaskFilter.CompletedToday) }
             }
         }
         item {
             SectionTitle("下一节课", "查看课表 →", onCourses)
             val course = state.nextCourse
             if(course == null) KeeperCard {
-                EmptyState("还没有课程安排", "可以手动添加任务，或连接学校。", "连接学校", onLogin)
+                when(state.courseAvailability) {
+                    CourseAvailability.NoSemester -> EmptyState("待设置学期", "请先完善学期设置，再查看课程安排。", "查看课表", onCourses)
+                    CourseAvailability.NotInTerm -> EmptyState("当前不在教学周内", "可以进入课表查看其他教学周。", "查看课表", onCourses)
+                    CourseAvailability.Unavailable -> EmptyState("暂无课程信息", "课程信息暂不可用，可以先管理任务。", "查看课表", onCourses)
+                    CourseAvailability.Ready -> EmptyState("还没有课程安排", "可以手动添加任务，或连接学校。", "连接学校", onLogin)
+                }
             } else KeeperCard(Modifier.clickable { onCourseDetail(course) }) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
                     Text(course.time,fontSize=12.sp,color=KeeperBlue)
@@ -79,18 +91,20 @@ fun HomeScreen(
         item {
             SectionTitle("本周概览", "查看数据 →", onStatistics)
             KeeperCard {
-                Text("${state.weekCompletedCount} / ${state.weekTaskCount} 项本周任务已完成", fontWeight=FontWeight.SemiBold,fontSize=14.sp)
-                LinearProgressIndicator(progress={state.weekProgress},modifier=Modifier.fillMaxWidth().height(7.dp))
-                Text("本周课程 ${state.weekCourseCount} 门",fontSize=12.sp,color=KeeperMuted)
+                Text(if(state.weekTaskCount==0) "暂无本周任务" else "${state.weekCompletedCount} / ${state.weekTaskCount} 项本周任务已完成", fontWeight=FontWeight.SemiBold,fontSize=14.sp)
+                if(state.weekTaskCount>0) LinearProgressIndicator(progress={state.weekProgress},modifier=Modifier.fillMaxWidth().height(7.dp))
+                Text(if(state.courseAvailability==CourseAvailability.Ready) "本周课程 ${state.weekCourseCount} 门" else "本周课程 暂无数据",fontSize=12.sp,color=KeeperMuted)
                 Text(state.pressureLabel,fontSize=12.sp,color=KeeperMuted)
             }
         }
-        item { Text("${state.lastSyncLabel} · 演示数据仅在内存中",fontSize=11.sp,color=KeeperMuted) }
+        item { Text("${state.lastSyncLabel} · ${if(state.isDemo) "演示数据仅在内存中" else "任务已保存在本机"}",fontSize=11.sp,color=KeeperMuted) }
     }
 }
-@Composable private fun Metric(value: Int, label: String, modifier: Modifier, onClick: () -> Unit) {
+@Composable private fun Metric(value: String, label: String, modifier: Modifier, tag: String, onClick: () -> Unit) {
     Column(modifier.clickable(onClick=onClick).padding(5.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text(value.toString(),fontSize=28.sp,fontWeight=FontWeight.SemiBold,color=Color.White)
+        Text(value,fontSize=if(value.length>3) 13.sp else 28.sp,lineHeight=if(value.length>3) 20.sp else 32.sp,
+            textAlign=TextAlign.Center,fontWeight=FontWeight.SemiBold,color=Color.White,
+            modifier=Modifier.heightIn(min=40.dp).wrapContentHeight(Alignment.CenterVertically).testTag(tag))
         Text(label,fontSize=11.sp,color=Color.White)
     }
 }

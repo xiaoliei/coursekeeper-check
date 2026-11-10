@@ -1,6 +1,7 @@
 package com.coursekeeper.home
 
 import kotlinx.coroutines.flow.StateFlow
+import com.coursekeeper.data.WriteReceipt
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
@@ -8,15 +9,20 @@ import java.time.format.ResolverStyle
 /** A's UI contract. Production adapters aggregate B/D/E/F services behind this interface. */
 interface HomeGateway {
     val state: StateFlow<HomeUiState>
-    suspend fun setTaskCompleted(id: String, completed: Boolean)
-    suspend fun addTask(task: NewTask)
+    /** Real writes require the version shown to the user; null is for legacy fixtures only. */
+    suspend fun setTaskCompleted(id: String, completed: Boolean, expectedVersion: Long? = null): WriteReceipt
+    suspend fun addTask(task: NewTask): WriteReceipt
+    suspend fun completeOnboarding() {}
+    fun retry() {}
 }
 
-enum class SyncStatus { Ready, Offline, Expired, Partial }
+enum class SyncStatus { Ready, Offline, Expired, Partial, Syncing, Error }
+enum class CourseAvailability { Ready, NoSemester, Unavailable, NotInTerm }
 data class CourseUi(val id: String, val title: String, val time: String, val location: String, val periods: String)
 data class TaskUi(
     val id: String, val title: String, val course: String, val type: String,
     val dueLabel: String, val completed: Boolean, val dueToday: Boolean, val completedToday: Boolean,
+    val version: Long = 1,
 )
 data class HomeUiState(
     val dateLabel: String = "", val weekLabel: String = "", val status: SyncStatus = SyncStatus.Ready,
@@ -26,8 +32,11 @@ data class HomeUiState(
     val weekTaskCount: Int = 0, val weekCompletedCount: Int = 0, val weekProgress: Float = 0f,
     val weekCourseCount: Int = 0, val pressureLabel: String = "暂无压力数据",
     val lastSyncLabel: String = "尚未同步", val onboarding: Boolean = false,
+    val isDemo: Boolean = true, val loading: Boolean = false, val readError: String? = null,
+    val courseAvailability: CourseAvailability = CourseAvailability.Ready,
+    val greeting: String = "上午好，同学",
 )
-data class NewTask(val title: String, val course: String, val type: String, val deadline: LocalDateTime)
+data class NewTask(val title: String, val course: String, val type: String, val deadline: LocalDateTime?, val courseId: String? = null)
 enum class TaskFilter(val label: String) { Pending("待办"), Completed("已完成"), All("全部"), Today("今日截止"), CompletedToday("今日完成") }
 fun List<TaskUi>.filtered(filter: TaskFilter) = filter {
     when (filter) {

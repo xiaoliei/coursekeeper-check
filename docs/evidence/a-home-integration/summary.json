@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-10",
+  "base_commit": "ccde71aed4135bcc0690120d17449820788a96d8",
+  "branch": "feat/a-home-integration-local",
+  "github_pushed": false,
+  "build": {
+    "debug_apk": "PASS",
+    "android_test_apk": "PASS",
+    "jdk": "Temurin 21.0.13+9",
+    "gradle": "9.6.0",
+    "compile_sdk": 37,
+    "build_tools": "36.0.0",
+    "environment_note": "Revalidated in the local source checkout with the original daemon JVM 21 criteria retained, JAVA_HOME set for this invocation only, offline dependencies and a local test-environment init script."
+  },
+  "unit_tests": {
+    "tests": 65,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "com.coursekeeper.data.RepositoryTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.data.SettingsStoreTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.data.StorageRecoveryTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.data.SyncCoordinatorTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.DemoHomeGatewayTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.home.HomeProjectionTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.home.HomeViewModelTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.home.RepositoryHomeGatewayTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.task.TaskContractTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.coursekeeper.task.TaskViewModelTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "device_tests": {
+    "passed": 6,
+    "failed": 0,
+    "api": 37,
+    "device": "dedicated emulator",
+    "environment_note": "Earlier device run used the JBR 25 build of the same app and test sources; device tests were not repeated for the JDK-only revalidation."
+  },
+  "manual_force_stop_relaunch": "PASS: task completion and onboarding settings persisted",
+  "apk_signature_verification": "PASS: v2",
+  "ide_sync_and_launch": {
+    "date": "2026-11-10",
+    "sync": "PASS (21:54)",
+    "launch": "PASS (22:05, com.coursekeeper.MainActivity)",
+    "device": "Medium Phone API 37.0 (emulator-5554)",
+    "source": "Android Studio idea.log"
+  },
+  "user_manual_acceptance": {
+    "date": "2026-11-10",
+    "result": "PASS (user-confirmed)",
+    "feedback": "测试没有问题",
+    "scope": [
+      "create a task due today",
+      "homepage counts and shared task data",
+      "complete and undo",
+      "task persistence after reopening"
+    ],
+    "record": "user-acceptance.md"
+  },
+  "local_a_p1_p3_status": "Implementation and local acceptance complete; ready for team handoff.",
+  "pre_upload_review": {
+    "checked_at": "2026-11-10T22:55:54+08:00",
+    "result": "PASS: no blocking issues found in the A P1/P3 change scope",
+    "fresh_jdk21_build_and_unit_tests": "PASS",
+    "remote_main": "ccde71aed4135bcc0690120d17449820788a96d8",
+    "base_up_to_date": true,
+    "candidate_file_hygiene": "PASS",
+    "git_author_identity": "Not yet configured; user must provide name and email before commit",
+    "github_pushed": false
+  }
+}

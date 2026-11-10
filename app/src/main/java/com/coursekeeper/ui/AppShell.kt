@@ -33,6 +33,10 @@ fun AppShell(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     // D 的任务模块接入点：为空时使用 A 的导航占位页，便于 A 的演示工程独立运行。
     taskScreen: (@Composable (Modifier) -> Unit)? = null,
+    coursesScreen: (@Composable (Modifier) -> Unit)? = null,
+    onTaskFilter: (TaskFilter) -> Unit = {},
+    onCreateTask: (() -> Unit)? = null,
+    onRetryHome: () -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(Destination.Home) }
     var filter by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
@@ -42,14 +46,18 @@ fun AppShell(
     var taskDetailId by rememberSaveable { mutableStateOf<String?>(null) }
     var courseDetailId by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(enabled=selected != Destination.Home && !add && !login && taskDetailId==null && courseDetailId==null) { selected=Destination.Home }
-    fun goTasks(value: TaskFilter) { filter=value;selected=Destination.Tasks }
+    fun goTasks(value: TaskFilter) { filter=value;onTaskFilter(value);selected=Destination.Tasks }
+    fun requestAddTask() {
+        if (taskScreen == null) add=true
+        else { goTasks(TaskFilter.Pending); onCreateTask?.invoke() }
+    }
 
     Scaffold(
         containerColor=KeeperBackground,
         topBar={ TopAppBar(title={ Column {
             Text("课程任务管家",fontSize=18.sp,fontWeight=FontWeight.Bold)
-            Text("团队公共工程 · 2026.11.09",fontSize=11.sp,color=KeeperMuted)
-        } }, actions={ Box {
+            Text(if(state.isDemo) "交互演示 · 2026.11.09" else state.dateLabel,fontSize=11.sp,color=KeeperMuted)
+        } }, actions={ if(state.isDemo) Box {
             TextButton(onClick={menu=true}) { Text("演示设置",fontSize=12.sp) }
             DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
                 DropdownMenuItem(text={Text("切换场景会重置示例",fontSize=11.sp)},onClick={},enabled=false)
@@ -62,17 +70,17 @@ fun AppShell(
             }
         } }) },
         snackbarHost={SnackbarHost(snackbarHostState)},
-        bottomBar={ if(!state.onboarding) Column {
+        bottomBar={ if(!state.onboarding && !state.loading && state.readError == null) Column {
             // 任务页自带新建入口，避免与 A 的演示表单重复
             if (taskScreen == null || selected != Destination.Tasks) {
-                Button(onClick={add=true},modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
+                Button(onClick=::requestAddTask,modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
                     Text("＋ 手动添加任务")
                 }
             }
             NavigationBar(containerColor=MaterialTheme.colorScheme.surface) {
                 Destination.entries.forEach { dest ->
                     val vector=remember(dest) { tabIcon(dest.label) }
-                    NavigationBarItem(selected=selected==dest,onClick={selected=dest},
+                    NavigationBarItem(selected=selected==dest,onClick={ if(dest==Destination.Tasks && taskScreen!=null) goTasks(TaskFilter.Pending) else selected=dest },
                         icon={Icon(vector,contentDescription=null)},label={Text(dest.label)},
                         colors=NavigationBarItemDefaults.colors(selectedIconColor=KeeperBlue,
                             selectedTextColor=KeeperBlue,indicatorColor=Color(0xFFEAF0FF)))
@@ -81,26 +89,31 @@ fun AppShell(
         } },
     ) { padding ->
         val area=Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)
-        if(state.onboarding) Onboarding(area,{login=true},onSkipLogin)
+        if(state.loading) Box(area,contentAlignment=Alignment.Center) { CircularProgressIndicator() }
+        else if(state.readError != null) Box(area.padding(24.dp),contentAlignment=Alignment.Center) {
+            EmptyState("暂时无法读取本地数据",state.readError,"重试",onRetryHome)
+        }
+        else if(state.onboarding) Onboarding(area,{login=true},onSkipLogin,state.isDemo)
         else when(selected) {
             Destination.Home -> HomeScreen(state,{selected=Destination.Courses},::goTasks,
-                {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},{login=true},{add=true},area)
-            Destination.Courses -> DemoCourses(state,area,{courseDetailId=it.id})
+                {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},{login=true},::requestAddTask,area)
+            Destination.Courses -> if(coursesScreen != null) coursesScreen(area) else DemoCourses(state,area,{courseDetailId=it.id})
             Destination.Tasks -> if (taskScreen != null) taskScreen(area) else DemoTasks(state,filter,{filter=it},onTaskToggle,{taskDetailId=it.id},area)
             Destination.Statistics -> DemoStatistics(state,area)
         }
     }
     if(add) AddTaskDialog(onDismiss={add=false},onSubmit={draft-> add=false;onAddTask(draft)})
     if(login) AlertDialog(onDismissRequest={login=false},title={Text("连接学校")},text={
-        Text(if(state.status==SyncStatus.Offline) "当前离线，联网后可以连接学校。已有数据仍可使用。"
+        Text(if(!state.isDemo) "学校连接暂不可用，你可以先手动管理任务。已有本地数据不会清除。"
+            else if(state.status==SyncStatus.Offline) "当前离线，联网后可以连接学校。已有数据仍可使用。"
             else "这是登录流程演示，不收集账号密码。正式版由 C 接入学校官方登录页。")
     },confirmButton={
-        if(state.status!=SyncStatus.Offline) TextButton(onClick={login=false;onSimulateLogin()}) { Text("模拟登录成功") }
+        if(state.isDemo && state.status!=SyncStatus.Offline) TextButton(onClick={login=false;onSimulateLogin()}) { Text("模拟登录成功") }
         else TextButton(onClick={login=false}) { Text("知道了") }
     },dismissButton={TextButton(onClick={login=false;if(state.onboarding) onSkipLogin()}) { Text("以后再说") }})
     state.tasks.find { it.id==taskDetailId }?.let { task ->
         AlertDialog(onDismissRequest={taskDetailId=null},title={Text(task.title)},text={
-            Text("${task.course.ifBlank { "未关联课程" }}\n${task.type}\n${task.dueLabel} 截止\n${if(task.completed) "已完成" else "待办"}")
+            Text("${task.course.ifBlank { "未关联课程" }}\n${task.type}\n${if(task.dueLabel=="截止待定") task.dueLabel else "${task.dueLabel} 截止"}\n${if(task.completed) "已完成" else "待办"}")
         },confirmButton={TextButton(onClick={taskDetailId=null;onTaskToggle(task)}) { Text(if(task.completed) "恢复待办" else "标记完成") }},dismissButton={TextButton(onClick={taskDetailId=null}) {Text("关闭")}})
     }
     state.courses.find { it.id==courseDetailId }?.let { course ->
@@ -110,7 +123,7 @@ fun AppShell(
     }
 }
 
-@Composable private fun Onboarding(modifier: Modifier,onLogin: () -> Unit,onSkip: () -> Unit) {
+@Composable private fun Onboarding(modifier: Modifier,onLogin: () -> Unit,onSkip: () -> Unit,isDemo: Boolean) {
     Column(modifier.verticalScroll(rememberScrollState()).padding(28.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally) {
         Text("今天该做什么，\n打开就知道。",fontSize=28.sp,lineHeight=36.sp,fontWeight=FontWeight.Bold)
         Spacer(Modifier.height(24.dp))
@@ -118,15 +131,15 @@ fun AppShell(
         Spacer(Modifier.height(32.dp))
         Button(onClick=onLogin,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("连接学校，导入课表")}
         OutlinedButton(onClick=onSkip,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("先手动使用")}
-        Text("本工程使用内存假数据，重启会还原。",fontSize=12.sp,color=KeeperMuted)
+        Text(if(isDemo) "本工程使用内存假数据，重启会还原。" else "手动任务保存在本机，可以离线使用。",fontSize=12.sp,color=KeeperMuted)
     }
 }
 @Composable private fun DemoCourses(state: HomeUiState,modifier: Modifier,onDetail: (CourseUi)->Unit) {
     Column(modifier.verticalScroll(rememberScrollState()).padding(18.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         Text("我的课表",fontSize=25.sp,fontWeight=FontWeight.Bold)
-        Text("导航占位 · B 后续接入完整课表",fontSize=12.sp,color=KeeperMuted)
+        if(state.isDemo) Text("导航占位 · B 后续接入完整课表",fontSize=12.sp,color=KeeperMuted)
         Text("${state.weekLabel} · ${state.dateLabel}")
-        if(state.courses.isEmpty()) KeeperCard {EmptyState("暂无课程","可以在首页连接学校。")}
+        if(state.courses.isEmpty()) KeeperCard {EmptyState(if(state.courseAvailability==CourseAvailability.NoSemester) "待设置学期" else "暂无课程信息","课程信息暂不可用，当前可先管理任务。")}
         state.courses.forEach { c -> KeeperCard {
             Text(c.time,color=KeeperBlue,fontSize=12.sp)
             Text(c.title,fontWeight=FontWeight.Bold)
@@ -155,13 +168,13 @@ fun AppShell(
 @Composable private fun DemoStatistics(state: HomeUiState,modifier: Modifier) {
     Column(modifier.verticalScroll(rememberScrollState()).padding(18.dp),verticalArrangement=Arrangement.spacedBy(18.dp)) {
         Text("数据看板",fontSize=25.sp,fontWeight=FontWeight.Bold)
-        Text("导航占位 · F 后续接入统计与图表",fontSize=12.sp,color=KeeperMuted)
+        if(state.isDemo) Text("导航占位 · F 后续接入统计与图表",fontSize=12.sp,color=KeeperMuted)
         KeeperCard {
-            Text("本周完成 ${state.weekCompletedCount} / ${state.weekTaskCount} 项",fontWeight=FontWeight.Bold)
-            LinearProgressIndicator(progress={state.weekProgress},modifier=Modifier.fillMaxWidth())
+            Text(if(state.weekTaskCount==0) "暂无本周任务" else "本周完成 ${state.weekCompletedCount} / ${state.weekTaskCount} 项",fontWeight=FontWeight.Bold)
+            if(state.weekTaskCount>0) LinearProgressIndicator(progress={state.weekProgress},modifier=Modifier.fillMaxWidth())
             Text("按本周截止的任务统计",fontSize=12.sp,color=KeeperMuted)
         }
-        KeeperCard {Text("本周课程 ${state.weekCourseCount} 门");Text(state.pressureLabel,color=KeeperMuted)}
+        KeeperCard {Text(if(state.courseAvailability==CourseAvailability.Ready) "本周课程 ${state.weekCourseCount} 门" else "本周课程 暂无数据");Text(state.pressureLabel,color=KeeperMuted)}
     }
 }
 @Composable private fun AddTaskDialog(onDismiss: ()->Unit,onSubmit: (NewTask)->Unit) {

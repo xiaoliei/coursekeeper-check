@@ -1,0 +1,9 @@
+
+com.coursekeeper.HomeIntegrationTest:..
+com.coursekeeper.NavigationTest:....
+
+Time: 27.515
+
+OK (6 tests)
+
+

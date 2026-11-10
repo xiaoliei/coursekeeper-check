@@ -1,0 +1,6 @@
+2026-11-10
+Temurin 21.0.13+9 / Gradle 9.6.0
+Original gradle/gradle-daemon-jvm.properties retained (toolchainVersion=21).
+Tasks: :app:assembleDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest
+Offline cached dependencies; local init script for Robolectric SDK and short temp path.
+Result: BUILD SUCCESSFUL; 65 unit tests, 0 failures, 0 errors, 0 skipped.

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.task.TaskContractTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-10T14:52:51.005Z" hostname="LAPTOP-CJQ77CDT" time="0.025">
+  <properties/>
+  <testcase name="input validation matches repository error messages" classname="com.coursekeeper.task.TaskContractTest" time="0.022"/>
+  <testcase name="status derives from completedAt then dueAt" classname="com.coursekeeper.task.TaskContractTest" time="0.001"/>
+  <testcase name="due label covers undated today tomorrow overdue and other dates" classname="com.coursekeeper.task.TaskContractTest" time="0.0"/>
+  <testcase name="sort puts undated first then due time then completed last" classname="com.coursekeeper.task.TaskContractTest" time="0.0"/>
+  <testcase name="filters combine status and type" classname="com.coursekeeper.task.TaskContractTest" time="0.0"/>
+  <testcase name="course label distinguishes missing course from deleted course" classname="com.coursekeeper.task.TaskContractTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

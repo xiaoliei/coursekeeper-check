@@ -1,13 +1,14 @@
 # 课程任务管家
 
-本目录是课程任务管家的 Android 项目仓库，由 A 模块演示工程迁移而来。A 的原始交付快照保留在 `./archive/coursekeeper-a`，原型、设计稿和验收记录仍以那里为准；统计口径、规则与看板相关草案见 [docs/统计口径与规则草案.md](docs/统计口径与规则草案.md)。
+本目录是课程任务管家的 Android 项目仓库，由 A 模块演示工程迁移而来。当前首页与任务页已接入同一份真实任务数据；范围、接口和验证结果见 [A 模块接入与验收说明](docs/A-首页真实任务接入-本地说明.md)。原始交付快照保留在团队仓库的 `archive/coursekeeper-a`；统计草案见 [docs/统计口径与规则草案.md](docs/统计口径与规则草案.md)。
 
 ## 当前状态
 
 - 版本 0.2.0，包名统一为 `com.coursekeeper`（原 A 演示为 `com.coursekeeper.a.demo`）。
-- 已迁移 A 的首页、导航、公共组件、假数据与测试；课表、任务、数据页仍是演示占位，分别由 B、D、F 替换。
+- 首页和 D 的任务页共享 E 的真实 Room 数据；新增、完成、撤销和日期筛选联动，跳过引导的选择会保存。
+- B 的课程服务及 F 的压力服务尚未接入，真实模式显示明确的缺失状态。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
 - 正式口径（统计、压力指数、规则阈值）为草案，需小组确认后生效，见 docs 目录。
-- E 的基础版数据与同步组件已加入 `data/`：Room、Repository、设置、分模块同步、版本与去重事务；接入方式和待联调边界见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)。当前页面仍由 A 的演示入口驱动，正式业务服务接入后切换数据源。
+- E 的基础版数据与同步组件已加入 `data/`：Room、Repository、设置、分模块同步、版本与去重事务；接入方式和待联调边界见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)。首页与任务页已读取真实数据，学校同步等待 C 的适配器。
 
 ## 环境与版本锁定
 
@@ -17,8 +18,8 @@
 | Android Gradle Plugin | 9.4.0 |
 | Compose Compiler | 2.2.10（AGP 内置 Kotlin，勿额外加 `org.jetbrains.kotlin.android`） |
 | Compose BOM | 2026.02.01 |
-| compileSdk / targetSdk / minSdk | 37 / 37 / 26；Build Tools 37.0.0；Platform 37 |
-| JDK | Android Studio 自带 JBR（JDK 17+） |
+| compileSdk / targetSdk / minSdk | 37 / 37 / 26；当前 AGP 默认 Build Tools 36.0.0；Platform 37 |
+| JDK | 仓库 daemon-JVM 配置锁定 JDK 21；其他 JBR 启动时可能触发 JDK 21 下载 |
 | SDK | 本地安装的 Android SDK，由 Android Studio 生成 `local.properties` 指向（已被 gitignore 排除） |
 
 首次构建若缺少 `platforms;android-37`，AGP 会在许可已接受时自动下载；如失败，用 sdkmanager 安装后重跑。
@@ -32,8 +33,9 @@
 ```
 
 - 调试 APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。
-- 9 项 JVM 逻辑测试来自 A 模块，覆盖统计口径、完成／撤销、场景切换与输入校验；包名迁移后需全部通过。
-- 设备测试：`.\gradlew.bat :app:connectedDebugAndroidTest`（需模拟器或真机，本轮未执行）。
+- JVM 测试覆盖 A 的投影、演示与接入、D 的任务交互以及 E 的数据和同步；本轮验证记录见 [A 本地联调说明](docs/A-首页真实任务接入-本地说明.md)。
+- 已在 Temurin JDK 21.0.13+9 下完成应用／测试 APK 构建和 65 项单元测试，0 失败、0 跳过。
+- 设备测试：`.\gradlew.bat :app:connectedDebugAndroidTest`（需模拟器或真机）。
 
 注意：Windows 下 AGP 可能对含中文的工程路径告警或报错。若遇到，把工程复制到英文路径再构建即可；路径不强制英文，中文路径能正常构建时可直接使用。
 
@@ -50,7 +52,7 @@ cd <本地工程目录>
 ```
 
 - Windows 下若 AGP 报“项目路径包含非 ASCII 字符”，把工程复制到英文路径后构建即可；路径不是硬性要求，能正常构建时用中文路径也可以。
-- 用 Android Studio 打开克隆后的目录（不要只打开 `app` 子目录），Gradle JDK 选 Android Studio 自带 JBR（JDK 17+），SDK 指向本地安装的 Android SDK。
+- 用 Android Studio 打开克隆后的目录（不要只打开 `app` 子目录），配置 JDK 21 和本地 Android SDK。仓库的 daemon-JVM 配置会优先选择 JDK 21；如启动用其他 JBR，Gradle 可能需要联网下载 21。
 - `local.properties` 由 Android Studio 自动生成，已被 gitignore 排除，不要提交。
 - 首次构建会自动下载 Gradle 9.6.0、依赖和缺失的 SDK 组件（需联网；网络慢可先配置镜像）。
 
@@ -77,7 +79,7 @@ export JAVA_HOME="<Android Studio 的 jbr 路径>"
 
 ### 3. Android Studio 日常开发
 
-- Open 选择工程目录，Gradle JDK 选自带 JBR，等待 Gradle Sync 完成。
+- Open 选择工程目录，Gradle JDK 配置为 JDK 21，等待 Gradle Sync 完成。
 - 点 Run 即编译并安装到当前模拟器或真机；提交前先完成第 2 节的编译与单元测试。
 
 ### 4. 界面（设备）测试
@@ -123,7 +125,7 @@ git push -u origin <你的分支>
 
 ### 6. 换机说明
 
-新机器把仓库克隆/复制到本地工程目录（遇中文路径构建报错再换英文路径），安装 Android Studio 并配置 JDK 17+ 与 Android SDK；首次构建 Gradle 会按 `gradle-wrapper.properties` 和 `app/build.gradle.kts` 自动下载发行版、依赖与缺失的 SDK 组件（需网络）。
+新机器把仓库克隆/复制到本地工程目录（遇中文路径构建报错再换英文路径），安装 Android Studio 并配置 JDK 21 与 Android SDK；首次构建 Gradle 会按 `gradle-wrapper.properties` 和 `app/build.gradle.kts` 自动下载发行版、依赖与缺失的 SDK 组件（需网络）。
 
 ## 目录结构
 
@@ -144,15 +146,15 @@ coursekeeper/
 
 | 成员 | 接入内容 | 入口 |
 |---|---|---|
-| A | 迁入 `home`、`ui` 代码与资源，按团队包名和版本对齐依赖 | `MainActivity.kt` 创建 `HomeViewModel` 的位置 |
+| A | 首页真实任务投影、公共导航与状态；消费 B/D/E/F 接口 | `home/RepositoryHomeGateway.kt`、`MainActivity.kt` |
 | B | 替换课表占位页，提供 `CourseService`（周次、节次、冲突） | `AppShell.kt` 中 `DemoCourses` |
 | C | 接入选校登录与 WebView，返回结构化数据给 E | 登录弹层与 `DemoScenario.Expired` |
-| D | 替换任务占位页，提供 `TaskService` 与通知 | `AppShell.kt` 中 `DemoTasks` |
-| E | 提供 Room、Repository 与同步状态 | 替换 `demo` 假数据为真实数据源 |
+| D | 维护已接入的真实任务页，继续实现通知 | `task/TaskScreen.kt`、`TaskViewModel.kt` 与共享 `TaskGateway` |
+| E | 维护 Room、Repository 与同步状态及后续迁移 | `CourseKeeperData` 为首页与任务页提供同一个数据源 |
 | F | 替换数据占位页，实现统计、规则、压力指数与构建检查 | `AppShell.kt` 中 `DemoStatistics` |
 
 页面先使用统一假数据推进，接口确认后逐项联调；正式写操作由 D、E 补齐校验、版本冲突、去重与事务。
 
 ## 假数据说明
 
-演示时钟固定为 **2026-11-09 09:50**，右上角“演示设置”可切换正常、离线、登录过期、部分成功、空数据、首次启动六种场景。数据仅存内存，重启还原；“本周 15 门课程、压力指数 40”是展示样例，正式口径见 docs 草案。
+DemoHomeGateway 的时钟固定为 **2026-11-09 09:50**，用于 Preview、测试与独立演示，内存数据重启还原。公共工程的 MainActivity 使用真实 Repository、设备日期和持久化引导状态，不灌入这些演示记录，不显示“15 门课程／压力 40”等样例值。

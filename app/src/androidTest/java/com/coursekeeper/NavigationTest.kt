@@ -2,6 +2,7 @@ package com.coursekeeper
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.coursekeeper.demo.*
@@ -13,13 +14,14 @@ import org.junit.Test
 
 class NavigationTest {
     @get:Rule val compose=createComposeRule()
-    private fun show(gateway: DemoHomeGateway=DemoHomeGateway()) {
+    private fun show(gateway: DemoHomeGateway=DemoHomeGateway(),customCourses:Boolean=false) {
         compose.setContent {
             val state by gateway.state.collectAsState()
             CourseKeeperTheme { AppShell(state,
                 onTaskToggle={runBlocking {gateway.setTaskCompleted(it.id,!it.completed)}},
                 onAddTask={runBlocking {gateway.addTask(it)}},onScenario=gateway::setScenario,
-                onSkipLogin=gateway::skipLogin,onSimulateLogin=gateway::simulateLogin)
+                onSkipLogin=gateway::skipLogin,onSimulateLogin=gateway::simulateLogin,
+                coursesScreen=if(customCourses) { _ -> Text("课程插槽验证") } else null)
             }
         }
     }
@@ -49,5 +51,13 @@ class NavigationTest {
         compose.onNodeWithText("保存任务").performClick()
         compose.onNodeWithText("任务",useUnmergedTree=true).performClick()
         compose.onNodeWithText("离线新增测试").assertExists()
+    }
+    @Test fun suppliedCourseSlotReplacesOnlyCoursesAndKeepsNavigation() {
+        show(customCourses=true)
+        compose.onNodeWithText("课表",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("课程插槽验证").assertIsDisplayed()
+        compose.onNodeWithText("首页",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("上午好，同学").assertIsDisplayed()
+        compose.onNodeWithText("＋ 手动添加任务").assertIsDisplayed()
     }
 }

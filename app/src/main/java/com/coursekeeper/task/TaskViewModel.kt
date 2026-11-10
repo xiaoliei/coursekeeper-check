@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
@@ -66,6 +67,7 @@ data class TaskUiState(
     val typeFilter: TaskType? = null,
     val openCount: Int = 0,
     val doneCount: Int = 0,
+    val dateFilter: TaskDateFilter = TaskDateFilter.ALL,
 ) {
     val totalCount: Int get() = openCount + doneCount
 }
@@ -89,8 +91,7 @@ class TaskViewModel(
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
 ) : ViewModel() {
 
-    private val statusFilter = MutableStateFlow(TaskStatusFilter.OPEN)
-    private val typeFilter = MutableStateFlow<TaskType?>(null)
+    private val query = MutableStateFlow(TaskQuery())
     private val eventChannel = Channel<TaskEvent>(Channel.BUFFERED)
     val events = eventChannel.receiveAsFlow()
 
@@ -106,22 +107,26 @@ class TaskViewModel(
     }
 
     val uiState: StateFlow<TaskUiState> =
-        combine(data, statusFilter, typeFilter, minuteTick) { snapshot, status, type, _ ->
+        combine(data, query, minuteTick) { snapshot, selected, _ ->
             val stamp = now()
             val views = snapshot.tasks.sortedForDisplay().map { it.toView(snapshot.courses, stamp) }
             TaskUiState(
-                tasks = views.visible(status, type),
+                tasks = views.visible(selected.status, selected.type, selected.date, stamp),
                 courses = snapshot.courses,
-                statusFilter = status,
-                typeFilter = type,
+                statusFilter = selected.status,
+                typeFilter = selected.type,
+                dateFilter = selected.date,
                 openCount = views.count { it.status != TaskStatus.COMPLETED },
                 doneCount = views.count { it.status == TaskStatus.COMPLETED },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskUiState())
 
-    fun setStatusFilter(value: TaskStatusFilter) { statusFilter.value = value }
+    fun setStatusFilter(value: TaskStatusFilter) { query.update { it.copy(status = value) } }
 
-    fun setTypeFilter(value: TaskType?) { typeFilter.value = value }
+    fun setTypeFilter(value: TaskType?) { query.update { it.copy(type = value) } }
+    /** One atomic query change prevents stale type/status chips narrowing a homepage count. */
+    fun showQuery(value: TaskQuery) { query.value = value }
+    fun clearDateFilter() { query.update { it.copy(date = TaskDateFilter.ALL) } }
 
     /** onResult 在协程内回调：null = 成功；非 null = 用户文案（表单保持打开、草稿不丢）。
      *  不传回调时失败会回落到事件通道提示，不会被静默吞掉。 */

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.data.SettingsStoreTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-10T14:52:48.528Z" hostname="LAPTOP-CJQ77CDT" time="0.506">
+  <properties/>
+  <testcase name="schoolAndSkippedOnboardingSurviveStoreRecreation" classname="com.coursekeeper.data.SettingsStoreTest" time="0.504"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

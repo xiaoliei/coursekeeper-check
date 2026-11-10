@@ -1,6 +1,7 @@
 package com.coursekeeper.demo
 
 import com.coursekeeper.home.*
+import com.coursekeeper.data.WriteReceipt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDateTime
@@ -12,7 +13,7 @@ enum class DemoScenario(val label: String) { Normal("正常使用"), Offline("�
 /** In-memory fixtures only. Never connect this demonstration implementation to production data. */
 class DemoHomeGateway : HomeGateway {
     private data class Task(val id: String, val title: String, val course: String, val type: String,
-        val deadline: LocalDateTime, val completedAt: LocalDateTime? = null)
+        val deadline: LocalDateTime?, val completedAt: LocalDateTime? = null, val version: Long = 1)
     private val now = LocalDateTime.of(2026, 11, 9, 9, 50)
     private var scenario = DemoScenario.Normal
     private var tasks = initialTasks()
@@ -34,18 +35,25 @@ class DemoHomeGateway : HomeGateway {
         scenario = DemoScenario.Normal
         publish()
     }
-    override suspend fun setTaskCompleted(id: String, completed: Boolean) {
+    override suspend fun completeOnboarding() { skipLogin() }
+    override suspend fun setTaskCompleted(id: String, completed: Boolean, expectedVersion: Long?): WriteReceipt {
         require(tasks.any { it.id == id }) { "任务不存在，请刷新后重试" }
+        val current = tasks.single { it.id == id }
+        require(expectedVersion == null || expectedVersion == current.version) { "内容已被修改，请刷新后重试" }
+        if ((current.completedAt != null) == completed) return WriteReceipt(id, current.version, false)
         tasks = tasks.map { task ->
-            if (task.id != id) task else task.copy(completedAt = if (completed) task.completedAt ?: now else null)
+            if (task.id != id) task else task.copy(completedAt = if (completed) now else null, version = task.version + 1)
         }
         publish()
+        return WriteReceipt(id, current.version + 1, true)
     }
-    override suspend fun addTask(task: NewTask) {
+    override suspend fun addTask(task: NewTask): WriteReceipt {
         require(task.title.isNotBlank()) { "请填写任务名称" }
         require(task.title.length <= 60) { "任务名称过长" }
-        tasks = tasks + Task(UUID.randomUUID().toString(), task.title, task.course, task.type, task.deadline)
+        val id = UUID.randomUUID().toString()
+        tasks = tasks + Task(id, task.title, task.course, task.type, task.deadline)
         publish()
+        return WriteReceipt(id, 1, true)
     }
     private fun publish() { mutableState.value = project() }
     private fun initialTasks() = listOf(
@@ -61,23 +69,25 @@ class DemoHomeGateway : HomeGateway {
             CourseUi("java", "面向对象程序设计", "10:10 — 11:45", "教学楼 302", "第 3–4 节"),
             CourseUi("db", "数据库原理", "14:00 — 15:35", "实验楼 B206", "第 5–6 节"),
         ) else emptyList()
-        val week = tasks.filter { !it.deadline.toLocalDate().isBefore(now.toLocalDate()) && it.deadline.toLocalDate().isBefore(now.toLocalDate().plusDays(7)) }
+        val week = tasks.filter { it.deadline?.toLocalDate()?.let { date -> !date.isBefore(now.toLocalDate()) && date.isBefore(now.toLocalDate().plusDays(7)) } == true }
         val complete = week.count { it.completedAt != null }
         return HomeUiState(
             dateLabel = "11 月 9 日 · 星期一", weekLabel = "第 10 教学周",
             status = when (scenario) { DemoScenario.Offline -> SyncStatus.Offline; DemoScenario.Expired -> SyncStatus.Expired; DemoScenario.Partial -> SyncStatus.Partial; else -> SyncStatus.Ready },
             todayCourseCount = courses.size,
-            todayDueCount = tasks.count { it.deadline.toLocalDate() == now.toLocalDate() },
+            todayDueCount = tasks.count { it.deadline?.toLocalDate() == now.toLocalDate() },
             todayCompletedCount = tasks.count { it.completedAt?.toLocalDate() == now.toLocalDate() },
             courses = courses, nextCourse = courses.getOrNull(1), nextCourseHint = "20 分钟后",
-            tasks = tasks.sortedBy { it.deadline }.map { t ->
-                val date = when (t.deadline.toLocalDate()) {
+            tasks = tasks.sortedWith(compareBy(nullsFirst()) { it.deadline }).map { t ->
+                val deadline = t.deadline
+                val date = when (deadline?.toLocalDate()) {
                     now.toLocalDate() -> "今天"
                     now.plusDays(1).toLocalDate() -> "明天"
-                    else -> t.deadline.format(DateTimeFormatter.ofPattern("MM/dd"))
+                    else -> deadline?.format(DateTimeFormatter.ofPattern("MM/dd")) ?: "截止待定"
                 }
-                TaskUi(t.id, t.title, t.course, t.type, (if(t.deadline.isBefore(now) && t.completedAt == null) "已逾期 · " else "") + date + " " + t.deadline.format(DateTimeFormatter.ofPattern("HH:mm")), t.completedAt != null,
-                    t.deadline.toLocalDate() == now.toLocalDate(), t.completedAt?.toLocalDate() == now.toLocalDate())
+                val dueLabel = if (deadline == null) "截止待定" else (if(deadline.isBefore(now) && t.completedAt == null) "已逾期 · " else "") + date + " " + deadline.format(DateTimeFormatter.ofPattern("HH:mm"))
+                TaskUi(t.id, t.title, t.course, t.type, dueLabel, t.completedAt != null,
+                    deadline?.toLocalDate() == now.toLocalDate(), t.completedAt?.toLocalDate() == now.toLocalDate(), t.version)
             },
             weekTaskCount = week.size, weekCompletedCount = complete,
             weekProgress = if (week.isEmpty()) 0f else complete.toFloat() / week.size,

@@ -43,7 +43,9 @@ import com.coursekeeper.ui.theme.*
         Text(when(status) {
             SyncStatus.Offline -> "当前离线 · 已有数据可继续使用"
             SyncStatus.Expired -> "登录已过期 · 现有数据已保留"
-            SyncStatus.Partial -> "课表已同步，任务暂未更新"
+            SyncStatus.Partial -> "部分数据同步未完成 · 已有数据可继续使用"
+            SyncStatus.Syncing -> "正在同步 · 本地数据可继续使用"
+            SyncStatus.Error -> "同步暂未完成 · 已有数据可继续使用"
             SyncStatus.Ready -> ""
         }, fontSize = 12.sp, color = if(warning) Color(0xFF8A5515) else KeeperMuted, modifier = Modifier.weight(1f))
         when(status) {
@@ -61,7 +63,7 @@ import com.coursekeeper.ui.theme.*
         Column(Modifier.weight(1f).clickable { onDetail(task) }.padding(vertical=12.dp), verticalArrangement=Arrangement.spacedBy(6.dp)) {
             Text(task.title, fontSize=14.sp, fontWeight=FontWeight.SemiBold, color=if(task.completed) KeeperMuted else KeeperInk)
             Text("${task.type} · ${task.course.ifBlank { "未关联课程" }}", fontSize=11.sp, color=KeeperMuted)
-            Text(if(task.completed) "已完成" else "${task.dueLabel} 截止", fontSize=11.sp, color=if(task.completed) Color(0xFF21856C) else Color(0xFF97591D))
+            Text(if(task.completed) "已完成" else if(task.dueLabel == "截止待定") task.dueLabel else "${task.dueLabel} 截止", fontSize=11.sp, color=if(task.completed) Color(0xFF21856C) else Color(0xFF97591D))
         }
     }
 }

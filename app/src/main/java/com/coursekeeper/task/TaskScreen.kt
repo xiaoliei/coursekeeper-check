@@ -51,6 +51,9 @@ fun TaskScreen(
     onToggle: (TaskView) -> Unit,
     onDelete: (TaskView) -> Unit,
     modifier: Modifier = Modifier,
+    createRequested: Boolean = false,
+    onCreateRequestConsumed: () -> Unit = {},
+    onClearDateFilter: () -> Unit = {},
 ) {
     var editorTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var editorNew by rememberSaveable { mutableStateOf(false) }
@@ -58,6 +61,15 @@ fun TaskScreen(
     var editorVersion by rememberSaveable { mutableStateOf(0L) }
     var pendingDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingDeleteVersion by rememberSaveable { mutableStateOf(0L) }
+
+    LaunchedEffect(createRequested) {
+        if (createRequested) {
+            editorTarget = null
+            pendingDeleteId = null
+            editorNew = true
+            onCreateRequestConsumed()
+        }
+    }
 
     // 任务从列表消失（同步删除、筛选变化）时清掉残留的弹层状态，防止"复活"
     LaunchedEffect(editorTarget, pendingDeleteId, state.tasks) {
@@ -109,6 +121,12 @@ fun TaskScreen(
                             if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} · 已完成 ${state.doneCount}",
                             fontSize = 11.sp, color = KeeperMuted,
                         )
+                    }
+                    if (state.dateFilter != TaskDateFilter.ALL) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("${state.dateFilter.label} · ${state.tasks.size} 项", color = KeeperBlue, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                            TextButton(onClick = onClearDateFilter) { Text("清除日期筛选", fontSize = 11.sp) }
+                        }
                     }
                 }
             }
