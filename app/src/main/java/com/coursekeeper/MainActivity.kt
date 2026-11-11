@@ -1,10 +1,14 @@
 package com.coursekeeper
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
@@ -17,6 +21,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.coursekeeper.data.CourseKeeperData
 import com.coursekeeper.home.*
+import com.coursekeeper.reminder.AlarmReminderScheduler
+import com.coursekeeper.reminder.ReminderCoordinator
+import com.coursekeeper.reminder.TaskNotifications
 import com.coursekeeper.task.RepositoryTaskGateway
 import com.coursekeeper.task.TaskEvent
 import com.coursekeeper.task.TaskScreen
@@ -54,6 +61,25 @@ class MainActivity : ComponentActivity() {
                     viewModelFactory { initializer { TaskViewModel(owner.tasks) } }
                 })
                 val taskState by taskModel.uiState.collectAsStateWithLifecycle()
+
+                // D 第 3 周：提醒对账随数据快照刷新；数据层首次出现带截止时间的任务（任何入口，
+                // 含首页快速添加）后申请一次通知权限（v1.0 §四）。
+                val reminderScheduler = remember { AlarmReminderScheduler(applicationContext) }
+                var notifPermissionAsked by rememberSaveable { mutableStateOf(false) }
+                val notifPermissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { }
+                LaunchedEffect(data, reminderScheduler) {
+                    TaskNotifications.ensureChannel(applicationContext)
+                    ReminderCoordinator.attach(data.repository.snapshots, reminderScheduler, this) {
+                        if (!notifPermissionAsked) {
+                            notifPermissionAsked = true
+                            if (Build.VERSION.SDK_INT >= 33) {
+                                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }
+                    }
+                }
                 LaunchedEffect(taskModel) {
                     taskModel.events.collect { event -> launch {
                         snackbar.currentSnackbarData?.dismiss()

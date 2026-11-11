@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 通知（API 33+ 运行时权限）；精确闹钟（API 31+ 系统开关，不可用时降级窗口提醒） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application android:allowBackup="false" android:label="课程管家"
         android:icon="@drawable/ic_launcher" android:supportsRtl="true"
         android:theme="@style/Theme.CourseKeeper">
@@ -10,5 +14,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- 到点发通知（仅本 App 显式 intent，不导出） -->
+        <receiver android:name=".reminder.ReminderReceiver" android:exported="false" />
+        <!-- 开机/应用更新后重建闹钟（两者均为受保护系统广播，只有系统可发，exported=false 即可收到） -->
+        <receiver android:name=".reminder.BootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
