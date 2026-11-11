@@ -15,7 +15,9 @@
 | `AndroidManifest.xml` | POST_NOTIFICATIONS / SCHEDULE_EXACT_ALARM / RECEIVE_BOOT_COMPLETED + 两个 receiver（均 exported=false） |
 | `app/src/test/.../reminder/` | 21 项单测：槽位计算、调度对账、删除补撤、幂等、回调时机、通知放行 |
 
-全仓测试 **86 项，失败 0**（65 原有 + 21 新增）。
+全仓测试 **86 项，失败 0**（65 原有 + 21 新增）。<br>
+（rebase 到 F 的 CI 提交后全仓为 **93 项**：本模块 86 + F 新增的 `fakedata/BoundaryFixtureTest` 7 项，
+同样全绿。）
 
 ## 二、架构：状态对账 + 自续链
 
@@ -109,8 +111,9 @@ ReminderReceiver → 核对库内状态（未删/未完成/截止未改）→ �
   非引导/加载/读取失败态"时应用到 `SnackbarHost` 的 `padding(bottom=...)`。**AppShell 保持对
   `com.coursekeeper.task` 包的零编译期依赖**，A 的独立演示工程（不传 `taskScreen`）行为不变。
 
-**A 需复核的是 `AppShell.kt` 的新参数 `snackbarBottomInset` 与它的门控条件**（该文件本次合计
-+14/−1；另 `MainActivity` +9、`TaskScreen` +11/−1）。
+**A 需复核的是 `AppShell.kt` 的新参数 `snackbarBottomInset` 与它的门控条件**（该文件在本次提交里
+合计 +24/−3，含切页收起与导航点击收起；`TaskScreen` +11/−1；`MainActivity` 单看"让位接线"这一处
+是 +9/−0，整文件因另含 Snackbar 时长修复共 +24/−2）。
 
 **真机验证**：提示底边 1878px、按钮顶边 2028px，间隔 150px 不重叠 ✅；
 提示仍可见时立刻点「＋ 新建任务」，表单正常打开（点击未被浮层吞掉）✅。
@@ -133,7 +136,7 @@ ReminderReceiver → 核对库内状态（未删/未完成/截止未改）→ �
 **增量复查（修复后）**：P0=0 P1=0 P2=3，结论可提交。P2-1（登记表清理顺序）、P2-3（Receiver 静默吞异常
 无日志）已修（登记表清理提前、catch 加 Log.w）；P2-2（后台 launch 防御）记为已知限制 5。
 
-每次修复后均重跑 `assembleDebug testDebugUnitTest`：**86 项，失败 0**。
+每次修复后均重跑 `assembleDebug testDebugUnitTest`：**86 项，失败 0**（rebase 到 F 的提交后为 93 项，见 §一）。
 
 **Snackbar 常驻修复的复查（同日，第 4 轮）**：P0=0 P1=0 **P2=6**，结论可提交。按建议修了 4 项：
 P2-2（AppShell 改 `snackbarBottomInset` 参数，去掉对任务包的编译期依赖）、P2-3（本文档补条目、
@@ -146,10 +149,10 @@ P2-①（本文档对紧凑判定归属与行数的描述过时）按实际架�
 readError==null` 在 Snackbar 门控与底栏可见性各写一份）提取为 `val contentReady` 两处共用，
 行为等价。
 
-验证口径：**86 项单测全绿**；`NavigationTest` 5 条 instrumented 在**最终代码**上用
-`adb shell am instrument -e class com.coursekeeper.NavigationTest` 跑出 **OK (5 tests)**，
-6.132 秒（真机华为 API 29）。未用 `connectedDebugAndroidTest`——它会反复装卸，触发未备案 APK
-的华为账号验证。
+验证口径：**93 项单测全绿**（本模块 86 + F 的边界假数据 7）；`NavigationTest` 5 条 instrumented
+在**最终代码**上用 `adb shell am instrument -e class com.coursekeeper.NavigationTest` 跑出
+**OK (5 tests)**，6.356 秒（真机华为 API 29）。未用 `connectedDebugAndroidTest`——它会反复装卸，
+触发未备案 APK 的华为账号验证。推送到 main 后 GitHub Actions（F 配置）在该提交上 **跑绿**。
 
 ## 七、真机验收（2026-11-11，华为 TEL-AN00a / Android 10 API 29）
 
