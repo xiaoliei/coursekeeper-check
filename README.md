@@ -8,7 +8,7 @@
 - 首页和 D 的任务页共享 E 的真实 Room 数据；新增、完成、撤销和日期筛选联动，跳过引导的选择会保存。
 - B 的课程服务及 F 的压力服务尚未接入，真实模式显示明确的缺失状态。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
 - 正式口径（统计、压力指数、规则阈值）为草案，需小组确认后生效，见 docs 目录。
-- E 的基础版数据与同步组件已加入 `data/`：Room、Repository、设置、分模块同步、版本与去重事务；接入方式和待联调边界见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)。首页与任务页已读取真实数据，学校同步等待 C 的适配器。
+- E 的数据层已升级 Room v3，支持非连续周次、排课独立教师及 v1/v2 无损迁移；接入方式见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)，本轮验证见 [E v3 迁移与联调验收](docs/E-v3迁移与联调验收.md)。首页、任务、提醒和看板共用真实快照，学校同步等待 C 的适配器。
 
 ## 环境与版本锁定
 
@@ -35,8 +35,9 @@
 
 - 调试 APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。
 - JVM 测试覆盖 A 的投影、演示与接入、D 的任务交互以及 E 的数据和同步；本轮验证记录见 [A 本地联调说明](docs/A-首页真实任务接入-本地说明.md)。
-- 统一“边界假数据”素材（跨节次、单双周、本周/下周区间两侧、截止待定等）在 `app/src/test/java/com/coursekeeper/fakedata/`，供 F 的统计/看板测试与首页投影回归复用；非连续周场景标为依赖 E v3 迁移。
+- 统一“边界假数据”素材（跨节次、单双周、非连续周、本周/下周区间两侧、截止待定等）在 `app/src/test/java/com/coursekeeper/fakedata/`，供 F 的统计/看板测试与首页投影回归复用；非连续周素材已随 E v3 启用。
 - 已在 Temurin JDK 21.0.13+9 下完成应用／测试 APK 构建和 65 项单元测试，0 失败、0 跳过。
+- E v3 最新联调在 JDK 21 下通过全仓 126 项单元测试（含 E 44 项），0 失败、0 跳过；应用／测试 APK 均已构建，见 [v3 验收记录](docs/E-v3迁移与联调验收.md)。
 - 设备测试：`.\gradlew.bat :app:connectedDebugAndroidTest`（需模拟器或真机）。
 - GitHub Actions 自动构建（`.github/workflows/build.yml`）：`push 到 main` 与任意 PR 都会先跑 `:app:testDebugUnitTest`、通过后再 `:app:assembleDebug`，作为合并门禁。
 

@@ -1,0 +1,400 @@
+{
+  "date": "2026-11-11",
+  "baseCommit": "a419f227dc611fbfd6a4c611f199cafc716fac66",
+  "roomVersion": 3,
+  "verifiedBuildInputs": 66,
+  "validationDirectory": "C:\\tmp\\coursekeeper-e-v3",
+  "unitTests": {
+    "task": ":app:testDebugUnitTest",
+    "tests": 126,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "eModuleTests": 44,
+    "eModuleAddedTests": 16,
+    "suites": [
+      {
+        "name": "com.coursekeeper.data.CourseScheduleV3Test",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "6.07"
+      },
+      {
+        "name": "com.coursekeeper.data.MigrationV3Test",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "1.147"
+      },
+      {
+        "name": "com.coursekeeper.data.RepositoryTest",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.345"
+      },
+      {
+        "name": "com.coursekeeper.data.ScheduleWeeksTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.002"
+      },
+      {
+        "name": "com.coursekeeper.data.SettingsStoreTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.239"
+      },
+      {
+        "name": "com.coursekeeper.data.StorageRecoveryTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.249"
+      },
+      {
+        "name": "com.coursekeeper.data.SyncCoordinatorTest",
+        "tests": "15",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.588"
+      },
+      {
+        "name": "com.coursekeeper.DemoHomeGatewayTest",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.338"
+      },
+      {
+        "name": "com.coursekeeper.fakedata.BoundaryFixtureTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.018"
+      },
+      {
+        "name": "com.coursekeeper.home.HomeProjectionTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.003"
+      },
+      {
+        "name": "com.coursekeeper.home.HomeViewModelTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.029"
+      },
+      {
+        "name": "com.coursekeeper.home.RepositoryHomeGatewayTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.217"
+      },
+      {
+        "name": "com.coursekeeper.reminder.ReminderContractTest",
+        "tests": "8",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.001"
+      },
+      {
+        "name": "com.coursekeeper.reminder.ReminderCoordinatorTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.013"
+      },
+      {
+        "name": "com.coursekeeper.reminder.ReminderSchedulerTest",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.203"
+      },
+      {
+        "name": "com.coursekeeper.statistics.StatisticsServiceTest",
+        "tests": "14",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.008"
+      },
+      {
+        "name": "com.coursekeeper.statistics.StatisticsViewModelTest",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.112"
+      },
+      {
+        "name": "com.coursekeeper.task.TaskContractTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.038"
+      },
+      {
+        "name": "com.coursekeeper.task.TaskViewModelTest",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "0.138"
+      }
+    ]
+  },
+  "packages": [
+    {
+      "file": "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
+      "bytes": 1051842,
+      "sha256": "76c64ca6defca2e559d1c4fa7e2c6678d7b113ba70c82ae6e87c67e6f30a1123"
+    },
+    {
+      "file": "app/build/outputs/apk/debug/app-debug.apk",
+      "bytes": 13300734,
+      "sha256": "891ec9de58dbd1288a3127c4d3af661cb7abb22d16930cce379e688928ded6e5"
+    }
+  ],
+  "lint": {
+    "result": "FAILED_EXISTING_HOME_PREVIEW_ERROR",
+    "eSourceErrors": 0,
+    "issues": [
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "34",
+            "column": "29"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "35",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "39",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "40",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "GradleDependency",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "46",
+            "column": "40"
+          }
+        ]
+      },
+      {
+        "id": "NewerVersionAvailable",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "43",
+            "column": "24"
+          }
+        ]
+      },
+      {
+        "id": "NewerVersionAvailable",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/build.gradle.kts",
+            "line": "44",
+            "column": "24"
+          }
+        ]
+      },
+      {
+        "id": "ConfigurationScreenWidthHeight",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/MainActivity.kt",
+            "line": "148",
+            "column": "25"
+          }
+        ]
+      },
+      {
+        "id": "ConfigurationScreenWidthHeight",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/task/TaskScreen.kt",
+            "line": "91",
+            "column": "19"
+          }
+        ]
+      },
+      {
+        "id": "StateFlowValueCalledInComposition",
+        "severity": "Error",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/ui/HomeScreen.kt",
+            "line": "114",
+            "column": "44"
+          }
+        ]
+      },
+      {
+        "id": "DataExtractionRules",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/src/main/AndroidManifest.xml",
+            "line": "7",
+            "column": "39"
+          }
+        ]
+      },
+      {
+        "id": "AutoboxingStateCreation",
+        "severity": "Hint",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/task/TaskScreen.kt",
+            "line": "71",
+            "column": "45"
+          }
+        ]
+      },
+      {
+        "id": "AutoboxingStateCreation",
+        "severity": "Hint",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/task/TaskScreen.kt",
+            "line": "73",
+            "column": "52"
+          }
+        ]
+      },
+      {
+        "id": "UseKtx",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/reminder/ReminderScheduler.kt",
+            "line": "91",
+            "column": "20"
+          }
+        ]
+      },
+      {
+        "id": "UseKtx",
+        "severity": "Warning",
+        "locations": [
+          {
+            "file": "app/src/main/java/com/coursekeeper/reminder/ReminderScheduler.kt",
+            "line": "91",
+            "column": "20"
+          }
+        ]
+      }
+    ]
+  },
+  "deviceTests": {
+    "executed": false,
+    "reason": "No adb devices attached; instrumentation APK compiled."
+  },
+  "scopes": {
+    "implemented": [
+      "weeks bitmap and teacher",
+      "v1/v2 to v3 migration",
+      "stable migrated schedule IDs",
+      "course sync diff and indexed reads",
+      "statistics reader compatibility"
+    ],
+    "unchanged": [
+      "task business/notification rules",
+      "statistics formulas",
+      "school login/parser implementation",
+      "course externalId uniqueness",
+      "unconfirmed semester default",
+      "Agent stage"
+    ]
+  },
+  "delivery": {
+    "targetBranch": "main",
+    "method": "direct push authorized by user",
+    "pullRequestRequired": false,
+    "commitGroups": [
+      "week bitmap encoding",
+      "v3 migration and reader compatibility",
+      "migration and sync tests",
+      "handoff and validation evidence"
+    ]
+  },
+  "prePushVerification": {
+    "mainCommit": "a419f227dc611fbfd6a4c611f199cafc716fac66",
+    "codeCommit": "21e72781b70682823972acac7789806c1d7b4b49",
+    "syncedBy": "git fetch origin + git rebase origin/main",
+    "unitTestCommand": ":app:testDebugUnitTest --rerun-tasks",
+    "packageCommand": ":app:assembleDebug :app:assembleDebugAndroidTest",
+    "unitTestResult": "BUILD SUCCESSFUL",
+    "packageResult": "BUILD SUCCESSFUL",
+    "executedTestBuildTasks": 31,
+    "tests": 126,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "verifiedBuildInputs": 66
+  }
+}
