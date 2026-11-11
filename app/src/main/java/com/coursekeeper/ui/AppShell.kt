@@ -35,6 +35,8 @@ fun AppShell(
     // D 的任务模块接入点：为空时使用 A 的导航占位页，便于 A 的演示工程独立运行。
     taskScreen: (@Composable (Modifier) -> Unit)? = null,
     coursesScreen: (@Composable (Modifier) -> Unit)? = null,
+    // F 的看板接入点：为空时使用 A 的导航占位页（DemoStatistics）。
+    statisticsScreen: (@Composable (Modifier) -> Unit)? = null,
     onTaskFilter: (TaskFilter) -> Unit = {},
     onCreateTask: (() -> Unit)? = null,
     onRetryHome: () -> Unit = {},
@@ -120,7 +122,7 @@ fun AppShell(
                 {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},{login=true},::requestAddTask,area)
             Destination.Courses -> if(coursesScreen != null) coursesScreen(area) else DemoCourses(state,area,{courseDetailId=it.id})
             Destination.Tasks -> if (taskScreen != null) taskScreen(area) else DemoTasks(state,filter,{filter=it},onTaskToggle,{taskDetailId=it.id},area)
-            Destination.Statistics -> DemoStatistics(state,area)
+            Destination.Statistics -> if(statisticsScreen != null) statisticsScreen(area) else DemoStatistics(state,area)
         }
     }
     if(add) AddTaskDialog(onDismiss={add=false},onSubmit={draft-> add=false;onAddTask(draft)})

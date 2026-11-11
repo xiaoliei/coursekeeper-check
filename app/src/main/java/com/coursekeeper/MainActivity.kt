@@ -27,6 +27,7 @@ import com.coursekeeper.home.*
 import com.coursekeeper.reminder.AlarmReminderScheduler
 import com.coursekeeper.reminder.ReminderCoordinator
 import com.coursekeeper.reminder.TaskNotifications
+import com.coursekeeper.statistics.StatisticsViewModel
 import com.coursekeeper.task.RepositoryTaskGateway
 import com.coursekeeper.task.TaskBottomButtonHeight
 import com.coursekeeper.task.TaskCompactHeightDp
@@ -37,6 +38,7 @@ import com.coursekeeper.task.TaskQuery
 import com.coursekeeper.task.TaskStatusFilter
 import com.coursekeeper.task.TaskDateFilter
 import com.coursekeeper.ui.AppShell
+import com.coursekeeper.ui.StatisticsScreen
 import com.coursekeeper.ui.theme.CourseKeeperTheme
 import kotlinx.coroutines.launch
 
@@ -45,6 +47,8 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     val data = CourseKeeperData.get(application)
     val tasks = RepositoryTaskGateway(data.repository)
     val gateway = RepositoryHomeGateway(data.repository, data.settings, viewModelScope, taskGateway=tasks)
+    // F：看板数据入口，订阅 E 的一致性快照实时计算统计结果。
+    val statistics = StatisticsViewModel(data.repository, scope = viewModelScope)
 }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +62,7 @@ class MainActivity : ComponentActivity() {
                 })
                 val state by model.state.collectAsStateWithLifecycle()
                 val snackbar=remember {SnackbarHostState()}
+                val statisticsState by owner.statistics.uiState.collectAsStateWithLifecycle()
 
                 // D：任务页接 E 的真实数据层（Room + Repository），不再经过演示网关。
                 val data = owner.data
@@ -154,7 +159,8 @@ class MainActivity : ComponentActivity() {
                         createRequested=createRequested,
                         onCreateRequestConsumed={createRequested=false},
                         onClearDateFilter=taskModel::clearDateFilter,
-                    ) })
+                    ) },
+                    statisticsScreen={ modifier -> StatisticsScreen(statisticsState, modifier) })
             }
         }
     }
