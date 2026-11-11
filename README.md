@@ -29,13 +29,16 @@
 在工程目录执行：
 
 ```powershell
-.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest
+.\gradlew.bat :app:testDebugUnitTest   # 先跑单元测试（门禁）
+.\gradlew.bat :app:assembleDebug       # 通过后再打调试包
 ```
 
 - 调试 APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。
 - JVM 测试覆盖 A 的投影、演示与接入、D 的任务交互以及 E 的数据和同步；本轮验证记录见 [A 本地联调说明](docs/A-首页真实任务接入-本地说明.md)。
+- 统一“边界假数据”素材（跨节次、单双周、本周/下周区间两侧、截止待定等）在 `app/src/test/java/com/coursekeeper/fakedata/`，供 F 的统计/看板测试与首页投影回归复用；非连续周场景标为依赖 E v3 迁移。
 - 已在 Temurin JDK 21.0.13+9 下完成应用／测试 APK 构建和 65 项单元测试，0 失败、0 跳过。
 - 设备测试：`.\gradlew.bat :app:connectedDebugAndroidTest`（需模拟器或真机）。
+- GitHub Actions 自动构建（`.github/workflows/build.yml`）：`push 到 main` 与任意 PR 都会先跑 `:app:testDebugUnitTest`、通过后再 `:app:assembleDebug`，作为合并门禁。
 
 注意：Windows 下 AGP 可能对含中文的工程路径告警或报错。若遇到，把工程复制到英文路径再构建即可；路径不强制英文，中文路径能正常构建时可直接使用。
 
@@ -139,6 +142,7 @@ coursekeeper/
 │   └── (statistics/ 待 W2 由 F 新增)
 ├── app/src/test/              # JVM 逻辑测试
 ├── app/src/androidTest/       # Compose 设备测试
+├── .github/workflows/         # GitHub Actions 自动构建（先测后构）
 └── docs/                      # 团队口径与规则草案
 ```
 
