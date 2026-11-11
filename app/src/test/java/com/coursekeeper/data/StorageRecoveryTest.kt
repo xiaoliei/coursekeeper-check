@@ -102,6 +102,8 @@ class StorageRecoveryTest : DataTestBase() {
                 assertEquals(4L, state.courses.single().version)
                 assertEquals("retained-schedule", state.schedules.single().id)
                 assertEquals("retained-course", state.schedules.single().courseId)
+                assertEquals("1-18", state.schedules.single().weeksText)
+                assertNull(state.schedules.single().teacher)
                 val retained = state.tasks.single()
                 assertEquals("retained-id", retained.id)
                 assertEquals(7L, retained.version)
