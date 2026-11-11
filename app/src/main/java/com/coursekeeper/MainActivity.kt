@@ -160,7 +160,7 @@ class MainActivity : ComponentActivity() {
                         onCreateRequestConsumed={createRequested=false},
                         onClearDateFilter=taskModel::clearDateFilter,
                     ) },
-                    statisticsScreen={ modifier -> StatisticsScreen(statisticsState, modifier) })
+                    statisticsScreen={ modifier -> StatisticsScreen(statisticsState, modifier) { owner.statistics.retry() } })
             }
         }
     }

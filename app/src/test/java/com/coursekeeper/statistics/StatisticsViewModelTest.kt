@@ -60,9 +60,31 @@ class StatisticsViewModelTest : DataTestBase() {
         seedBoundaryWeek()
         val before = vm.uiState.first { it.weekTaskCount == 4 }
         source.failing = true
-        repository.createTask(dueTask("e", LocalDateTime.of(2026, 11, 12, 10, 0)))
-        advanceUntilIdle()
+        vm.retry()
         // 计算失败：保留上一次成功值（仍为 4），不以空结果覆盖。
-        assertEquals(before, vm.uiState.value)
+        assertEquals(before.copy(error = "看板加载失败，请重试"), vm.uiState.value)
+    }
+
+    @Test
+    fun vmShowsErrorAndRetryRecoversAfterInitialSourceFailure() = runTest {
+        val source = object : CourseStatsSource {
+            var failing = true
+            override fun summary(snapshot: DataSnapshot, now: LocalDateTime): CourseStats {
+                check(!failing) { "course source down" }
+                return CourseStats()
+            }
+        }
+        val vm = StatisticsViewModel(repository, courseStatsSource = source, scope = backgroundScope, now = { now })
+        seedBoundaryWeek()
+        advanceUntilIdle()
+        val failed = vm.uiState.first { it.error != null }
+        assertEquals(0, failed.weekTaskCount)
+        assertEquals("看板加载失败，请重试", failed.error)
+
+        source.failing = false
+        vm.retry()
+        advanceUntilIdle()
+        assertEquals(null, vm.uiState.value.error)
+        assertEquals(4, vm.uiState.value.weekTaskCount)
     }
 }

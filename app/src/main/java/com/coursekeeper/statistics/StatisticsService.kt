@@ -49,6 +49,7 @@ object StatisticsService {
             pressureScore = pressure?.first,
             pressureLevel = if (pressure != null) level(pressure.first) else "",
             explanation = pressure?.second ?: "暂无数据",
+            error = null,
         )
     }
 

@@ -1,6 +1,7 @@
 package com.coursekeeper.statistics
 
 import com.coursekeeper.data.model.DataSnapshot
+import com.coursekeeper.data.model.CourseRecord
 import com.coursekeeper.data.model.ScheduleRecord
 import com.coursekeeper.data.model.SemesterRecord
 import com.coursekeeper.data.model.TaskRecord
@@ -130,9 +131,52 @@ class StatisticsServiceTest {
         assertEquals(CourseStats(0, 0, 0, 0), adapter.summary(BoundaryFixtures.alternatingWeeks(), now))
         val even = DataSnapshot(
             semesters = listOf(SemesterRecord("s1", "秋季", LocalDate.of(2026, 9, 7), 20)),
+            courses = listOf(CourseRecord("c1", "数据结构", semesterId = "s1", version = 1)),
             schedules = listOf(ScheduleRecord("sch-even", "c1", dayOfWeek = 2, startPeriod = 1, endPeriod = 2,
                 startWeek = 10, endWeek = 10, weekPattern = WeekPattern.EVEN)),
         )
         assertEquals(CourseStats(1, 2, 1, 1), adapter.summary(even, now))
+    }
+
+    @Test
+    fun intervalAdapterUsesSemesterThatContainsToday() {
+        val adapter = IntervalCourseStatsAdapter()
+        val snapshot = DataSnapshot(
+            semesters = listOf(
+                SemesterRecord("old", "旧学期", LocalDate.of(2026, 6, 8), 18),
+                SemesterRecord("current", "当前学期", LocalDate.of(2026, 9, 7), 20),
+            ),
+            courses = listOf(
+                CourseRecord("old-course", "旧学期课", semesterId = "old", version = 1),
+                CourseRecord("current-course", "当前学期课", semesterId = "current", version = 1),
+            ),
+            schedules = listOf(
+                ScheduleRecord("sch-old", "old-course", 2, 1, 2, 1, 18),
+                ScheduleRecord("sch-current", "current-course", 2, 3, 4, 10, 10),
+            ),
+        )
+        assertEquals(CourseStats(1, 2, 1, 1), adapter.summary(snapshot, now))
+    }
+
+    @Test
+    fun intervalAdapterIgnoresUnattachedSchedulesOutsideSemester() {
+        val adapter = IntervalCourseStatsAdapter()
+        val snapshot = DataSnapshot(
+            semesters = listOf(SemesterRecord("current", "当前学期", LocalDate.of(2026, 9, 7), 20)),
+            courses = listOf(CourseRecord("no-semester", "未关联", semesterId = null, version = 1)),
+            schedules = listOf(ScheduleRecord("sch-no-semester", "no-semester", 2, 1, 2, 10, 10)),
+        )
+        assertEquals(CourseStats(), adapter.summary(snapshot, now))
+    }
+
+    @Test
+    fun intervalAdapterShowsZeroOutsideEverySemester() {
+        val adapter = IntervalCourseStatsAdapter()
+        val snapshot = DataSnapshot(
+            semesters = listOf(SemesterRecord("old", "旧学期", LocalDate.of(2026, 6, 8), 12)),
+            courses = listOf(CourseRecord("old-course", "旧学期课", semesterId = "old", version = 1)),
+            schedules = listOf(ScheduleRecord("sch-old", "old-course", 2, 1, 2, 10, 10)),
+        )
+        assertEquals(CourseStats(), adapter.summary(snapshot, now))
     }
 }

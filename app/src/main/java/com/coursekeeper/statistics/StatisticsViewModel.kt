@@ -1,7 +1,9 @@
 package com.coursekeeper.statistics
 
 import com.coursekeeper.data.CourseKeeperRepository
+import com.coursekeeper.data.model.DataSnapshot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -23,21 +25,33 @@ class StatisticsViewModel(
 ) {
     private val _uiState = MutableStateFlow(StatisticsUi())
     val uiState: StateFlow<StatisticsUi> = _uiState
+    private var latestSnapshot: DataSnapshot? = null
 
     init {
         scope.launch {
             repository.snapshots.collect { snapshot ->
-                try {
-                    val current = now()
-                    _uiState.value = StatisticsService.compute(
-                        snapshot,
-                        courseStatsSource.summary(snapshot, current),
-                        current,
-                    )
-                } catch (_: Exception) {
-                    // 读失败保留上一次成功值，不以空结果覆盖（草案 §1“失败不能以空结果覆盖”）。
-                }
+                latestSnapshot = snapshot
+                compute(snapshot)
             }
+        }
+    }
+
+    fun retry() {
+        latestSnapshot?.let(::compute)
+    }
+
+    private fun compute(snapshot: DataSnapshot) {
+        try {
+            val current = now()
+            _uiState.value = StatisticsService.compute(
+                snapshot,
+                courseStatsSource.summary(snapshot, current),
+                current,
+            )
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (_: Exception) {
+            _uiState.value = _uiState.value.copy(error = "看板加载失败，请重试")
         }
     }
 }

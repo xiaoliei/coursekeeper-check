@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +27,7 @@ import com.coursekeeper.ui.theme.KeeperMuted
  * Compose Canvas 图表与 8 条规则提示归 W3。
  */
 @Composable
-fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier) {
+fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier, onRetry: () -> Unit = {}) {
     val ui = state ?: return
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -48,7 +49,7 @@ fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier) {
         }
         KeeperCard {
             Text("截止分布", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text("已逾期 ${ui.dueDist.overdue} · 本周 ${ui.dueDist.thisWeek} · 未来一周 ${ui.dueDist.next7Days}",
+            Text("已逾期 ${ui.dueDist.overdue} · 本周 ${ui.dueDist.thisWeek} · 下周 ${ui.dueDist.next7Days}",
                 fontSize = 13.sp)
         }
         KeeperCard {
@@ -58,6 +59,14 @@ fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier) {
             } else {
                 Text("${ui.pressureScore} · ${ui.pressureLevel}", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 Text(ui.explanation, fontSize = 12.sp, color = KeeperMuted)
+            }
+        }
+        ui.error?.let { message ->
+            KeeperCard {
+                Text(message, fontSize = 13.sp, color = KeeperMuted)
+                Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) {
+                    Text("重试")
+                }
             }
         }
     }

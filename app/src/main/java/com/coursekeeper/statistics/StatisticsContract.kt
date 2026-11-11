@@ -47,4 +47,5 @@ data class StatisticsUi(
     val pressureScore: Int? = null,
     val pressureLevel: String = "",
     val explanation: String = "",
+    val error: String? = null,
 )

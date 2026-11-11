@@ -2,6 +2,7 @@ package com.coursekeeper.statistics
 
 import com.coursekeeper.data.model.DataSnapshot
 import com.coursekeeper.data.model.ScheduleRecord
+import com.coursekeeper.data.model.SemesterRecord
 import com.coursekeeper.data.model.WeekPattern
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -20,11 +21,13 @@ class IntervalCourseStatsAdapter : CourseStatsSource {
     override fun summary(snapshot: DataSnapshot, now: LocalDateTime): CourseStats {
         val today = now.toLocalDate()
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val currentWeek = snapshot.semesters.firstOrNull { it.startsOn != null }?.let { semester ->
+        val currentSemester = snapshot.semesters
+            .filter { it.startsOn != null }
+            .filter { semester -> semester.contains(today) }
+            .maxByOrNull { it.startsOn!! }
+        val currentWeek = currentSemester?.let { semester ->
             val start = semester.startsOn!!.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            if (!today.isBefore(start) && today.isBefore(start.plusWeeks(semester.weekCount.toLong()))) {
-                ChronoUnit.WEEKS.between(start, monday).toInt() + 1
-            } else null
+            ChronoUnit.WEEKS.between(start, monday).toInt() + 1
         }
 
         fun active(schedule: ScheduleRecord): Boolean {
@@ -37,13 +40,21 @@ class IntervalCourseStatsAdapter : CourseStatsSource {
             }
         }
 
-        val todayEntries = snapshot.schedules.filter { active(it) && it.dayOfWeek == today.dayOfWeek.value }
-        val weekEntries = snapshot.schedules.filter(::active)
+        val activeSchedules = snapshot.schedules.filter { schedule ->
+            snapshot.courses.firstOrNull { it.id == schedule.courseId }?.semesterId == currentSemester?.id
+        }
+        val todayEntries = activeSchedules.filter { active(it) && it.dayOfWeek == today.dayOfWeek.value }
+        val weekEntries = activeSchedules.filter(::active)
         return CourseStats(
             todayLessonCount = todayEntries.size,
             todayPeriodCount = todayEntries.sumOf { it.endPeriod - it.startPeriod + 1 },
             weekCourseCount = weekEntries.map { it.courseId }.distinct().size,
             weekEntryCount = weekEntries.size,
         )
+    }
+
+    private fun SemesterRecord.contains(date: LocalDate): Boolean {
+        val start = startsOn!!.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        return !date.isBefore(start) && date.isBefore(start.plusWeeks(weekCount.toLong()))
     }
 }
