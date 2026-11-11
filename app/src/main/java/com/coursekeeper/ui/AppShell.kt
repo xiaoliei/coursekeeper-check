@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.coursekeeper.demo.DemoScenario
@@ -37,6 +38,9 @@ fun AppShell(
     onTaskFilter: (TaskFilter) -> Unit = {},
     onCreateTask: (() -> Unit)? = null,
     onRetryHome: () -> Unit = {},
+    // 任务页底部自带按钮的高度，由调用方传入：让本文件对任务模块保持零编译期依赖，
+    // 独立演示工程（不传 taskScreen）也无须知道这个值。默认 0 = 提示按原位置显示。
+    snackbarBottomInset: Dp = 0.dp,
 ) {
     var selected by rememberSaveable { mutableStateOf(Destination.Home) }
     var filter by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
@@ -51,6 +55,11 @@ fun AppShell(
         if (taskScreen == null) add=true
         else { goTasks(TaskFilter.Pending); onCreateTask?.invoke() }
     }
+    // 切页时收起上一条提示：带"撤销"的 Snackbar 在 Material3 里默认常驻（Indefinite），
+    // 不主动关就会一直浮在底部挡住新页面，用户于是只能靠"点撤销"让它消失。
+    LaunchedEffect(selected) { snackbarHostState.currentSnackbarData?.dismiss() }
+    // 内容区与底栏的可见条件：底栏渲染与否、提示是否需要让位都取决于它，只定义一次避免漂移。
+    val contentReady = !state.onboarding && !state.loading && state.readError == null
 
     Scaffold(
         containerColor=KeeperBackground,
@@ -69,8 +78,16 @@ fun AppShell(
                 }
             }
         } }) },
-        snackbarHost={SnackbarHost(snackbarHostState)},
-        bottomBar={ if(!state.onboarding && !state.loading && state.readError == null) Column {
+        snackbarHost={ SnackbarHost(
+            snackbarHostState,
+            // 任务页自带的"＋ 新建任务"在内容层底部，Scaffold 只认得 bottomBar，
+            // 提示会正好压住它。抬到按钮上方，避免影响连续新建。
+            // 只在任务页真正渲染出那个按钮时生效：引导/加载/读取失败态整页不渲染内容与底栏。
+            Modifier.padding(bottom = if (
+                selected==Destination.Tasks && taskScreen!=null && contentReady
+            ) snackbarBottomInset else 0.dp)
+        ) },
+        bottomBar={ if(contentReady) Column {
             // 任务页自带新建入口，避免与 A 的演示表单重复
             if (taskScreen == null || selected != Destination.Tasks) {
                 Button(onClick=::requestAddTask,modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
@@ -80,7 +97,11 @@ fun AppShell(
             NavigationBar(containerColor=MaterialTheme.colorScheme.surface) {
                 Destination.entries.forEach { dest ->
                     val vector=remember(dest) { tabIcon(dest.label) }
-                    NavigationBarItem(selected=selected==dest,onClick={ if(dest==Destination.Tasks && taskScreen!=null) goTasks(TaskFilter.Pending) else selected=dest },
+                    // 点任意导航项都先收起提示（含点当前 tab 的情形：selected 不变也要能关掉）
+                    NavigationBarItem(selected=selected==dest,onClick={
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        if(dest==Destination.Tasks && taskScreen!=null) goTasks(TaskFilter.Pending) else selected=dest
+                    },
                         icon={Icon(vector,contentDescription=null)},label={Text(dest.label)},
                         colors=NavigationBarItemDefaults.colors(selectedIconColor=KeeperBlue,
                             selectedTextColor=KeeperBlue,indicatorColor=Color(0xFFEAF0FF)))

@@ -66,6 +66,56 @@ ReminderReceiver → 核对库内状态（未删/未完成/截止未改）→ �
    实际不可达；系统对后台权限弹窗也会静默抑制。
 6. **设备关机跨过槽位时刻的提醒丢失**：闹钟不跨重启持久，重启后只挂仍未来的槽位（不补发过去的）。
 
+## 五之二、已修的交互缺陷：带"撤销"的 Snackbar 常驻（2026-11-11）
+
+**现象**（用户真机报告）：勾选完成后黑色提示「任务已完成 / 撤销」不消失，点四个底部导航都不消失，
+只有点"撤销"才能关掉——但撤销会把任务恢复回待办，违背用户意图。
+
+**根因**：Material3 `SnackbarHostState.showSnackbar(message, actionLabel)` 的默认参数是
+`duration = if (actionLabel == null) Short else Indefinite`。**只要带操作按钮就默认常驻**，
+而代码从未在切页时主动关闭，于是唯一的出口变成"点撤销"。
+
+**修复**（四处）：
+1. 两处带撤销的 `showSnackbar` 显式传 `duration = SnackbarDuration.Long`（约 10 秒；系统无障碍
+   "操作时限"开启时会被自动延长）与 `withDismissAction = true`（右上角关闭按钮，文案由 Material3
+   的中文资源提供，content-desc = "关闭"）。
+2. `AppShell` 新增 `LaunchedEffect(selected) { snackbarHostState.currentSnackbarData?.dismiss() }`
+   ——**切页即收起**。覆盖底部导航之外的选中变化：首页卡片跳转、课程详情"查看课表"、系统返回键。
+3. `AppShell` 的 `NavigationBarItem.onClick` 里先 `dismiss()` 再导航——覆盖**点当前 tab**
+   （`selected` 不变、上述 effect 不重启）的情形，这是"点任意导航都不消失"的直接修复。
+4. 无 action 的提示（"任务已保存""任务已删除"）保持 `Short` 自动消失。
+
+第 2、3 条都在 A 的 `AppShell.kt` 里，合计新增约 10 行（含注释），需 A 复核。
+
+**真机验证**（华为 API29）：关闭按钮渲染并可点 ✅；切「首页」后立即消失 ✅；不操作等约 10 秒自动消失
+且任务仍保持勾选后的状态、未被误撤销 ✅；在任务页原地再点「任务」tab 也能收起 ✅（instrumented 用例覆盖）。
+
+### 后续：提示遮挡"＋ 新建任务"按钮（同日修复）
+
+**现象**（用户真机报告）：连续新建任务时，提示会正好压住任务页底部的蓝色「＋ 新建任务」按钮几秒，
+虽然会自动消失，但影响连续添加的手感；删除操作不受影响。
+
+**根因**：任务页的按钮在**内容层**底部（`Column` 的最后一个子项），而 Snackbar 由 `Scaffold`
+的 `snackbarHost` 渲染，它只按 `bottomBar` 定位。任务页的 `bottomBar` 只有底部导航栏
+（"手动添加任务"按钮在这一页被隐藏），于是提示正好落在导航栏上方 —— 也就是那个按钮的位置。
+首页没有这个问题，因为首页的添加按钮在 `bottomBar` 里，`Scaffold` 会自动让提示避开它。
+
+**修复**（职责分两处，紧凑判定在调用方）：
+- `TaskScreen.kt` 提取两个常量：`TaskBottomButtonHeight = 68.dp`（= 48dp 最小点击区 + 上下各
+  10dp 边距）与 `TaskCompactHeightDp = 480`（短屏阈值）；`compact` 判定改为引用后者，单一来源。
+- `MainActivity` 按 `LocalConfiguration.screenHeightDp >= TaskCompactHeightDp` 决定传
+  `TaskBottomButtonHeight` 还是 `0.dp`——紧凑模式下按钮并入头部行内，不需要留位。
+- `AppShell` 新增可选参数 `snackbarBottomInset: Dp = 0.dp`，只在"任务页 + 传了 `taskScreen` +
+  非引导/加载/读取失败态"时应用到 `SnackbarHost` 的 `padding(bottom=...)`。**AppShell 保持对
+  `com.coursekeeper.task` 包的零编译期依赖**，A 的独立演示工程（不传 `taskScreen`）行为不变。
+
+**A 需复核的是 `AppShell.kt` 的新参数 `snackbarBottomInset` 与它的门控条件**（该文件本次合计
++14/−1；另 `MainActivity` +9、`TaskScreen` +11/−1）。
+
+**真机验证**：提示底边 1878px、按钮顶边 2028px，间隔 150px 不重叠 ✅；
+提示仍可见时立刻点「＋ 新建任务」，表单正常打开（点击未被浮层吞掉）✅。
+
+
 ## 六、提交前质检记录（2026-11-11）
 
 按 AGENTS.md 三步走。首轮双路自检 + 修复增量复查，两轮结论如下。
@@ -84,6 +134,22 @@ ReminderReceiver → 核对库内状态（未删/未完成/截止未改）→ �
 无日志）已修（登记表清理提前、catch 加 Log.w）；P2-2（后台 launch 防御）记为已知限制 5。
 
 每次修复后均重跑 `assembleDebug testDebugUnitTest`：**86 项，失败 0**。
+
+**Snackbar 常驻修复的复查（同日，第 4 轮）**：P0=0 P1=0 **P2=6**，结论可提交。按建议修了 4 项：
+P2-2（AppShell 改 `snackbarBottomInset` 参数，去掉对任务包的编译期依赖）、P2-3（本文档补条目、
+校正行数）、P2-4（测试改用 `Indefinite` 与生产时长解耦、`scope.cancel()` 进 finally）、
+P2-5（内边距门控加引导/加载/错误态条件）。P2-1（大字号下 68dp 偏小）、P2-6（`screenHeightDp`
+整窗启发式且 API 36 起弃用）记为已知限制。
+
+**第 5 轮聚焦复查（只审上述 4 项修复）**：P0=0 P1=0 P2=2，结论可提交。两项均已修：
+P2-①（本文档对紧凑判定归属与行数的描述过时）按实际架构重写；P2-②（`!onboarding && !loading &&
+readError==null` 在 Snackbar 门控与底栏可见性各写一份）提取为 `val contentReady` 两处共用，
+行为等价。
+
+验证口径：**86 项单测全绿**；`NavigationTest` 5 条 instrumented 在**最终代码**上用
+`adb shell am instrument -e class com.coursekeeper.NavigationTest` 跑出 **OK (5 tests)**，
+6.132 秒（真机华为 API 29）。未用 `connectedDebugAndroidTest`——它会反复装卸，触发未备案 APK
+的华为账号验证。
 
 ## 七、真机验收（2026-11-11，华为 TEL-AN00a / Android 10 API 29）
 

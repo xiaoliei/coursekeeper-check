@@ -9,10 +9,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,6 +28,8 @@ import com.coursekeeper.reminder.AlarmReminderScheduler
 import com.coursekeeper.reminder.ReminderCoordinator
 import com.coursekeeper.reminder.TaskNotifications
 import com.coursekeeper.task.RepositoryTaskGateway
+import com.coursekeeper.task.TaskBottomButtonHeight
+import com.coursekeeper.task.TaskCompactHeightDp
 import com.coursekeeper.task.TaskEvent
 import com.coursekeeper.task.TaskScreen
 import com.coursekeeper.task.TaskViewModel
@@ -87,7 +92,14 @@ class MainActivity : ComponentActivity() {
                             is TaskEvent.Saved -> snackbar.showSnackbar("任务已保存")
                             is TaskEvent.Deleted -> snackbar.showSnackbar("任务已删除")
                             is TaskEvent.Message -> {
-                                val result=snackbar.showSnackbar(event.text,actionLabel=event.undoTaskId?.let { "撤销" })
+                                // 带操作按钮时 Material3 默认 Indefinite（永不自动消失），必须显式给时长；
+                                // 同时开 withDismissAction，让用户能关掉而不是被迫点"撤销"。
+                                val result=snackbar.showSnackbar(
+                                    event.text,
+                                    actionLabel=event.undoTaskId?.let { "撤销" },
+                                    withDismissAction=event.undoTaskId!=null,
+                                    duration=if(event.undoTaskId!=null) SnackbarDuration.Long else SnackbarDuration.Short,
+                                )
                                 if(result==SnackbarResult.ActionPerformed && event.undoTaskId!=null && event.undoVersion!=null) {
                                     taskModel.undo(event.undoTaskId,event.undoCompleted,event.undoVersion)
                                 }
@@ -101,7 +113,12 @@ class MainActivity : ComponentActivity() {
                         when(event) {
                             HomeEvent.TaskAdded -> snackbar.showSnackbar("任务已加入清单")
                             is HomeEvent.Message -> {
-                                val result=snackbar.showSnackbar(event.text,actionLabel=if(event.undoTaskId!=null) "撤销" else null)
+                                val result=snackbar.showSnackbar(
+                                    event.text,
+                                    actionLabel=if(event.undoTaskId!=null) "撤销" else null,
+                                    withDismissAction=event.undoTaskId!=null,
+                                    duration=if(event.undoTaskId!=null) SnackbarDuration.Long else SnackbarDuration.Short,
+                                )
                                 if(result==SnackbarResult.ActionPerformed && event.undoTaskId!=null && event.undoVersion!=null) model.undo(event.undoTaskId,event.undoCompleted,event.undoVersion)
                             }
                         }
@@ -120,6 +137,11 @@ class MainActivity : ComponentActivity() {
                     }) },
                     onCreateTask={createRequested=true},
                     onRetryHome=model::retry,
+                    // 任务页自带的"＋ 新建任务"会挡住提示，把提示抬高这个高度；
+                    // 紧凑模式下按钮并入头部，不需要留位。
+                    snackbarBottomInset=if (
+                        LocalConfiguration.current.screenHeightDp >= TaskCompactHeightDp
+                    ) TaskBottomButtonHeight else 0.dp,
                     taskScreen={ modifier -> TaskScreen(
                         state=taskState,
                         onStatusFilter=taskModel::setStatusFilter,

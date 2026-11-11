@@ -37,6 +37,16 @@ private val OverdueColor = Color(0xFFB3261E)
 private val DoneColor = Color(0xFF21856C)
 private val DuePattern = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm").withResolverStyle(ResolverStyle.STRICT)
 
+/** 短屏阈值：低于此高度工具栏收成紧凑模式，底部"＋ 新建任务"并入头部行内。 */
+const val TaskCompactHeightDp = 480
+
+/**
+ * 任务页底部"＋ 新建任务"按钮块占的高度 = 48dp 最小点击区 + 上下各 10dp 边距。
+ * AppShell 用它把 Snackbar 抬到按钮上方，否则提示会正压住这个按钮，
+ * 影响连续新建任务的手感（浮层与内容层的层叠问题，不是提示机制问题）。
+ */
+val TaskBottomButtonHeight = 68.dp
+
 /**
  * 任务页（成员 D）。只负责展示与交互，业务校验由 Repository 权威执行。
  * create / update 通过 onResult 回传结果：null = 成功（关闭表单），非 null = 用户文案（表单保持打开、草稿不丢）。
@@ -78,7 +88,7 @@ fun TaskScreen(
     }
 
     // 横屏/短屏只 ~230dp 可用高度，大标题与固定按钮会把列表压到看不见；此时改用紧凑头部 + 行内新建入口。
-    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
+    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < TaskCompactHeightDp
 
     Column(modifier.fillMaxSize()) {
         // 页头作为列表首项一起滚动：横屏内容区仅约 200dp，固定页头会把列表挤到不可见。
