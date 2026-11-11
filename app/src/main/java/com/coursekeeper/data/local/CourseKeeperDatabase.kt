@@ -11,7 +11,7 @@ import com.coursekeeper.data.model.*
 
 @Database(entities = [SemesterRecord::class, PeriodRecord::class, CourseRecord::class,
     ScheduleRecord::class, TaskRecord::class, SyncRecord::class, TombstoneRecord::class,
-    WriteRequestRecord::class, DataRevision::class], version = 2, exportSchema = true)
+    WriteRequestRecord::class, DataRevision::class], version = 3, exportSchema = true)
 @TypeConverters(RecordConverters::class)
 abstract class CourseKeeperDatabase : RoomDatabase() {
     internal abstract fun records(): CourseKeeperDao
@@ -25,8 +25,27 @@ abstract class CourseKeeperDatabase : RoomDatabase() {
             }
         }
 
+        /** Preserve IDs/versions and expand the exact old week set (including odd/even weeks). */
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE `_schedules_v3` (`id` TEXT NOT NULL, `courseId` TEXT NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startPeriod` INTEGER NOT NULL, `endPeriod` INTEGER NOT NULL, `weeks` INTEGER NOT NULL, `weeksText` TEXT NOT NULL, `location` TEXT, `teacher` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`courseId`) REFERENCES `courses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                db.query("SELECT id, courseId, dayOfWeek, startPeriod, endPeriod, startWeek, endWeek, weekPattern, location FROM schedules").use { rows ->
+                    while (rows.moveToNext()) {
+                        val weeks = ScheduleWeeks.fromRange(rows.getInt(5), rows.getInt(6), WeekPattern.valueOf(rows.getString(7)))
+                        // Null means "use the course's teacher"; never invent a per-entry override.
+                        db.execSQL("INSERT INTO `_schedules_v3` (id, courseId, dayOfWeek, startPeriod, endPeriod, weeks, weeksText, location, teacher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)",
+                            arrayOf<Any?>(rows.getString(0), rows.getString(1), rows.getInt(2), rows.getInt(3), rows.getInt(4),
+                                weeks, ScheduleWeeks.format(weeks), if (rows.isNull(8)) null else rows.getString(8)))
+                    }
+                }
+                db.execSQL("DROP TABLE schedules")
+                db.execSQL("ALTER TABLE `_schedules_v3` RENAME TO schedules")
+                db.execSQL("CREATE INDEX `index_schedules_courseId` ON `schedules` (`courseId`)")
+            }
+        }
+
         fun open(context: Context, name: String = "coursekeeper.db"): CourseKeeperDatabase =
             Room.databaseBuilder(context.applicationContext, CourseKeeperDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2).build()
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     }
 }

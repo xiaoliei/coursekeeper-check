@@ -100,7 +100,8 @@ class CourseKeeperRepository(
         write(null, "") {
             val old = dao.semester(record.id)
             checkData(old?.version == expectedVersion, DataError.VERSION_CONFLICT)
-            checkData(record.id.isNotBlank() && record.name.isNotBlank() && record.weekCount > 0, DataError.INVALID_RECORD)
+            checkData(record.id.isNotBlank() && record.name.isNotBlank() && record.weekCount in 1..ScheduleWeeks.MAX_WEEKS,
+                DataError.INVALID_RECORD)
             checkData(periods.map { it.number }.distinct().size == periods.size &&
                 periods.all { it.semesterId == record.id && it.number > 0 && it.startsAt < it.endsAt }, DataError.INVALID_RECORD)
             val version = old?.let { nextVersion(it.version) } ?: 1L
@@ -133,20 +134,25 @@ class CourseKeeperRepository(
 
     internal suspend fun validateCourse(draft: CourseDraft) {
         checkData(draft.title.isNotBlank(), DataError.INVALID_RECORD)
-        checkData(draft.semesterId == null || dao.semester(draft.semesterId) != null, DataError.INVALID_RECORD)
+        val semester = draft.semesterId?.let { dao.semester(it) }
+        checkData(draft.semesterId == null || semester != null, DataError.INVALID_RECORD)
         checkData(draft.schedules.distinct().size == draft.schedules.size && draft.schedules.all {
             it.dayOfWeek in 1..7 && it.startPeriod > 0 && it.endPeriod >= it.startPeriod &&
-                it.startWeek > 0 && it.endWeek >= it.startWeek
+                it.weeks != 0L && it.weeksText == ScheduleWeeks.format(it.weeks) &&
+                (semester == null || ScheduleWeeks.fits(it.weeks, semester.weekCount))
         }, DataError.INVALID_RECORD)
     }
 
     internal suspend fun replaceSchedules(courseId: String, schedules: List<ScheduleDraft>) {
+        // Reuse migrated IDs as well: an unchanged v2 entry must survive later v3 aggregate edits.
+        val previousIds = dao.courseSchedules(courseId).associate { fingerprint(it.asDraft()) to it.id }
         dao.deleteSchedules(courseId)
         dao.insertSchedules(schedules.map { draft ->
             // Stable schedule IDs, independent of response order; aggregate version is on the course.
-            val id = UUID.nameUUIDFromBytes("$courseId:${fingerprint(draft)}".toByteArray(Charsets.UTF_8)).toString()
+            val signature = fingerprint(draft)
+            val id = previousIds[signature] ?: UUID.nameUUIDFromBytes("$courseId:$signature".toByteArray(Charsets.UTF_8)).toString()
             ScheduleRecord(id, courseId, draft.dayOfWeek, draft.startPeriod, draft.endPeriod,
-                draft.startWeek, draft.endWeek, draft.weekPattern, draft.location)
+                draft.weeks, draft.weeksText, draft.location, draft.teacher)
         })
     }
 
@@ -176,13 +182,17 @@ internal fun nextVersion(version: Long): Long {
     return version + 1
 }
 
+internal fun ScheduleRecord.asDraft() = ScheduleDraft(
+    dayOfWeek, startPeriod, endPeriod, weeks, weeksText, location, teacher,
+)
+
 internal fun fingerprint(vararg parts: Any?): String {
     fun encode(part: Any?): String = when (part) {
         null -> "N"
         is TaskDraft -> "T" + listOf(part.title, part.type, part.dueAt, part.courseId).joinToString("") { encode(it) }
         is CourseDraft -> "C" + listOf(part.title, part.semesterId, part.teacher, part.schedules).joinToString("") { encode(it) }
-        is ScheduleDraft -> "S" + listOf(part.dayOfWeek, part.startPeriod, part.endPeriod, part.startWeek,
-            part.endWeek, part.weekPattern, part.location).joinToString("") { encode(it) }
+        is ScheduleDraft -> "S" + listOf(part.dayOfWeek, part.startPeriod, part.endPeriod, part.weeks,
+            part.weeksText, part.location, part.teacher).joinToString("") { encode(it) }
         is List<*> -> "L${part.size}:" + part.joinToString("") { encode(it) }
         else -> part.toString().let { "V${it.length}:$it" }
     }

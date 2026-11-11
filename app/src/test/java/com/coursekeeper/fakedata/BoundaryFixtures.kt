@@ -8,6 +8,7 @@ import com.coursekeeper.data.model.SemesterRecord
 import com.coursekeeper.data.model.TaskRecord
 import com.coursekeeper.data.model.TaskType
 import com.coursekeeper.data.model.WeekPattern
+import com.coursekeeper.data.model.ScheduleWeeks
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -18,8 +19,7 @@ import java.time.LocalDateTime
  * 下周一 = 2026-11-16（开区间右界）。与 HomeProjectionTest / DataTestBase 使用的日期一致。
  *
  * 用途：供 F 的 W2 StatisticsService 与看板测试、以及现有首页投影回归测试统一取用。
- * 当前 schedule 仍是 E 的区间模型（startWeek/endWeek/weekPattern），故“非连续周”场景只能以
- * 占位形态给出（见 [nonConsecutiveWeeks] 与 BoundaryFixtureTest.nonConsecutiveWeeksPlaceholder）。
+ * 排课使用 E v3 的 weeks 位图；非连续周样例已可供读写和统计适配器回归使用。
  */
 object BoundaryFixtures {
     /** 固定“现在”：2026-11-10 10:00（周二）。 */
@@ -56,11 +56,12 @@ object BoundaryFixtures {
         schedules = listOf(schedule("c1", day = 2, start = 1, end = 2), schedule("c2", day = 3, start = 1, end = 2)),
     )
 
-    /** 单双周：weekPattern ODD/EVEN 是旧区间模型可表达的最细周次子集。 */
+    /** 单周位图：第 10 周不生效，第 9/11 周生效。 */
     fun alternatingWeeks(): DataSnapshot = DataSnapshot(
         semesters = listOf(semester(LocalDate.of(2026, 9, 7))),
         courses = listOf(course("c1", "数据结构")),
-        schedules = listOf(schedule("c1", day = 2, start = 1, end = 2, pattern = WeekPattern.ODD)),
+        schedules = listOf(ScheduleRecord("sch-odd", "c1", 2, 1, 2,
+            weeks = ScheduleWeeks.fromRange(1, 20, WeekPattern.ODD))),
     )
 
     // ---- 学期边界 ----
@@ -96,12 +97,11 @@ object BoundaryFixtures {
         ))
     }
 
-    /**
-     * 非连续周占位（依赖 E v3 迁移 + B v1.0，当前不启用）。
-     *
-     * 迁移后 schedule 由 startWeek/endWeek/weekPattern 改为周次位图 + 冗余文本，形如：
-     *   ScheduleRecord(..., weeks = (1L shl 8) or (1L shl 10) or (1L shl 11) or (1L shl 12), weeksText = "9,11-13")
-     * 迁移时启用 BoundaryFixtureTest.nonConsecutiveWeeksPlaceholder 并补入上述字段的真实数据。
-     */
-    fun nonConsecutiveWeeks(): DataSnapshot = DataSnapshot()
+    /** B 实测的非连续周次：9、11—13 周；数据表示已落地，不代表 B 的服务已交付。 */
+    fun nonConsecutiveWeeks(): DataSnapshot = DataSnapshot(
+        semesters = listOf(semester(LocalDate.of(2026, 9, 7))),
+        courses = listOf(course("c1", "非连续周课程")),
+        schedules = listOf(ScheduleRecord("sch-non-consecutive", "c1", 2, 1, 2,
+            weeks = (1L shl 8) or (1L shl 10) or (1L shl 11) or (1L shl 12))),
+    )
 }

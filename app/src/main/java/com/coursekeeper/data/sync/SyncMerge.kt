@@ -13,14 +13,17 @@ internal suspend fun CourseKeeperRepository.mergeCourses(
     val distinct = imports.distinct()
     checkData(distinct.all { it.externalId.isNotBlank() } &&
         distinct.map { it.externalId }.distinct().size == distinct.size, DataError.SYNC_IDENTITY_CONFLICT)
+    val currentCourses = dao.courses().filter { it.source == RecordSource.SYNC }.associateBy { it.externalId }
+    val baselineCourses = baseline.courses.filter { it.source == RecordSource.SYNC }.associateBy { it.externalId }
+    val schedulesByCourse = dao.schedules().groupBy { it.courseId }
     var counts = MergeCounts()
     for (item in distinct) {
         if (dao.deleted(SyncModule.COURSES, RecordSource.SYNC, item.externalId)) {
             counts = counts.copy(protectedCount = counts.protectedCount + 1)
             continue
         }
-        val old = dao.importedCourse(RecordSource.SYNC, item.externalId)
-        val before = baseline.courses.singleOrNull { it.source == RecordSource.SYNC && it.externalId == item.externalId }
+        val old = currentCourses[item.externalId]
+        val before = baselineCourses[item.externalId]
         if (old?.manualDirty == true) {
             counts = counts.copy(protectedCount = counts.protectedCount + 1)
             continue
@@ -28,9 +31,7 @@ internal suspend fun CourseKeeperRepository.mergeCourses(
         checkData(old?.version == before?.version, DataError.VERSION_CONFLICT)
         validateCourse(item.fields)
         val fields = item.fields
-        val currentSchedules = dao.schedules().filter { it.courseId == old?.id }.map {
-            ScheduleDraft(it.dayOfWeek, it.startPeriod, it.endPeriod, it.startWeek, it.endWeek, it.weekPattern, it.location)
-        }.toSet()
+        val currentSchedules = schedulesByCourse[old?.id].orEmpty().map { it.asDraft() }.toSet()
         if (old == null) {
             val record = CourseRecord(UUID.randomUUID().toString(), fields.title.trim(), fields.semesterId,
                 fields.teacher, RecordSource.SYNC, item.externalId)

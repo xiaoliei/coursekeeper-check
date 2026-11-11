@@ -15,6 +15,8 @@ internal interface CourseKeeperDao {
     @Query("SELECT * FROM periods ORDER BY semesterId, number") suspend fun periods(): List<PeriodRecord>
     @Query("SELECT * FROM courses ORDER BY id") suspend fun courses(): List<CourseRecord>
     @Query("SELECT * FROM schedules ORDER BY id") suspend fun schedules(): List<ScheduleRecord>
+    @Query("SELECT * FROM schedules WHERE courseId = :courseId ORDER BY id")
+    suspend fun courseSchedules(courseId: String): List<ScheduleRecord>
     @Query("SELECT * FROM tasks ORDER BY dueAt IS NOT NULL, dueAt, id") suspend fun tasks(): List<TaskRecord>
     @Query("SELECT * FROM sync_records ORDER BY module") suspend fun syncRecords(): List<SyncRecord>
     @Query("SELECT * FROM tasks WHERE id = :id") suspend fun task(id: String): TaskRecord?

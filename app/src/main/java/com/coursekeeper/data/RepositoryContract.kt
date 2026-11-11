@@ -37,8 +37,14 @@ data class ScheduleDraft(
     val dayOfWeek: Int,
     val startPeriod: Int,
     val endPeriod: Int,
-    val startWeek: Int,
-    val endWeek: Int,
-    val weekPattern: WeekPattern = WeekPattern.ALL,
+    val weeks: Long,
+    val weeksText: String = ScheduleWeeks.format(weeks),
     val location: String? = null,
-)
+    val teacher: String? = null,
+) {
+    /** Old callers can submit ranges while B/C move to bitmap inputs. No old fields are stored. */
+    constructor(dayOfWeek: Int, startPeriod: Int, endPeriod: Int, startWeek: Int, endWeek: Int,
+        weekPattern: WeekPattern = WeekPattern.ALL, location: String? = null,
+    ) : this(dayOfWeek, startPeriod, endPeriod,
+        weeks = ScheduleWeeks.fromRange(startWeek, endWeek, weekPattern), location = location)
+}

@@ -7,7 +7,7 @@ import com.coursekeeper.home.projectHome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
+import com.coursekeeper.data.model.ScheduleWeeks
 import org.junit.Test
 
 /**
@@ -68,17 +68,17 @@ class BoundaryFixtureTest {
     @Test
     fun alternatingWeeksStayExpressibleInCurrentModel() {
         val snap = BoundaryFixtures.alternatingWeeks()
-        assertTrue(snap.schedules.single().weekPattern.name in setOf("ODD", "EVEN"))
-        assertEquals(10, snap.schedules.single().startWeek)
-        assertEquals(10, snap.schedules.single().endWeek)
+        assertTrue(ScheduleWeeks.contains(snap.schedules.single().weeks, 9))
+        assertFalse(ScheduleWeeks.contains(snap.schedules.single().weeks, 10))
+        assertTrue(ScheduleWeeks.contains(snap.schedules.single().weeks, 11))
     }
 
-    @Ignore("依赖 E v3 迁移（weeks 位图 + weeksText）与 B v1.0；迁移后启用")
     @Test
-    fun nonConsecutiveWeeksPlaceholder() {
-        // 迁移后在此断言（例如 weeks 位图 9,11-13 与 weeksText）：
-        //   val schedule = BoundaryFixtures.nonConsecutiveWeeks().schedules.single()
-        //   assertEquals("9,11-13", schedule.weeksText)
-        TODO("占位：等 E v3（weeks/weeksText）与 B v1.0 到位后实现")
+    fun nonConsecutiveWeeksAreRepresentedWithoutFillingTheGap() {
+        val schedule = BoundaryFixtures.nonConsecutiveWeeks().schedules.single()
+        assertEquals(7424L, schedule.weeks)
+        assertEquals("9,11-13", schedule.weeksText)
+        assertFalse(ScheduleWeeks.contains(schedule.weeks, 10))
+        assertEquals(listOf(9, 11, 12, 13), (1..64).filter { ScheduleWeeks.contains(schedule.weeks, it) })
     }
 }
