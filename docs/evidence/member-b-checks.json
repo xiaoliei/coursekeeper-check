@@ -1,0 +1,184 @@
+﻿{
+    "date":  "2026-11-12",
+    "branch":  "feat/course-service",
+    "commit":  "54f3c81",
+    "jdk":  {
+                "Exception":  {
+                                  "SerializedRemoteException":  null,
+                                  "SerializedRemoteInvocationInfo":  null,
+                                  "ErrorRecord":  {
+                                                      "Exception":  {
+                                                                        "Message":  "java version \"21.0.7\" 2025-04-15 LTS",
+                                                                        "Data":  {
+
+                                                                                 },
+                                                                        "InnerException":  null,
+                                                                        "TargetSite":  null,
+                                                                        "StackTrace":  null,
+                                                                        "HelpLink":  null,
+                                                                        "Source":  null,
+                                                                        "HResult":  -2146233087
+                                                                    },
+                                                      "TargetObject":  null,
+                                                      "CategoryInfo":  {
+                                                                           "Category":  0,
+                                                                           "Activity":  "",
+                                                                           "Reason":  "ParentContainsErrorRecordException",
+                                                                           "TargetName":  "",
+                                                                           "TargetType":  ""
+                                                                       },
+                                                      "FullyQualifiedErrorId":  "RuntimeException",
+                                                      "ErrorDetails":  null,
+                                                      "InvocationInfo":  null,
+                                                      "ScriptStackTrace":  null,
+                                                      "PipelineIterationInfo":  [
+
+                                                                                ]
+                                                  },
+                                  "WasThrownFromThrowStatement":  false,
+                                  "Message":  "java version \"21.0.7\" 2025-04-15 LTS",
+                                  "Data":  {
+
+                                           },
+                                  "InnerException":  null,
+                                  "TargetSite":  null,
+                                  "StackTrace":  null,
+                                  "HelpLink":  null,
+                                  "Source":  null,
+                                  "HResult":  -2146233087
+                              },
+                "TargetObject":  "java version \"21.0.7\" 2025-04-15 LTS",
+                "CategoryInfo":  {
+                                     "Category":  0,
+                                     "Activity":  "",
+                                     "Reason":  "RemoteException",
+                                     "TargetName":  "java version \"21.0.7\" 2025-04-15 LTS",
+                                     "TargetType":  "String"
+                                 },
+                "FullyQualifiedErrorId":  "NativeCommandError",
+                "ErrorDetails":  null,
+                "InvocationInfo":  {
+                                       "MyCommand":  {
+                                                         "Path":  "E:\\java\\jdk21\\bin\\java.exe",
+                                                         "Extension":  ".exe",
+                                                         "Definition":  "E:\\java\\jdk21\\bin\\java.exe",
+                                                         "Source":  "E:\\java\\jdk21\\bin\\java.exe",
+                                                         "Version":  {
+                                                                         "Major":  21,
+                                                                         "Minor":  0,
+                                                                         "Build":  7,
+                                                                         "Revision":  0,
+                                                                         "MajorRevision":  0,
+                                                                         "MinorRevision":  0
+                                                                     },
+                                                         "Visibility":  0,
+                                                         "OutputType":  [
+                                                                            {
+                                                                                "Name":  "System.String",
+                                                                                "Type":  "string",
+                                                                                "TypeDefinitionAst":  null
+                                                                            }
+                                                                        ],
+                                                         "Name":  "java.exe",
+                                                         "CommandType":  32,
+                                                         "ModuleName":  "",
+                                                         "Module":  null,
+                                                         "RemotingCapability":  1,
+                                                         "Parameters":  null,
+                                                         "ParameterSets":  null
+                                                     },
+                                       "BoundParameters":  {
+
+                                                           },
+                                       "UnboundArguments":  [
+
+                                                            ],
+                                       "ScriptLineNumber":  23,
+                                       "OffsetInLine":  10,
+                                       "HistoryId":  -1,
+                                       "ScriptName":  "",
+                                       "Line":  "  jdk = (\u0026 \u0027E:\\java\\jdk21\\bin\\java.exe\u0027 -version 2\u003e\u00261 | Select-Object -First 1)\n",
+                                       "PositionMessage":  "所在位置 行:23 字符: 10\r\n+   jdk = (\u0026 \u0027E:\\java\\jdk21\\bin\\java.exe\u0027 -version 2\u003e\u00261 | Select-Object ...\r\n+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                                       "PSScriptRoot":  "",
+                                       "PSCommandPath":  null,
+                                       "InvocationName":  "\u0026",
+                                       "PipelineLength":  0,
+                                       "PipelinePosition":  0,
+                                       "ExpectingInput":  false,
+                                       "CommandOrigin":  1,
+                                       "DisplayScriptPosition":  null
+                                   },
+                "ScriptStackTrace":  "在 \u003cScriptBlock\u003e、\u003c无文件\u003e 中: 第 19 行",
+                "PipelineIterationInfo":  [
+                                              0,
+                                              0,
+                                              0
+                                          ],
+                "writeErrorStream":  true,
+                "PSMessageDetails":  null
+            },
+    "tasks":  [
+                  ":app:testDebugUnitTest --tests com.coursekeeper.course.*",
+                  ":app:assembleDebug"
+              ],
+    "result":  "BUILD SUCCESSFUL",
+    "tests":  50,
+    "failures":  0,
+    "errors":  0,
+    "suites":  [
+                   {
+                       "name":  "com.coursekeeper.course.ConflictDetectorTest",
+                       "tests":  "7",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   },
+                   {
+                       "name":  "com.coursekeeper.course.CourseProjectionTest",
+                       "tests":  "10",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   },
+                   {
+                       "name":  "com.coursekeeper.course.CourseSelfCheckTest",
+                       "tests":  "1",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   },
+                   {
+                       "name":  "com.coursekeeper.course.CourseViewModelTest",
+                       "tests":  "9",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   },
+                   {
+                       "name":  "com.coursekeeper.course.HomeCourseProjectionTest",
+                       "tests":  "6",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   },
+                   {
+                       "name":  "com.coursekeeper.course.WeekCalculatorTest",
+                       "tests":  "7",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   },
+                   {
+                       "name":  "com.coursekeeper.course.WeekTextTest",
+                       "tests":  "10",
+                       "failures":  "0",
+                       "errors":  "0",
+                       "skipped":  "0"
+                   }
+               ],
+    "apk":  {
+                "path":  "app/build/outputs/apk/debug/app-debug.apk",
+                "sha256":  "d28e74d7de971d0ad67b68527caa34920d88566af9d5ec46b597075c756fe3a4",
+                "bytes":  13547427
+            }
+}
