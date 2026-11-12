@@ -198,7 +198,7 @@ private fun TimetableBody(
             if (entries.isNotEmpty()) {
                 item(key = "day-$day") {
                     Text(
-                        "${DayNames[day - 1]} · ${entries.size} 节",
+                        "${DayNames[day - 1]} · ${entries.sumOf { it.periodCount }} 节",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = KeeperMuted,
