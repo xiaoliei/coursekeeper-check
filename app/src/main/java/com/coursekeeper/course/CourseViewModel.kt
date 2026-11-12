@@ -7,6 +7,7 @@ import com.coursekeeper.data.DataError
 import com.coursekeeper.data.DataException
 import com.coursekeeper.data.ScheduleDraft
 import com.coursekeeper.data.model.DataSnapshot
+import com.coursekeeper.data.model.PeriodRecord
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+
+/** 未配置节次表时的默认节次数（与《课程与周次规则》一致）。 */
+const val DEFAULT_PERIOD_COUNT = 13
 
 /** 编辑课程时用的完整视图：课程字段 + 它的全部排课（不只当前周）。 */
 data class CourseSummary(
@@ -47,9 +51,12 @@ data class CourseUiState(
     val days: Map<Int, List<CourseEntry>> = emptyMap(),
     val conflicts: List<CourseConflict> = emptyList(),
     val courses: List<CourseSummary> = emptyList(),
+    /** 本学期节次表；空表表示只显示节次号（未设置具体时刻）。 */
+    val periods: List<PeriodRecord> = emptyList(),
     val error: String? = null,
 ) {
     val entryCount: Int get() = days.values.sumOf { it.size }
+    val periodCount: Int get() = periods.maxOfOrNull { it.number } ?: DEFAULT_PERIOD_COUNT
     val isEmptyWeek: Boolean get() = entryCount == 0
     val isCurrentWeek: Boolean get() = currentWeek != null && selectedWeek == currentWeek
     val canGoPrevious: Boolean get() = weekCount > 0 && selectedWeek > 1
@@ -94,25 +101,35 @@ class CourseViewModel(
         selectedWeek.value = uiState.value.currentWeek ?: 1
     }
 
-    /** 学期起始日补录；成功后课表周次立即按新起始日重算。 */
-    fun configureSemester(startsOn: LocalDate, weekCount: Int, onResult: (String?) -> Unit) =
-        viewModelScope.launch {
-            if (weekCount !in 1..64) {
-                onResult(ERROR_WEEK_COUNT)
-                return@launch
-            }
-            val current = uiState.value
-            val id = current.semesterId ?: DEFAULT_SEMESTER_ID
-            safely(onResult) {
-                writer.configureSemester(
-                    semesterId = id,
-                    name = current.semesterName.ifBlank { "本学期" },
-                    startsOn = startsOn,
-                    weekCount = weekCount,
-                    expectedVersion = current.semesterVersion,
-                )
-            }
+    /** 学期起始日 + 节次表补录；成功后课表周次与节次时刻立即生效。 */
+    fun configureSemester(
+        startsOn: LocalDate,
+        weekCount: Int,
+        periods: List<PeriodRecord>,
+        onResult: (String?) -> Unit,
+    ) = viewModelScope.launch {
+        if (weekCount !in 1..64) {
+            onResult(ERROR_WEEK_COUNT)
+            return@launch
         }
+        val periodsError = validatePeriods(periods)
+        if (periodsError != null) {
+            onResult(periodsError)
+            return@launch
+        }
+        val current = uiState.value
+        val id = current.semesterId ?: DEFAULT_SEMESTER_ID
+        safely(onResult) {
+            writer.configureSemester(
+                semesterId = id,
+                name = current.semesterName.ifBlank { "本学期" },
+                startsOn = startsOn,
+                weekCount = weekCount,
+                periods = periods.map { it.copy(semesterId = id) },
+                expectedVersion = current.semesterVersion,
+            )
+        }
+    }
 
     /** [existing] 为空 = 新增课程；非空 = 按用户打开时看到的版本提交。 */
     fun saveCourse(existing: CourseSummary?, draft: CourseDraft, onResult: (String?) -> Unit) =
@@ -124,6 +141,12 @@ class CourseViewModel(
             }
             if (title.length > 60) {
                 onResult("课程名称过长（≤60 字）")
+                return@launch
+            }
+            val limit = uiState.value.periodCount
+            val overflow = draft.schedules.firstOrNull { it.endPeriod > limit }
+            if (overflow != null) {
+                onResult("第 ${overflow.dayOfWeek} 天的排课超出本学期节次数（共 $limit 节）")
                 return@launch
             }
             safely(onResult) {
@@ -181,7 +204,19 @@ class CourseViewModel(
             days = timetable.days,
             conflicts = conflicts,
             courses = courseSummaries,
+            periods = snapshot.periods
+                .filter { semester != null && it.semesterId == semester.id }
+                .sortedBy { it.number },
         )
+    }
+
+    /** 节次表校验：编号唯一从 1 起、每节结束晚于开始；空表合法（只显示节次号）。 */
+    private fun validatePeriods(periods: List<PeriodRecord>): String? {
+        if (periods.isEmpty()) return null
+        if (periods.map { it.number }.toSet().size != periods.size) return "节次编号重复"
+        if (periods.any { it.number < 1 }) return "节次编号需从 1 开始"
+        if (periods.any { !it.startsAt.isBefore(it.endsAt) }) return "每节的结束时间必须晚于开始时间"
+        return null
     }
 
     private fun weekLabel(snapshot: DataSnapshot, semester: SemesterInfo?, week: Int): String {

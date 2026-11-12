@@ -44,11 +44,14 @@ interface CourseWriter {
     suspend fun updateCourse(id: String, expectedVersion: Long, draft: CourseDraft, requestId: String? = null): WriteReceipt
     suspend fun deleteCourse(id: String, expectedVersion: Long, requestId: String? = null): WriteReceipt
     suspend fun configureSemester(semesterId: String, name: String, startsOn: LocalDate,
-                                  weekCount: Int, expectedVersion: Long? = null): WriteReceipt
+                                  weekCount: Int, periods: List<PeriodRecord>,
+                                  expectedVersion: Long? = null): WriteReceipt
 }
 ```
 
 写操作全部委托 `CourseKeeperRepository`：版本校验、排课整组替换、墓碑、事务都由 E 负责，B 不重复实现。
+
+**节次设置**：`periods` 是完整节次表（第 N 节 → 开始/结束时刻）。空表表示不设具体时刻，课表只显示“第 N 节”；填了就显示 `08:00 — 09:40`，首页“下一节课”也会给“N 分钟后 / 进行中”。学期与节次在 E 那边是同一个版本化聚合（`saveSemester`）。
 
 ### 统计（F 用）
 
@@ -163,17 +166,17 @@ $env:JAVA_HOME='E:\java\jdk21'
 | `WeekCalculatorTest` | 周一起算、起始日非周一、学期边界、当前学期选择 |
 | `ConflictDetectorTest` | 相交/不相交、同课程异地点、重复条目去重 |
 | `CourseProjectionTest` | 四个数字与 F 的临时适配器逐项一致、跨节次、同名不同码、非连续周 |
-| `CourseViewModelTest` | 初始周、翻周边界、未设学期、学期设置、保存/删除、版本冲突文案 |
+| `CourseViewModelTest` | 初始周、翻周边界、未设学期、学期设置、节次时间保存与校验、保存/删除、版本冲突文案、结束节超限 |
 | `HomeCourseProjectionTest` | 三种状态映射、下一节课与提示、当天课程结束 |
 
-另外在模拟器（`Medium_Phone_API_37.0`）上手工走通：设置学期 → 添加课程 → 冲突提示 → 详情 → 翻周 → 删除。
+另外在模拟器（`Medium_Phone_API_37.0`）上手工走通：设置学期（含 2 节节次时间）→ 添加课程 → 冲突提示 → 详情 → 翻周 → 删除；设置节次后课表卡片显示 `08:00 — 09:40`。
 
 ## 六、已知限制
 
-1. **没有官方节次时刻表**：界面只显示“第 X-Y 节”，`nextCourse.time` 为空，提示退化为“今天”。拿到教务处对照表后填 `PeriodRecord` 即可自动生效。
-2. **停课/假期未支持**：校历第 13 周校运会停课目前不会自动跳过，需手动调整课程周次。
-3. **调课覆盖层未做**：群通知里的调课不会改课表，只能手动编辑课程（影响整学期）或建任务提醒。
-4. **跨学期重修**：`courses` 仍是 `(source, externalId)` 全局唯一，同一课程编号两个学期会冲突（E 的开放问题 6）。
+1. **没有官方节次时刻表**：现在由用户在学期设置里手填（`PeriodRecord`）；官方对照表到位后可做默认预填。未填时只显示“第 X-Y 节”，`nextCourse.time` 为空。
+2. **停课/假期未支持**：校历第 13 周校运会停课不会自动跳过，需手动调整课程周次（见规则 v0.2 §10.1，本期明确不做）。
+3. **调课覆盖层未做**：群通知里的调课不会改课表，只能手动编辑课程或建任务提醒（同上，本期明确不做）。
+4. **跨学期重修**：`courses` 仍是 `(source, externalId)` 全局唯一，同一课程编号两个学期会冲突（E 的开放问题）。
 5. **课表页无设备测试**：只有 JVM 单测 + 模拟器手工验证，没有 Compose UI Test。
 
 ## 七、提交记录（本地，未推送）

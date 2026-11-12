@@ -19,18 +19,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.coursekeeper.data.CourseDraft
 import com.coursekeeper.data.ScheduleDraft
+import com.coursekeeper.data.model.PeriodRecord
 import com.coursekeeper.data.model.ScheduleWeeks
 import com.coursekeeper.ui.components.EmptyState
 import com.coursekeeper.ui.components.KeeperCard
 import com.coursekeeper.ui.theme.KeeperBlue
 import com.coursekeeper.ui.theme.KeeperMuted
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 
 private val DayNames = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
 private val ConflictColor = Color(0xFFB3261E)
 private val DatePattern = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
+private val TimePattern = DateTimeFormatter.ofPattern("HH:mm").withResolverStyle(ResolverStyle.STRICT)
 
 /**
  * 课表页（成员 B，第 3–4 步）。
@@ -44,7 +47,7 @@ fun CourseScreen(
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
     onCurrentWeek: () -> Unit,
-    onSaveSemester: (LocalDate, Int, (String?) -> Unit) -> Unit,
+    onSaveSemester: (LocalDate, Int, List<PeriodRecord>, (String?) -> Unit) -> Unit,
     onSaveCourse: (CourseSummary?, CourseDraft, (String?) -> Unit) -> Unit,
     onDeleteCourse: (CourseSummary, (String?) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
@@ -110,9 +113,10 @@ fun CourseScreen(
         SemesterDialog(
             initialStartsOn = LocalDate.now(),
             initialWeekCount = state.weekCount.takeIf { it > 0 } ?: 20,
+            initialPeriods = state.periods,
             onDismiss = { semesterDialog = false },
-            onConfirm = { date, weeks, onResult ->
-                onSaveSemester(date, weeks) { error ->
+            onConfirm = { date, weeks, periods, onResult ->
+                onSaveSemester(date, weeks, periods) { error ->
                     onResult(error)
                     if (error == null) semesterDialog = false
                 }
@@ -124,6 +128,7 @@ fun CourseScreen(
         CourseEditorDialog(
             course = editing,
             semesterId = state.semesterId,
+            periodLimit = state.periodCount,
             onDismiss = { editorOpen = false },
             onSave = { draft, onResult ->
                 onSaveCourse(editing, draft) { error ->
@@ -206,7 +211,13 @@ private fun TimetableBody(
                     )
                 }
                 items(entries, key = { it.scheduleId }) { entry ->
-                    CourseEntryCard(entry, state.conflicts.any { it.first.scheduleId == entry.scheduleId || it.second.scheduleId == entry.scheduleId }) {
+                    CourseEntryCard(
+                        entry = entry,
+                        timeText = timeText(entry, state.periods),
+                        conflicted = state.conflicts.any {
+                            it.first.scheduleId == entry.scheduleId || it.second.scheduleId == entry.scheduleId
+                        },
+                    ) {
                         onEntryClick(entry)
                     }
                 }
@@ -215,8 +226,17 @@ private fun TimetableBody(
     }
 }
 
+/** 已配置节次时刻时，卡片上显示具体时间；否则只显示节次号。 */
+private fun timeText(entry: CourseEntry, periods: List<PeriodRecord>): String? {
+    if (periods.isEmpty()) return null
+    val byNumber = periods.associateBy { it.number }
+    val start = byNumber[entry.startPeriod]?.startsAt ?: return null
+    val end = byNumber[entry.endPeriod]?.endsAt ?: return null
+    return "${start.format(TimePattern)} — ${end.format(TimePattern)}"
+}
+
 @Composable
-private fun CourseEntryCard(entry: CourseEntry, conflicted: Boolean, onClick: () -> Unit) {
+private fun CourseEntryCard(entry: CourseEntry, timeText: String?, conflicted: Boolean, onClick: () -> Unit) {
     KeeperCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -236,7 +256,11 @@ private fun CourseEntryCard(entry: CourseEntry, conflicted: Boolean, onClick: ()
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(entry.title.ifBlank { "未命名课程" }, fontWeight = FontWeight.Bold)
-                val meta = listOfNotNull(entry.location?.takeIf { it.isNotBlank() }, entry.teacher?.takeIf { it.isNotBlank() })
+                val meta = listOfNotNull(
+                    timeText,
+                    entry.location?.takeIf { it.isNotBlank() },
+                    entry.teacher?.takeIf { it.isNotBlank() },
+                )
                 if (meta.isNotEmpty()) Text(meta.joinToString(" · "), fontSize = 12.sp, color = KeeperMuted)
             }
             if (conflicted) Text("冲突", fontSize = 12.sp, color = ConflictColor)
@@ -346,18 +370,29 @@ private fun CourseDetailDialog(
 private fun SemesterDialog(
     initialStartsOn: LocalDate,
     initialWeekCount: Int,
+    initialPeriods: List<PeriodRecord>,
     onDismiss: () -> Unit,
-    onConfirm: (LocalDate, Int, (String?) -> Unit) -> Unit,
+    onConfirm: (LocalDate, Int, List<PeriodRecord>, (String?) -> Unit) -> Unit,
 ) {
     var dateText by rememberSaveable { mutableStateOf(initialStartsOn.toString()) }
     var weekText by rememberSaveable { mutableStateOf(initialWeekCount.toString()) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val rows = remember(initialPeriods) {
+        mutableStateListOf<PeriodRow>().apply {
+            initialPeriods.sortedBy { it.number }.forEach {
+                add(PeriodRow(it.startsAt.format(TimePattern), it.endsAt.format(TimePattern)))
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("学期设置") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Text("第 1 周从哪天开始（会自动对齐到该周周一）。", fontSize = 12.sp, color = KeeperMuted)
                 OutlinedTextField(
                     value = dateText,
@@ -371,6 +406,39 @@ private fun SemesterDialog(
                     label = { Text("学期周数") },
                     singleLine = true,
                 )
+                HorizontalDivider()
+                Text("节次时间（可选）", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "留空则只显示“第 N 节”；填写后课表和“下一节课”会显示具体时刻。",
+                    fontSize = 11.sp,
+                    color = KeeperMuted,
+                )
+                rows.forEachIndexed { index, row ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("第 ${index + 1} 节", fontSize = 12.sp, modifier = Modifier.width(56.dp))
+                        OutlinedTextField(
+                            value = row.start,
+                            onValueChange = { rows[index] = row.copy(start = it) },
+                            label = { Text("开始", fontSize = 10.sp) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        OutlinedTextField(
+                            value = row.end,
+                            onValueChange = { rows[index] = row.copy(end = it) },
+                            label = { Text("结束", fontSize = 10.sp) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = { rows.removeAt(index) }) { Text("删", fontSize = 11.sp) }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { rows.add(PeriodRow("", "")) }) { Text("＋ 添加一节", fontSize = 12.sp) }
+                    TextButton(onClick = { while (rows.size < DEFAULT_PERIOD_COUNT) rows.add(PeriodRow("", "")) }) {
+                        Text("补齐到 $DEFAULT_PERIOD_COUNT 节", fontSize = 12.sp)
+                    }
+                }
                 error?.let { Text(it, color = ConflictColor, fontSize = 12.sp) }
             }
         },
@@ -378,10 +446,31 @@ private fun SemesterDialog(
             TextButton(onClick = {
                 val date = runCatching { LocalDate.parse(dateText.trim(), DatePattern) }.getOrNull()
                 val weeks = weekText.trim().toIntOrNull()
+                val periods = mutableListOf<PeriodRecord>()
+                var problem: String? = null
+                rows.forEachIndexed { index, row ->
+                    if (problem != null) return@forEachIndexed
+                    val startText = row.start.trim()
+                    val endText = row.end.trim()
+                    if (startText.isEmpty() && endText.isEmpty()) return@forEachIndexed
+                    val start = runCatching { LocalTime.parse(startText, TimePattern) }.getOrNull()
+                    val end = runCatching { LocalTime.parse(endText, TimePattern) }.getOrNull()
+                    when {
+                        start == null || end == null -> problem = "第 ${index + 1} 节的时间格式应为 HH:mm"
+                        !start.isBefore(end) -> problem = "第 ${index + 1} 节的结束时间必须晚于开始时间"
+                        else -> periods += PeriodRecord(
+                            semesterId = "",
+                            number = index + 1,
+                            startsAt = start,
+                            endsAt = end,
+                        )
+                    }
+                }
                 when {
                     date == null -> error = "请填写有效日期，例如 2026-09-07"
                     weeks == null || weeks !in 1..64 -> error = "学期周数需在 1—64 之间"
-                    else -> onConfirm(date, weeks) { message ->
+                    problem != null -> error = problem
+                    else -> onConfirm(date, weeks, periods) { message ->
                         error = message
                         if (message == null) onDismiss()
                     }
@@ -391,6 +480,8 @@ private fun SemesterDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
 }
+
+private data class PeriodRow(val start: String, val end: String)
 
 /** 编辑对话框中的一条排课草稿。 */
 private data class ScheduleRow(
@@ -405,6 +496,7 @@ private data class ScheduleRow(
 private fun CourseEditorDialog(
     course: CourseSummary?,
     semesterId: String?,
+    periodLimit: Int,
     onDismiss: () -> Unit,
     onSave: (CourseDraft, (String?) -> Unit) -> Unit,
 ) {
@@ -470,6 +562,8 @@ private fun CourseEditorDialog(
                     when {
                         start == null || end == null || start < 1 || end < start ->
                             problem = "第 ${index + 1} 条排课的节次不正确"
+                        end > periodLimit ->
+                            problem = "第 ${index + 1} 条排课超出本学期节次数（共 $periodLimit 节）"
                         weeks.isEmpty ->
                             problem = "第 ${index + 1} 条排课的周次无法识别"
                         else -> parsed += ScheduleDraft(

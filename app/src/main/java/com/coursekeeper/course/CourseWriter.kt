@@ -2,6 +2,7 @@ package com.coursekeeper.course
 
 import com.coursekeeper.data.CourseDraft
 import com.coursekeeper.data.WriteReceipt
+import com.coursekeeper.data.model.PeriodRecord
 import java.time.LocalDate
 
 /**
@@ -25,13 +26,15 @@ interface CourseWriter {
 
     /**
      * 学期 + 节次是一个版本化聚合（E 的 `saveSemester`）。
-     * `expectedVersion` 为 null 表示首次创建；节次沿用库中已有配置，不自行编造时刻。
+     * [periods] 是界面当前展示的完整节次表：空表表示不设置具体时刻（只显示节次号）。
+     * `expectedVersion` 为 null 表示首次创建。
      */
     suspend fun configureSemester(
         semesterId: String,
         name: String,
         startsOn: LocalDate,
         weekCount: Int,
+        periods: List<PeriodRecord>,
         expectedVersion: Long? = null,
     ): WriteReceipt
 }

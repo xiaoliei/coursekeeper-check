@@ -7,6 +7,7 @@ import com.coursekeeper.data.ScheduleDraft
 import com.coursekeeper.data.WriteReceipt
 import com.coursekeeper.data.model.CourseRecord
 import com.coursekeeper.data.model.DataSnapshot
+import com.coursekeeper.data.model.PeriodRecord
 import com.coursekeeper.data.model.ScheduleRecord
 import com.coursekeeper.data.model.SemesterRecord
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,7 @@ import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 /**
  * 课表页 ViewModel 单测（成员 B）。
@@ -152,12 +154,76 @@ class CourseViewModelTest {
         assertEquals(CoursePhase.NO_SEMESTER, model.uiState.value.phase)
 
         var result: String? = "未回调"
-        model.configureSemester(LocalDate.of(2026, 9, 7), 20) { result = it }
+        model.configureSemester(LocalDate.of(2026, 9, 7), 20, emptyList()) { result = it }
         advanceUntilIdle()
 
         assertNull(result)
         assertEquals(CoursePhase.READY, model.uiState.value.phase)
         assertEquals(10, model.uiState.value.currentWeek)
+    }
+
+    @Test
+    fun `保存学期时一并写入节次时间`() = runTest {
+        val snapshots = MutableStateFlow(snapshot(semesters = listOf(SemesterRecord("s1", "秋季", null, 20))))
+        val writer = FakeWriter(snapshots)
+        val model = viewModel(snapshots, writer)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        val periods = listOf(
+            PeriodRecord("", 1, LocalTime.of(8, 0), LocalTime.of(8, 45)),
+            PeriodRecord("", 2, LocalTime.of(8, 55), LocalTime.of(9, 40)),
+        )
+        var result: String? = "未回调"
+        model.configureSemester(LocalDate.of(2026, 9, 7), 20, periods) { result = it }
+        advanceUntilIdle()
+
+        assertNull(result)
+        assertEquals(2, writer.lastPeriods?.size)
+        // 入学时应盖上当前学期 id，否则 E 的 saveSemester 会判 INVALID_RECORD
+        assertTrue(writer.lastPeriods!!.all { it.semesterId == "semester-default" })
+        assertEquals(2, model.uiState.value.periods.size)
+        assertEquals(2, model.uiState.value.periodCount)
+    }
+
+    @Test
+    fun `节次时间非法被拦下 不调用写侧`() = runTest {
+        val snapshots = MutableStateFlow(snapshot())
+        val writer = FakeWriter(snapshots)
+        val model = viewModel(snapshots, writer)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        val periods = listOf(PeriodRecord("", 1, LocalTime.of(9, 0), LocalTime.of(8, 0)))
+        var result: String? = null
+        model.configureSemester(LocalDate.of(2026, 9, 7), 20, periods) { result = it }
+        advanceUntilIdle()
+
+        assertEquals("每节的结束时间必须晚于开始时间", result)
+        assertNull(writer.lastPeriods)
+    }
+
+    @Test
+    fun `结束节超过本学期节次数被拦下`() = runTest {
+        val snapshots = MutableStateFlow(snapshot())
+        val writer = FakeWriter(snapshots)
+        val model = viewModel(snapshots, writer)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        var result: String? = null
+        model.saveCourse(
+            existing = null,
+            draft = CourseDraft(
+                title = "越界课程",
+                semesterId = "s1",
+                schedules = listOf(ScheduleDraft(3, 1, DEFAULT_PERIOD_COUNT + 1, WeekText.parse("1-16").weeks)),
+            ),
+        ) { result = it }
+        advanceUntilIdle()
+
+        assertTrue(result!!.contains("超出本学期节次数"))
+        assertEquals(0, writer.created)
     }
 
     @Test
@@ -250,6 +316,7 @@ class CourseViewModelTest {
         var created = 0
         var deleted = 0
         var lastDraft: CourseDraft? = null
+        var lastPeriods: List<PeriodRecord>? = null
 
         override suspend fun createCourse(draft: CourseDraft, requestId: String?): WriteReceipt {
             failWith?.let { throw DataException(it) }
@@ -287,11 +354,14 @@ class CourseViewModelTest {
             name: String,
             startsOn: LocalDate,
             weekCount: Int,
+            periods: List<PeriodRecord>,
             expectedVersion: Long?,
         ): WriteReceipt {
             failWith?.let { throw DataException(it) }
+            lastPeriods = periods
             snapshots.value = snapshots.value.copy(
                 semesters = listOf(SemesterRecord(semesterId, name, startsOn, weekCount)),
+                periods = periods,
             )
             return WriteReceipt(semesterId, 1, true)
         }

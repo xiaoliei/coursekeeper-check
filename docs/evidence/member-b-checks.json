@@ -1,7 +1,6 @@
 ﻿{
     "date":  "2026-11-12",
     "branch":  "feat/course-service",
-    "commit":  "95f8b44",
     "jdk":  "21.0.7",
     "gradle":  "9.6.0",
     "tasks":  [
@@ -12,7 +11,7 @@
     "fullSuite":  {
                       "suites":  26,
                       "errors":  0,
-                      "tests":  176,
+                      "tests":  180,
                       "failures":  0
                   },
     "bModule":  {
@@ -25,7 +24,7 @@
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.CourseProjectionTest",
-                                       "tests":  10,
+                                       "tests":  11,
                                        "failures":  0,
                                        "errors":  0
                                    },
@@ -37,7 +36,7 @@
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.CourseViewModelTest",
-                                       "tests":  9,
+                                       "tests":  12,
                                        "failures":  0,
                                        "errors":  0
                                    },
@@ -60,12 +59,12 @@
                                        "errors":  0
                                    }
                                ],
-                    "tests":  50,
+                    "tests":  54,
                     "failures":  0
                 },
     "apk":  {
                 "path":  "app/build/outputs/apk/debug/app-debug.apk",
-                "sha256":  "d28e74d7de971d0ad67b68527caa34920d88566af9d5ec46b597075c756fe3a4",
-                "bytes":  13547427
+                "sha256":  "7eccd07dc912fcef204b438e7efb02006f27aef525a4f771ecb8201d346a01cc",
+                "bytes":  13558457
             }
 }

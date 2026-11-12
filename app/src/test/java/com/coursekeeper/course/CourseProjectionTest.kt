@@ -5,6 +5,7 @@ import com.coursekeeper.data.model.DataSnapshot
 import com.coursekeeper.data.model.PeriodRecord
 import com.coursekeeper.data.model.ScheduleRecord
 import com.coursekeeper.data.model.SemesterRecord
+import com.coursekeeper.data.model.RecordSource
 import com.coursekeeper.fakedata.BoundaryFixtures
 import com.coursekeeper.statistics.IntervalCourseStatsAdapter
 import org.junit.Assert.assertEquals
@@ -164,5 +165,34 @@ class CourseProjectionTest {
         val conflicts = CourseProjector.conflicts(snapshot, 10, BoundaryFixtures.NOW.toLocalDate())
         assertEquals(1, conflicts.size)
         assertEquals(ConflictKind.DIFFERENT_COURSE, conflicts[0].kind)
+    }
+
+    @Test
+    fun `同步来源的课程与手动课程显示一致`() {
+        fun snapshotOf(source: RecordSource) = DataSnapshot(
+            semesters = listOf(SemesterRecord("s1", "秋季", LocalDate.of(2026, 9, 7), 20)),
+            courses = listOf(
+                CourseRecord(
+                    id = "c1", title = "数据结构", semesterId = "s1", teacher = "教师甲",
+                    source = source, externalId = if (source == RecordSource.SYNC) "CST4823A" else null,
+                ),
+            ),
+            schedules = listOf(
+                ScheduleRecord("sch1", "c1", dayOfWeek = 2, startPeriod = 1, endPeriod = 4,
+                    weeks = WeekText.parse("9,11-13").weeks, weeksText = "9,11-13", location = "A101"),
+            ),
+        )
+
+        val manual = CourseProjector.project(snapshotOf(RecordSource.MANUAL), BoundaryFixtures.NOW)
+        val synced = CourseProjector.project(snapshotOf(RecordSource.SYNC), BoundaryFixtures.NOW)
+
+        assertEquals(manual.todayLessonCount, synced.todayLessonCount)
+        assertEquals(manual.todayPeriodCount, synced.todayPeriodCount)
+        assertEquals(manual.weekCourseCount, synced.weekCourseCount)
+        assertEquals(manual.weekEntryCount, synced.weekEntryCount)
+        assertEquals(manual.todayEntries.map { it.title to it.teacher }, synced.todayEntries.map { it.title to it.teacher })
+
+        val syncedTimetable = CourseProjector.timetable(snapshotOf(RecordSource.SYNC), 11, BoundaryFixtures.NOW.toLocalDate())
+        assertEquals("数据结构", syncedTimetable.days.getValue(2).single().title)
     }
 }

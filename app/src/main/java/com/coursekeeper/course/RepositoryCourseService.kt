@@ -4,6 +4,7 @@ import com.coursekeeper.data.CourseDraft
 import com.coursekeeper.data.CourseKeeperRepository
 import com.coursekeeper.data.WriteReceipt
 import com.coursekeeper.data.model.DataSnapshot
+import com.coursekeeper.data.model.PeriodRecord
 import com.coursekeeper.data.model.SemesterRecord
 import com.coursekeeper.statistics.CourseStats
 import com.coursekeeper.statistics.CourseStatsSource
@@ -64,6 +65,7 @@ class RepositoryCourseService(
         name: String,
         startsOn: LocalDate,
         weekCount: Int,
+        periods: List<PeriodRecord>,
         expectedVersion: Long?,
     ): WriteReceipt {
         val snapshot = repository.snapshot()
@@ -75,8 +77,7 @@ class RepositoryCourseService(
             weekCount = weekCount,
             version = existing?.version ?: 1,
         )
-        // 节次沿用 E 已保存的配置；没有就留空，界面只显示节次号（不编造时刻）。
-        val periods = snapshot.periods.filter { it.semesterId == semesterId }
+        // 节次表由界面传入；空表表示只用节次号，不编造时刻。
         return repository.saveSemester(record, periods, expectedVersion)
     }
 }
