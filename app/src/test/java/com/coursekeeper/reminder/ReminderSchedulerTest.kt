@@ -37,6 +37,11 @@ class ReminderSchedulerTest {
 
     private fun scheduled() = shadowOf(alarm).scheduledAlarms
 
+    /** 直接读持久化登记表：断言"真的写进了 SharedPreferences"，而不是恰好存在某个进程内存里。 */
+    private fun registeredIds(): Set<String> =
+        context.getSharedPreferences("reminder_scheduler", Context.MODE_PRIVATE)
+            .getStringSet("registered_task_ids", null) ?: emptySet()
+
     private fun millis(time: LocalDateTime) =
         time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -136,10 +141,12 @@ class ReminderSchedulerTest {
         // 进程 A：排上闹钟后进程被回收（开机重建的 BootReceiver 或界面进程都可能是 A）
         AlarmReminderScheduler(context).reconcile(listOf(record("open", dueAt = now.plusDays(2))), now)
         assertEquals(1, scheduled().size)
+        assertEquals(setOf("open"), registeredIds())
 
         // 进程 B：新实例的内存登记表天然为空，只能靠持久化登记表认出"open 排过闹钟"
         AlarmReminderScheduler(context).reconcile(emptyList(), now)
         assertEquals(0, scheduled().size)
+        assertEquals(emptySet<String>(), registeredIds())
     }
 
     @Test
@@ -150,9 +157,37 @@ class ReminderSchedulerTest {
 
         // 跨实例对账不得误撤仍在快照里的任务
         assertEquals(1, scheduled().size)
+        assertEquals(setOf("open"), registeredIds())
         assertEquals(
             "open",
             shadowOf(scheduled().single().operation).savedIntent.getStringExtra(ReminderReceiver.EXTRA_TASK_ID),
+        )
+    }
+
+    @Test
+    fun `registered set merges by delta so concurrent registrations survive`() {
+        // 另一个实例在本轮对账读完之后登记了 "late"：整表覆盖会静默丢掉它，增量合并不会
+        assertEquals(
+            setOf("kept", "late", "new"),
+            registeredAfter(
+                current = setOf("kept", "gone", "late"),
+                cancelled = setOf("gone"),
+                scheduled = setOf("new"),
+            ),
+        )
+    }
+
+    @Test
+    fun `cancellations do not wipe ids registered after the pass started`() {
+        // "late" 不在 initial 里、却在合并时的 current 里 = 另一实例刚排上，本轮不撤它；
+        // "gone" 前后都在，按本轮判断正常撤销。
+        assertEquals(
+            setOf("gone"),
+            cancellationsToApply(
+                cancelled = setOf("gone", "late"),
+                initial = setOf("gone"),
+                current = setOf("gone", "late"),
+            ),
         )
     }
 

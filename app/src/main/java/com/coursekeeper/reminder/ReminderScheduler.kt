@@ -27,6 +27,33 @@ internal fun useExactAlarm(sdkInt: Int, canScheduleExactAlarms: Boolean): Boolea
     sdkInt < 31 || canScheduleExactAlarms
 
 /**
+ * 登记表的增量合并：只移除本轮撤掉的、只加入本轮排上的。
+ *
+ * 不能拿"本轮开始时读到的集合 + 本轮结果"整表覆盖——另一个实例（到点 Receiver 续排、
+ * 开机重建）可能在本轮读完之后刚登记了新 taskId，整表覆盖会把它静默抹掉；等进程重启后
+ * 删除该任务，就留下撤不掉的孤儿闹钟，正是登记表要防的场景。
+ */
+internal fun registeredAfter(
+    current: Set<String>,
+    cancelled: Set<String>,
+    scheduled: Set<String>,
+): Set<String> = (current - cancelled) + scheduled
+
+/**
+ * 本轮真正生效的撤销集合：**在本轮开始读取之后才出现**的登记不撤。
+ *
+ * reconcile 的 cancelled 基于本轮开始时读到的登记表；如果另一个实例（到点 Receiver 续排）
+ * 在这之后才登记了某 taskId，说明它刚给该任务挂上新闹钟。此时按过期判断去撤，会留下
+ * "有闹钟、无登记"的孤儿。歧义时偏向保留登记，失败方向变成"有登记、无闹钟"，
+ * 由下一次对账空转清掉。等价的化简：cancelled - (current - initial)。
+ */
+internal fun cancellationsToApply(
+    cancelled: Set<String>,
+    initial: Set<String>,
+    current: Set<String>,
+): Set<String> = cancelled - (current - initial)
+
+/**
  * AlarmManager 实现（技术决定：不用 WorkManager——任务少、时间点明确，
  * WM 在 Doze 下会推迟到维护窗口，DDL 提醒不可接受）。
  * 每个任务一条自续链：只挂最早的未来槽位，到点后 Receiver 再排下一槽位；
@@ -41,40 +68,50 @@ class AlarmReminderScheduler(private val context: Context) : ReminderScheduler {
      * App 都是新实例，登记表为空。此时删除任务，taskId 已从快照消失，reconcile 无从得知
      * "它排过闹钟"，AlarmManager 里那条就成了孤儿——到点会被 Receiver 的 shouldFireNotification
      * 守卫拦下（不弹通知），但在此之前一直占着系统闹钟队列。
+     *
+     * 前提（Agent 阶段新增写入路径时必须保持）：
+     * 1. 所有组件在同一进程内（Manifest 不声明 `android:process`）——SharedPreferences 不跨进程同步；
+     * 2. `reconcile` 必须传**完整**任务快照——登记表是全局的，传过滤后的子集会撤掉其它任务的闹钟。
      */
     private val store: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val trackedLock = Any()
 
-    private fun tracked(): Set<String> = synchronized(trackedLock) {
+    private fun storedIds(): Set<String> =
         store.getStringSet(KEY_REGISTERED, null)?.toSet() ?: emptySet()
-    }
 
-    private fun updateTracked(block: (MutableSet<String>) -> Unit) = synchronized(trackedLock) {
-        val ids = (store.getStringSet(KEY_REGISTERED, null) ?: emptySet()).toMutableSet()
+    private fun tracked(): Set<String> = synchronized(TRACKED_LOCK) { storedIds() }
+
+    private fun updateTracked(block: (MutableSet<String>) -> Unit) = synchronized(TRACKED_LOCK) {
+        val current = storedIds()
+        val ids = current.toMutableSet()
         block(ids)
-        store.edit().putStringSet(KEY_REGISTERED, ids.toSet()).apply()
+        if (ids != current) store.edit().putStringSet(KEY_REGISTERED, ids.toSet()).apply()
     }
 
     override fun reconcile(tasks: List<TaskRecord>, now: LocalDateTime) {
         val present = tasks.mapTo(HashSet()) { it.id }
-        val kept = tracked().toMutableSet()
-        // 跨进程实例补撤：登记过、但已从快照消失的 taskId（本实例没见过它，靠持久化登记表兜住）
-        kept.filterNot { it in present }.forEach {
-            cancelAlarm(it)
-            kept -= it
-        }
+        val initial = tracked()
+        // 跨实例补撤：登记过、但已从快照消失的 taskId（本实例没见过它，靠持久化登记表兜住）
+        val cancelled = initial.filterNotTo(mutableSetOf<String>()) { it in present }
+        cancelled.forEach { cancelAlarm(it) }
+        val scheduled = mutableSetOf<String>()
         for (task in tasks) {
             if (task.needsReminder(now)) {
                 scheduleAlarm(task.id, task.title, task.dueAt!!, nextReminderSlot(task.dueAt, now)!!)
-                kept += task.id
+                scheduled += task.id
             } else {
                 cancelAlarm(task.id)
-                kept -= task.id
+                cancelled += task.id
             }
         }
-        synchronized(trackedLock) {
-            store.edit().putStringSet(KEY_REGISTERED, kept.toSet()).apply()
+        // 增量合并而不是整表覆盖：两次读取之间可能有别的实例刚登记了新 id（见 registeredAfter）
+        synchronized(TRACKED_LOCK) {
+            val current = storedIds()
+            // 另一实例在本轮读完之后才登记的 id，不能被本轮的（可能基于过期快照的）cancelled 压掉。
+            // 歧义时偏向"保持登记"：失败方向从"有闹钟无登记"（孤儿，占系统队列）
+            // 变成"有登记无闹钟"（幽灵，下次对账空转清掉）。
+            val merged = registeredAfter(current, cancellationsToApply(cancelled, initial, current), scheduled)
+            if (merged != current) store.edit().putStringSet(KEY_REGISTERED, merged).apply()
         }
     }
 
@@ -133,5 +170,11 @@ class AlarmReminderScheduler(private val context: Context) : ReminderScheduler {
         const val WINDOW_MILLIS = 10L * 60 * 1000
         const val PREFS_NAME = "reminder_scheduler"
         const val KEY_REGISTERED = "registered_task_ids"
+
+        /**
+         * 进程级锁：UI（MainActivity）、到点 Receiver、BootReceiver 各自 new 一个实例，
+         * 但共享同一份 SharedPreferences。锁若放在实例上，跨实例的读-改-写完全没有互斥。
+         */
+        val TRACKED_LOCK = Any()
     }
 }
