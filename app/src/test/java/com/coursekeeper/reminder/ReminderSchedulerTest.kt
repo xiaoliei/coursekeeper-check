@@ -132,6 +132,31 @@ class ReminderSchedulerTest {
     }
 
     @Test
+    fun `a new scheduler instance cancels alarms of a task deleted by an earlier instance`() {
+        // 进程 A：排上闹钟后进程被回收（开机重建的 BootReceiver 或界面进程都可能是 A）
+        AlarmReminderScheduler(context).reconcile(listOf(record("open", dueAt = now.plusDays(2))), now)
+        assertEquals(1, scheduled().size)
+
+        // 进程 B：新实例的内存登记表天然为空，只能靠持久化登记表认出"open 排过闹钟"
+        AlarmReminderScheduler(context).reconcile(emptyList(), now)
+        assertEquals(0, scheduled().size)
+    }
+
+    @Test
+    fun `a new scheduler instance keeps alarms for tasks still present`() {
+        val tasks = listOf(record("open", dueAt = now.plusDays(2)))
+        AlarmReminderScheduler(context).reconcile(tasks, now)
+        AlarmReminderScheduler(context).reconcile(tasks, now)
+
+        // 跨实例对账不得误撤仍在快照里的任务
+        assertEquals(1, scheduled().size)
+        assertEquals(
+            "open",
+            shadowOf(scheduled().single().operation).savedIntent.getStringExtra(ReminderReceiver.EXTRA_TASK_ID),
+        )
+    }
+
+    @Test
     fun `exact alarm usage follows sdk and system switch`() {
         assertTrue(useExactAlarm(28, false))   // API 31 前无需权限
         assertTrue(useExactAlarm(31, true))
