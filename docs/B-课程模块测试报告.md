@@ -165,11 +165,13 @@ curl.exe -L -o "$dir\android-all-instrumented-$v.jar" `
 
 | 文件 | 内容 |
 |---|---|
-| `docs/evidence/member-b-tests.xml` | B 的 7 个套件 / 50 项测试 JUnit XML |
+| `docs/evidence/member-b-tests.xml` | B 的 7 个套件 / 54 项测试 JUnit XML |
 | `docs/evidence/member-b-checks.json` | 分支、提交、JDK、任务、用例数、APK 大小与 SHA256 |
 | `docs/课程与周次规则-v0.2.md` | 口径与实现状态 |
 | `docs/B-课程与周次交接.md` | 接口、状态、各成员接入方式、已知限制 |
+| `docs/evidence/member-b-screenshots/` | 模拟器实测截图：空周视图、冲突提示、课程详情、节次时刻 |
 | 本文件 | 全量回归与手工验证记录 |
+
 
 
 
