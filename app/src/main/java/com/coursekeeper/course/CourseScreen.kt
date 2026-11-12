@@ -88,7 +88,7 @@ fun CourseScreen(
                         onAction = { editorCourseId = null; editorOpen = true },
                     )
                 } else {
-                    TimetableBody(state) { entry ->
+                    TimetableBody(state, Modifier.weight(1f)) { entry ->
                         detailCourseId = entry.courseId
                     }
                 }
@@ -183,8 +183,13 @@ private fun WeekHeader(
 }
 
 @Composable
-private fun TimetableBody(state: CourseUiState, onEntryClick: (CourseEntry) -> Unit) {
+private fun TimetableBody(
+    state: CourseUiState,
+    modifier: Modifier = Modifier,
+    onEntryClick: (CourseEntry) -> Unit,
+) {
     LazyColumn(
+        modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
