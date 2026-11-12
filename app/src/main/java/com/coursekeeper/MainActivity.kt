@@ -22,6 +22,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.coursekeeper.course.CourseScreen
+import com.coursekeeper.course.CourseViewModel
+import com.coursekeeper.course.RepositoryCourseService
 import com.coursekeeper.data.CourseKeeperData
 import com.coursekeeper.home.*
 import com.coursekeeper.reminder.AlarmReminderScheduler
@@ -49,6 +52,8 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     val gateway = RepositoryHomeGateway(data.repository, data.settings, viewModelScope, taskGateway=tasks)
     // F：看板数据入口，订阅 E 的一致性快照实时计算统计结果。
     val statistics = StatisticsViewModel(data.repository, scope = viewModelScope)
+    // B：课程业务，读侧投影 + 写侧委托 Repository。
+    val courseService = RepositoryCourseService(data.repository)
 }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +76,14 @@ class MainActivity : ComponentActivity() {
                     viewModelFactory { initializer { TaskViewModel(owner.tasks) } }
                 })
                 val taskState by taskModel.uiState.collectAsStateWithLifecycle()
+
+                // B：课表页，读 E 的快照、写走 Repository。
+                val courseModel: CourseViewModel = viewModel(factory=remember(data) {
+                    viewModelFactory { initializer {
+                        CourseViewModel(owner.courseService, owner.courseService, data.repository.snapshots)
+                    } }
+                })
+                val courseState by courseModel.uiState.collectAsStateWithLifecycle()
 
                 // D 第 3 周：提醒对账随数据快照刷新；数据层首次出现带截止时间的任务（任何入口，
                 // 含首页快速添加）后申请一次通知权限（v1.0 §四）。
@@ -159,6 +172,16 @@ class MainActivity : ComponentActivity() {
                         createRequested=createRequested,
                         onCreateRequestConsumed={createRequested=false},
                         onClearDateFilter=taskModel::clearDateFilter,
+                    ) },
+                    coursesScreen={ modifier -> CourseScreen(
+                        state=courseState,
+                        onPreviousWeek=courseModel::previousWeek,
+                        onNextWeek=courseModel::nextWeek,
+                        onCurrentWeek=courseModel::goCurrentWeek,
+                        onSaveSemester=courseModel::configureSemester,
+                        onSaveCourse=courseModel::saveCourse,
+                        onDeleteCourse=courseModel::deleteCourse,
+                        modifier=modifier,
                     ) },
                     statisticsScreen={ modifier -> StatisticsScreen(statisticsState, modifier) { owner.statistics.retry() } })
             }
