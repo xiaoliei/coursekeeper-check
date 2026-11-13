@@ -185,3 +185,44 @@ readError==null` 在 Snackbar 门控与底栏可见性各写一份）提取为 `
 仍弹「风险提示→继续安装」，由 ADB 轮询屏幕坐标自动点击。另：`am force-stop` 会清掉 App 全部闹钟
 （系统行为），故调试期间强制停止后需重开 App 才会重新挂提醒。
 
+## 七之二、真机补验：拒绝通知权限（Android 16 / API 36，2026-11-13）
+
+**为什么补这一项**：定版验收有「拒绝通知权限不影响任务保存」，但华为 TEL-AN00a 是 Android 10
+（API 29），没有 `POST_NOTIFICATIONS` 运行时权限，历史验收覆盖不到。本轮在荣耀 Magic5 Pro 上补验。
+**纯验证轮，未改任何代码。**
+
+环境：荣耀 Magic5 Pro `PGT-AN10`（Android 16 / API 36，MagicOS 10.0.0），基线 `main@d1ad6c9`，
+`assembleDebug` 产物（sha256 `edf0404f…c3c2`）`adb install -r` 覆盖安装；App `0.2.0`
+（versionCode 2，targetSdk 37）。
+
+| # | 场景 | 实测结果 | 证据 |
+| --- | --- | --- | --- |
+| 1 | `pm revoke … POST_NOTIFICATIONS` → 强制停止 → 重开 | `granted=false, USER_FIXED`；`appops POST_NOTIFICATION: ignore` | `12-…` |
+| 2 | 系统权限弹窗 → 点「禁止后不再提示」 | 弹窗正常出现；荣耀文案为「禁止后不再提示 / 始终允许」（非 AOSP 的「不允许 / 允许」）；拒绝后不再补弹 | `03`、`04` |
+| 3 | 新建任务 `NotifDeny-A`（截止 11:45）→ 保存 | 保存成功，列表显示「今天 11:45」，无崩溃 | `08` |
+| 4 | 提醒注册 | `RTC_WAKEUP origWhen=2026-11-13 10:45:00 window=+10m`（= 截止−1h；精确闹钟权限 default → 窗口降级，既有 P1） | `09` |
+| 5 | 登记表持久化 | `shared_prefs/reminder_scheduler.xml` 含该任务 UUID，与 `tasks.id` 一致 | `10` |
+| 6 | 到点（10:49:34 触发，槽位 10:45 + 窗口降级） | Receiver 确实被触发（`logcat` `AlarmManager: WAKEUP alarm … com.coursekeeper` + `broadcasts` 记录 `FIRE_TASK_REMINDER … ReminderReceiver`）；**无通知**（`NotificationRecord` 0 条、`importance=NONE`、全程无 `enqueueNotificationInternal`）；无崩溃 | `13`、`15`、`16`、`17`、`18` |
+| 7 | 系统设置 → 课程管家 → 打开「显示通知」 | `granted=true`；`appops POST_NOTIFICATION` 回落 `Default mode: allow` | `20`、`21` |
+| 8 | 再建 `NotifDeny-B`（截止 12:00）→ 到点 | 闹钟精确（`origWhen=11:00:00 window=0`）；通知栏显示「任务截止提醒 /「NotifDeny-B」将在 11-13 12:00 截止」；`NotificationRecord importance=3` | `22`、`24`、`25` |
+
+**判据修正（重要）**：工单原写「`dumpsys notification` 无该渠道记录」——**不成立**。通知渠道由
+`TaskNotifications.ensureChannel()` 在 App 启动时创建，与权限无关；被拒后渠道记录仍在
+（`mId='task_reminders'`、`mImportance=3`）。正确判据是：无**已投递通知**
+（`NotificationRecord.*pkg=com.coursekeeper` 计数 0）+ `AppSettings importance=NONE`
++ `appops POST_NOTIFICATION: ignore`。这是「计数类判据先看样例」的又一例
+（前例见 `真机测试报告.md` §8）。
+
+**与工单的偏差（如实记录）**：工单期望「新建任务 → 弹权限」，实际弹窗在**重开 App 时**就出现了——
+库中已有一个带截止时间的任务（`物理实验`，截止 2026-11-13 00:27），`ReminderCoordinator.attach`
+收到首个含 `dueAt≠null` 的快照即触发申请。拒绝后（USER_FIXED）再新建 `NotifDeny-A` 不再补弹。
+触发点不同、回调路径相同（`attach` → `onFirstDatedTask`）；核心断言「拒绝后任务照常保存、
+提醒照常注册、到点不弹不崩」已由第 3–6 项覆盖，「新建动作本身触发弹窗」未单独复现
+（不删既有带截止任务就无法隔离该时机）。
+
+**环境副作用**：第 8 项为缩短等待，验证期间临时 `appops set … SCHEDULE_EXACT_ALARM allow`，
+验证后已恢复 `default`；该改动只影响闹钟精确性，不影响权限结论。测试任务 `NotifDeny-A/B` 已删除，
+`registered_task_ids` 为空、活动闹钟 0 条、通知已消。设备终态：通知权限**已授权**。
+
+证据目录：`..\跨对话交接\2026-11-13-通知拒绝验证\evidence\`（截图 + `dumpsys`/`logcat` 文本）。
+
