@@ -202,7 +202,7 @@ readError==null` 在 Snackbar 门控与底栏可见性各写一份）提取为 `
 | 3 | 新建任务 `NotifDeny-A`（截止 11:45）→ 保存 | 保存成功，列表显示「今天 11:45」，无崩溃 | `08` |
 | 4 | 提醒注册 | `RTC_WAKEUP origWhen=2026-11-13 10:45:00 window=+10m`（= 截止−1h；精确闹钟权限 default → 窗口降级，既有 P1） | `09` |
 | 5 | 登记表持久化 | `shared_prefs/reminder_scheduler.xml` 含该任务 UUID，与 `tasks.id` 一致 | `10` |
-| 6 | 到点（10:49:34 触发，槽位 10:45 + 窗口降级） | Receiver 确实被触发（`logcat` `AlarmManager: WAKEUP alarm … com.coursekeeper` + `broadcasts` 记录 `FIRE_TASK_REMINDER … ReminderReceiver`）；**无通知**（`NotificationRecord` 0 条、`importance=NONE`、全程无 `enqueueNotificationInternal`）；无崩溃 | `13`、`15`、`16`、`17`、`18` |
+| 6 | 到点（10:49:34 触发，槽位 10:45 + 窗口降级） | Receiver 确实被触发（`logcat` `AlarmManager: WAKEUP alarm … com.coursekeeper` + `broadcasts` 记录 `FIRE_TASK_REMINDER … ReminderReceiver`）；**无通知**（`NotificationRecord` 0 条、`importance=NONE`）；**拒绝态期间无 `enqueueNotificationInternal`**（全段唯一一条出现在授权后的第 8 项，11:00:00.052）；无崩溃 | `13`、`15`、`16`、`17`、`18` |
 | 7 | 系统设置 → 课程管家 → 打开「显示通知」 | `granted=true`；`appops POST_NOTIFICATION` 回落 `Default mode: allow` | `20`、`21` |
 | 8 | 再建 `NotifDeny-B`（截止 12:00）→ 到点 | 闹钟精确（`origWhen=11:00:00 window=0`）；通知栏显示「任务截止提醒 /「NotifDeny-B」将在 11-13 12:00 截止」；`NotificationRecord importance=3` | `22`、`24`、`25` |
 
