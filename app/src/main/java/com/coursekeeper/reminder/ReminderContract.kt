@@ -34,3 +34,25 @@ private val DUE_FORMAT = DateTimeFormatter.ofPattern("MM-dd HH:mm")
 /** 通知文案。槽位都在截止之前，到点时截止必然还在未来，"将在"恒成立。 */
 fun reminderText(title: String, dueAt: LocalDateTime): String =
     "「$title」将在 ${dueAt.format(DUE_FORMAT)} 截止"
+
+/**
+ * 重启后是否该提示「允许自启动」。
+ *
+ * 背景：国产 ROM（EMUI/MagicOS 等）默认拦截 BOOT_COMPLETED，重启后提醒不会自动重建，
+ * 直到用户下次打开 App。判定依据 BootReceiver 上次成功执行的墙钟标记：
+ * 标记早于本次开机时刻（bootTime = nowWall − nowElapsed 估算）⇒ 本次开机接收器没跑过 ⇒ 提示。
+ *
+ * 刻意保守的两处：
+ * - 标记缺失（从未执行过，典型是首次安装）不提示——无法区分"装完没重启过"与"重启被拦"，
+ *   宁可漏提示也不误报；
+ * - 本次开机内已展示过不再重复（由调用方持久化"展示时估算的开机时刻"并传入）。
+ */
+fun shouldShowBootHint(
+    lastBootHandledWall: Long,
+    bootTimeWall: Long,
+    hasPendingReminder: Boolean,
+    shownThisBoot: Boolean,
+): Boolean = lastBootHandledWall > 0 &&
+    bootTimeWall > lastBootHandledWall &&
+    hasPendingReminder &&
+    !shownThisBoot

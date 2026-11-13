@@ -64,6 +64,10 @@ fun TaskScreen(
     createRequested: Boolean = false,
     onCreateRequestConsumed: () -> Unit = {},
     onClearDateFilter: () -> Unit = {},
+    // 开机自启引导（W5）：MainActivity 判定后传入；默认关闭，独立演示工程与单测无需感知。
+    bootReminderHint: Boolean = false,
+    onDismissBootReminderHint: () -> Unit = {},
+    onOpenAutoStartSettings: () -> Unit = {},
 ) {
     var editorTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var editorNew by rememberSaveable { mutableStateOf(false) }
@@ -141,6 +145,17 @@ fun TaskScreen(
                 }
             }
 
+            // 重启自启引导卡：只在判定命中的本次开机内出现（MainActivity 持久化去重），
+            // 放在页头之后、列表之前，可关闭，不参与筛选与任务操作。
+            if (bootReminderHint) {
+                item(key = "section:boot-hint") {
+                    BootHintCard(
+                        onOpenSettings = onOpenAutoStartSettings,
+                        onDismiss = onDismissBootReminderHint,
+                    )
+                }
+            }
+
             if (state.tasks.isEmpty()) {
                 item(key = "section:empty") {
                     Column(Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp))
@@ -210,6 +225,31 @@ fun TaskScreen(
             },
             dismissButton = { TextButton(onClick = { pendingDeleteId = null }) { Text("取消") } },
         )
+    }
+}
+
+/**
+ * 重启自启引导卡（W5）：文案说事实——默认被 ROM 拦、打开 App 会恢复、允许自启动可永久解决；
+ * 「去设置」跳系统应用详情页（不猜 OEM 专属页路径）。
+ */
+@Composable
+private fun BootHintCard(onOpenSettings: () -> Unit, onDismiss: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(16.dp))
+            .border(1.dp, Color(0xFFEBEFF6), RoundedCornerShape(16.dp)).padding(16.dp),
+    ) {
+        Text("重启后提醒可能不会自动恢复", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "手机系统默认禁止本应用开机自启，重启后到点提醒会暂停，打开一次 App 后恢复。" +
+                "在系统设置中允许自启动可永久解决。",
+            fontSize = 12.sp, color = KeeperMuted,
+        )
+        Spacer(Modifier.height(2.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = onOpenSettings) { Text("去设置", fontSize = 13.sp) }
+            TextButton(onClick = onDismiss) { Text("知道了", fontSize = 13.sp) }
+        }
     }
 }
 

@@ -166,10 +166,12 @@ class AlarmReminderScheduler(private val context: Context) : ReminderScheduler {
             putExtra(ReminderReceiver.EXTRA_DUE_AT, dueAtMillis)
         }
 
-    private companion object {
-        const val WINDOW_MILLIS = 10L * 60 * 1000
-        const val PREFS_NAME = "reminder_scheduler"
-        const val KEY_REGISTERED = "registered_task_ids"
+    companion object {
+        private const val WINDOW_MILLIS = 10L * 60 * 1000
+
+        /** 开机自启引导（BootStateStore）复用同一文件：登记表状态与开机标记一起读，少开一个 prefs。 */
+        internal const val PREFS_NAME = "reminder_scheduler"
+        internal const val KEY_REGISTERED = "registered_task_ids"
 
         /**
          * 进程级锁：UI（MainActivity）、到点 Receiver、BootReceiver 各自 new 一个实例，

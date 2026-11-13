@@ -1,9 +1,12 @@
 package com.coursekeeper
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.app.Application
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -28,8 +31,10 @@ import com.coursekeeper.course.RepositoryCourseService
 import com.coursekeeper.data.CourseKeeperData
 import com.coursekeeper.home.*
 import com.coursekeeper.reminder.AlarmReminderScheduler
+import com.coursekeeper.reminder.BootStateStore
 import com.coursekeeper.reminder.ReminderCoordinator
 import com.coursekeeper.reminder.TaskNotifications
+import com.coursekeeper.reminder.shouldShowBootHint
 import com.coursekeeper.statistics.StatisticsViewModel
 import com.coursekeeper.task.RepositoryTaskGateway
 import com.coursekeeper.task.TaskBottomButtonHeight
@@ -103,6 +108,25 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+
+                // W5 开机自启引导：重启被 ROM 拦截（BootReceiver 没跑）时，任务页提示一次。
+                // 展示即持久化"本次开机已提示"，同一次开机内重进不重复；
+                // 允许自启动后重启，接收器跑过会刷新标记，不再出现。
+                var showBootHint by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    val ctx = applicationContext
+                    val bootTime = BootStateStore.currentBootTimeWall()
+                    if (shouldShowBootHint(
+                            lastBootHandledWall = BootStateStore.lastBootHandledWall(ctx),
+                            bootTimeWall = bootTime,
+                            hasPendingReminder = BootStateStore.hasPendingReminder(ctx),
+                            shownThisBoot = BootStateStore.bootHintShownWall(ctx) >= bootTime,
+                        )
+                    ) {
+                        BootStateStore.markBootHintShown(ctx, bootTime)
+                        showBootHint = true
+                    }
+                }
                 LaunchedEffect(taskModel) {
                     taskModel.events.collect { event -> launch {
                         snackbar.currentSnackbarData?.dismiss()
@@ -172,6 +196,16 @@ class MainActivity : ComponentActivity() {
                         createRequested=createRequested,
                         onCreateRequestConsumed={createRequested=false},
                         onClearDateFilter=taskModel::clearDateFilter,
+                        bootReminderHint=showBootHint,
+                        onDismissBootReminderHint={ showBootHint=false },
+                        onOpenAutoStartSettings={
+                            // 系统应用详情页：所有 ROM 都有"允许自启动"类开关的入口（荣耀在
+                            // 「应用启动管理」），不猜 OEM 专属 Activity，避免深链失效。
+                            startActivity(
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                    .setData(Uri.fromParts("package", packageName, null))
+                            )
+                        },
                     ) },
                     coursesScreen={ modifier -> CourseScreen(
                         state=courseState,

@@ -3,6 +3,7 @@ package com.coursekeeper.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import android.util.Log
 import com.coursekeeper.data.CourseKeeperData
 import com.coursekeeper.data.model.DataSnapshot
@@ -59,6 +60,12 @@ class BootReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 ReminderCoordinator.rebuildAll(context)
+                // 成功才写"本次开机已处理"标记：这是自启引导判定"本次开机接收器跑过没有"的唯一依据。
+                // 失败（库不可用）不写——下次打开 App 仍会提示，用户知情。ROM 拦截时本方法根本不会执行，
+                // 标记保持上一次开机的旧值，同样触发提示。
+                BootStateStore.markBootHandled(
+                    context, System.currentTimeMillis(), SystemClock.elapsedRealtime(),
+                )
             } catch (error: Exception) {
                 // 开机/更新时库不可用不得让进程崩溃，下次打开 App 时 attach 会对账补上
                 Log.w(TAG, "reminder rebuild failed", error)
