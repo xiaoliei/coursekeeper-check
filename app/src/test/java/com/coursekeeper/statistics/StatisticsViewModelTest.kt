@@ -32,7 +32,9 @@ class StatisticsViewModelTest : DataTestBase() {
 
     @Test
     fun vmMapsSnapshotToStatisticsUiWithFixtureClock() = runTest {
-        val vm = StatisticsViewModel(repository, scope = backgroundScope, now = { now })
+        val vm = StatisticsViewModel(repository, courseStatsSource = object : CourseStatsSource {
+            override fun summary(snapshot: DataSnapshot, now: LocalDateTime) = CourseStats()
+        }, scope = backgroundScope, now = { now })
         seedBoundaryWeek()
         // 等全部边界数据入快照（含下周一 00:00 的 next7Days 项）。
         val ui = vm.uiState.first { it.weekTaskCount == 4 && it.dueDist.next7Days == 1 }

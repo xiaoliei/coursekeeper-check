@@ -51,9 +51,9 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     val tasks = RepositoryTaskGateway(data.repository)
     val gateway = RepositoryHomeGateway(data.repository, data.settings, viewModelScope, taskGateway=tasks)
     // F：看板数据入口，订阅 E 的一致性快照实时计算统计结果。
-    val statistics = StatisticsViewModel(data.repository, scope = viewModelScope)
     // B：课程业务，读侧投影 + 写侧委托 Repository。
     val courseService = RepositoryCourseService(data.repository)
+    val statistics = StatisticsViewModel(data.repository, courseStatsSource = courseService, scope = viewModelScope)
 }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

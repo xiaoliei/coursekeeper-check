@@ -17,8 +17,7 @@ import java.time.LocalDateTime
  * 课程服务（成员 B）：把 E 的 Repository 接到 [CourseProjector] 上。
  *
  * - 读侧全部是快照投影，不持有可变状态；
- * - 实现 F 的 [CourseStatsSource]，F 把 `StatisticsViewModel` 里的
- *   `IntervalCourseStatsAdapter` 换成本服务即可删除临时适配器；
+ * - 实现 F 的 [CourseStatsSource]，作为统计看板的正式课程数字来源；
  * - 写侧委托 `CourseKeeperRepository`，版本、事务、排课整组替换、墓碑都由 E 负责。
  */
 class RepositoryCourseService(

@@ -13,13 +13,13 @@ import java.time.LocalDateTime
  * 看板数据入口（成员 F，W2 骨架）。
  *
  * 订阅 E 的一致性快照，用 StatisticsService 实时计算统计结果：
- * - 课程侧四个数字经 [CourseStatsSource] 消费（当前为临时 [IntervalCourseStatsAdapter]，待 B 的 CourseService 替换）；
+ * - 课程侧四个数字经 [CourseStatsSource] 消费，正式来源是 B 的 RepositoryCourseService；
  * - 数量变化时按当前时刻重算，页面随时间自动更新；
  * - 单次计算失败保留上一次成功值，不因读取异常清空看板。
  */
 class StatisticsViewModel(
     repository: CourseKeeperRepository,
-    private val courseStatsSource: CourseStatsSource = IntervalCourseStatsAdapter(),
+    private val courseStatsSource: CourseStatsSource,
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
     scope: CoroutineScope,
 ) {

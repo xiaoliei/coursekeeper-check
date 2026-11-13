@@ -9,6 +9,7 @@ import com.coursekeeper.data.model.TaskType
 import com.coursekeeper.data.model.WeekPattern
 import com.coursekeeper.data.settings.AppSettings
 import com.coursekeeper.fakedata.BoundaryFixtures
+import com.coursekeeper.course.CourseProjector
 import com.coursekeeper.home.projectHome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -107,40 +108,35 @@ class StatisticsServiceTest {
     }
 
     @Test
-    fun intervalAdapterCountsCrossPeriodAsOneEntryFourPeriods() {
-        val adapter = IntervalCourseStatsAdapter()
-        assertEquals(CourseStats(1, 4, 1, 1), adapter.summary(BoundaryFixtures.crossPeriodCourse(), now))
+    fun courseSourceCountsCrossPeriodAsOneEntryFourPeriods() {
+        assertEquals(CourseStats(1, 4, 1, 1), CourseProjector.summary(BoundaryFixtures.crossPeriodCourse(), now))
     }
 
     @Test
-    fun intervalAdapterDeduplicatesCourseWhileCountingEntries() {
-        val adapter = IntervalCourseStatsAdapter()
-        assertEquals(CourseStats(1, 2, 1, 2), adapter.summary(BoundaryFixtures.sameCourseMultipleEntries(), now))
+    fun courseSourceDeduplicatesCourseWhileCountingEntries() {
+        assertEquals(CourseStats(1, 2, 1, 2), CourseProjector.summary(BoundaryFixtures.sameCourseMultipleEntries(), now))
     }
 
     @Test
-    fun intervalAdapterCountsSameTitleDistinctCodesAsTwoCourses() {
-        val adapter = IntervalCourseStatsAdapter()
-        assertEquals(CourseStats(1, 2, 2, 2), adapter.summary(BoundaryFixtures.sameTitleDistinctCodes(), now))
+    fun courseSourceCountsSameTitleDistinctCodesAsTwoCourses() {
+        assertEquals(CourseStats(1, 2, 2, 2), CourseProjector.summary(BoundaryFixtures.sameTitleDistinctCodes(), now))
     }
 
     @Test
-    fun intervalAdapterAppliesWeekParityToCurrentWeek() {
-        val adapter = IntervalCourseStatsAdapter()
+    fun courseSourceAppliesWeekParityToCurrentWeek() {
         // 教学周 10（偶数周）：ODD 不生效，EVEN 生效。
-        assertEquals(CourseStats(0, 0, 0, 0), adapter.summary(BoundaryFixtures.alternatingWeeks(), now))
+        assertEquals(CourseStats(0, 0, 0, 0), CourseProjector.summary(BoundaryFixtures.alternatingWeeks(), now))
         val even = DataSnapshot(
             semesters = listOf(SemesterRecord("s1", "秋季", LocalDate.of(2026, 9, 7), 20)),
             courses = listOf(CourseRecord("c1", "数据结构", semesterId = "s1", version = 1)),
             schedules = listOf(ScheduleRecord("sch-even", "c1", dayOfWeek = 2, startPeriod = 1, endPeriod = 2,
                 startWeek = 10, endWeek = 10, weekPattern = WeekPattern.EVEN)),
         )
-        assertEquals(CourseStats(1, 2, 1, 1), adapter.summary(even, now))
+        assertEquals(CourseStats(1, 2, 1, 1), CourseProjector.summary(even, now))
     }
 
     @Test
-    fun intervalAdapterUsesSemesterThatContainsToday() {
-        val adapter = IntervalCourseStatsAdapter()
+    fun courseSourceUsesSemesterThatContainsToday() {
         val snapshot = DataSnapshot(
             semesters = listOf(
                 SemesterRecord("old", "旧学期", LocalDate.of(2026, 6, 8), 18),
@@ -155,28 +151,26 @@ class StatisticsServiceTest {
                 ScheduleRecord("sch-current", "current-course", 2, 3, 4, 10, 10),
             ),
         )
-        assertEquals(CourseStats(1, 2, 1, 1), adapter.summary(snapshot, now))
+        assertEquals(CourseStats(1, 2, 1, 1), CourseProjector.summary(snapshot, now))
     }
 
     @Test
-    fun intervalAdapterIgnoresUnattachedSchedulesOutsideSemester() {
-        val adapter = IntervalCourseStatsAdapter()
+    fun courseSourceIgnoresUnattachedSchedulesOutsideSemester() {
         val snapshot = DataSnapshot(
             semesters = listOf(SemesterRecord("current", "当前学期", LocalDate.of(2026, 9, 7), 20)),
             courses = listOf(CourseRecord("no-semester", "未关联", semesterId = null, version = 1)),
             schedules = listOf(ScheduleRecord("sch-no-semester", "no-semester", 2, 1, 2, 10, 10)),
         )
-        assertEquals(CourseStats(), adapter.summary(snapshot, now))
+        assertEquals(CourseStats(), CourseProjector.summary(snapshot, now))
     }
 
     @Test
-    fun intervalAdapterShowsZeroOutsideEverySemester() {
-        val adapter = IntervalCourseStatsAdapter()
+    fun courseSourceShowsZeroOutsideEverySemester() {
         val snapshot = DataSnapshot(
             semesters = listOf(SemesterRecord("old", "旧学期", LocalDate.of(2026, 6, 8), 12)),
             courses = listOf(CourseRecord("old-course", "旧学期课", semesterId = "old", version = 1)),
             schedules = listOf(ScheduleRecord("sch-old", "old-course", 2, 1, 2, 10, 10)),
         )
-        assertEquals(CourseStats(), adapter.summary(snapshot, now))
+        assertEquals(CourseStats(), CourseProjector.summary(snapshot, now))
     }
 }

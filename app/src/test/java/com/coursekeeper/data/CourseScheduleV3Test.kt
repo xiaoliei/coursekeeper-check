@@ -4,7 +4,7 @@ import com.coursekeeper.data.model.*
 import com.coursekeeper.data.sync.*
 import com.coursekeeper.fakedata.BoundaryFixtures
 import com.coursekeeper.statistics.CourseStats
-import com.coursekeeper.statistics.IntervalCourseStatsAdapter
+import com.coursekeeper.course.CourseProjector
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -93,7 +93,7 @@ class CourseScheduleV3Test : DataTestBase() {
     }
 
     @Test fun statisticsAdapterDoesNotFillNonConsecutiveWeekGaps() {
-        val source = IntervalCourseStatsAdapter()
+        val source = CourseProjector
         val fixture = BoundaryFixtures.nonConsecutiveWeeks()
         assertEquals(CourseStats(), source.summary(fixture, BoundaryFixtures.NOW)) // week 10: absent
         assertEquals(CourseStats(1, 2, 1, 1), source.summary(fixture, BoundaryFixtures.NOW.plusWeeks(1))) // week 11

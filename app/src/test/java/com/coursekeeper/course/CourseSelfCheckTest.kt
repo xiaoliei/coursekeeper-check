@@ -6,7 +6,7 @@ import com.coursekeeper.data.model.ScheduleRecord
 import com.coursekeeper.data.model.ScheduleWeeks
 import com.coursekeeper.data.model.SemesterRecord
 import com.coursekeeper.fakedata.BoundaryFixtures
-import com.coursekeeper.statistics.IntervalCourseStatsAdapter
+import com.coursekeeper.statistics.CourseStats
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -16,7 +16,7 @@ import java.time.LocalDateTime
  * 手动自查报告（成员 B，临时工具，可随时删除）。
  *
  * 运行后在 Run 控制台打印一张中文对照表：周次解析、教学周换算、冲突判定，
- * 以及课程四个数字与 F 的临时适配器是否逐项一致。
+ * 以及课程四个数字投影结果是否一致。
  * 任何一项显示“FAIL”都会让本测试变红。
  */
 class CourseSelfCheckTest {
@@ -84,24 +84,27 @@ class CourseSelfCheckTest {
         if (conflicts.size != 1) failed = true
 
         report.appendLine()
-        report.appendLine("④ 四个课程数字 vs F 的临时适配器（now = ${BoundaryFixtures.NOW}）")
-        report.appendLine("  %-32s %-23s %-23s %s".format("夹具", "B 服务", "F 适配器", "结果"))
-        val adapter = IntervalCourseStatsAdapter()
+        report.appendLine("④ 四个课程数字投影（now = ${BoundaryFixtures.NOW}）")
+        report.appendLine("  %-32s %-23s %-23s %s".format("夹具", "实际", "期望", "结果"))
         val fixtures = listOf(
-            "跨节次" to BoundaryFixtures.crossPeriodCourse(),
-            "同课多条目" to BoundaryFixtures.sameCourseMultipleEntries(),
-            "同名不同编号" to BoundaryFixtures.sameTitleDistinctCodes(),
-            "单双周" to BoundaryFixtures.alternatingWeeks(),
-            "无学期" to BoundaryFixtures.noSemester(),
-            "有学期无排课" to BoundaryFixtures.configuredSemesterNoSchedule(),
+            Fixture("跨节次", BoundaryFixtures.crossPeriodCourse(), CourseStats(1, 4, 1, 1)),
+            Fixture("同课多条目", BoundaryFixtures.sameCourseMultipleEntries(), CourseStats(1, 2, 1, 2)),
+            Fixture("同名不同编号", BoundaryFixtures.sameTitleDistinctCodes(), CourseStats(1, 2, 2, 2)),
+            Fixture("单双周", BoundaryFixtures.alternatingWeeks(), CourseStats(0, 0, 0, 0)),
+            Fixture("无学期", BoundaryFixtures.noSemester(), CourseStats(0, 0, 0, 0)),
+            Fixture("有学期无排课", BoundaryFixtures.configuredSemesterNoSchedule(), CourseStats(0, 0, 0, 0)),
         )
-        fixtures.forEach { (name, snapshot) ->
-            val mine = CourseProjector.summary(snapshot, BoundaryFixtures.NOW)
-            val theirs = adapter.summary(snapshot, BoundaryFixtures.NOW)
-            val ok = mine == theirs
+        fixtures.forEach { fixture ->
+            val actual = CourseProjector.summary(fixture.snapshot, BoundaryFixtures.NOW)
+            val ok = actual == fixture.expected
             if (!ok) failed = true
             report.appendLine(
-                "  %-32s %-23s %-23s %s".format(name, mine.short(), theirs.short(), if (ok) "一致" else "不一致"),
+                "  %-32s %-23s %-23s %s".format(
+                    fixture.name,
+                    actual.short(),
+                    fixture.expected.short(),
+                    if (ok) "OK" else "FAIL",
+                ),
             )
         }
 
@@ -142,8 +145,14 @@ class CourseSelfCheckTest {
         assertTrue("自查报告存在 FAIL，见控制台输出", !failed)
     }
 
-    private fun com.coursekeeper.statistics.CourseStats.short(): String =
+    private fun CourseStats.short(): String =
         "条$todayLessonCount 节$todayPeriodCount 门$weekCourseCount 周$weekEntryCount"
+
+    private data class Fixture(
+        val name: String,
+        val snapshot: DataSnapshot,
+        val expected: CourseStats,
+    )
 
     private fun slot(
         id: String,

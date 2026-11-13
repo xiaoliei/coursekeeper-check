@@ -18,7 +18,7 @@ data class CourseStats(
     val weekEntryCount: Int = 0,
 )
 
-/** 课程统计来源。由 B 的 CourseService 实现；当前用临时适配器填充（见 IntervalCourseStatsAdapter）。 */
+/** 课程统计来源。由 B 的 RepositoryCourseService 实现。 */
 interface CourseStatsSource {
     fun summary(snapshot: DataSnapshot, now: LocalDateTime): CourseStats
 }

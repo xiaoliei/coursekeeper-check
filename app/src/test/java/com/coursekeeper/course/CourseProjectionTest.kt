@@ -7,7 +7,7 @@ import com.coursekeeper.data.model.ScheduleRecord
 import com.coursekeeper.data.model.SemesterRecord
 import com.coursekeeper.data.model.RecordSource
 import com.coursekeeper.fakedata.BoundaryFixtures
-import com.coursekeeper.statistics.IntervalCourseStatsAdapter
+import com.coursekeeper.statistics.CourseStats
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -19,32 +19,31 @@ import java.time.LocalTime
 /**
  * 课程投影单测（成员 B）。
  *
- * 关键验收：四个课程数字必须与 F 的临时适配器 [IntervalCourseStatsAdapter] **逐项相等**，
- * 这样 F 更换数据源时看板数字不会跳变。
+ * 关键验收：四个课程数字由课程投影统一计算，统计层只消费投影结果。
  */
 class CourseProjectionTest {
 
-    private val fixtures: List<DataSnapshot> = listOf(
-        BoundaryFixtures.crossPeriodCourse(),
-        BoundaryFixtures.sameCourseMultipleEntries(),
-        BoundaryFixtures.sameTitleDistinctCodes(),
-        BoundaryFixtures.alternatingWeeks(),
-        BoundaryFixtures.noSemester(),
-        BoundaryFixtures.configuredSemesterNoSchedule(),
-        BoundaryFixtures.taskDateBoundary(),
-    )
-
     @Test
-    fun `四个课程数字与 F 的临时适配器逐项一致`() {
-        val adapter = IntervalCourseStatsAdapter()
-        fixtures.forEachIndexed { index, snapshot ->
-            assertEquals(
-                "fixture #$index",
-                adapter.summary(snapshot, BoundaryFixtures.NOW),
-                CourseProjector.summary(snapshot, BoundaryFixtures.NOW),
-            )
+    fun `四个课程数字统计契约符合固定期望`() {
+        val fixtures = listOf(
+            Fixture("跨节次", BoundaryFixtures.crossPeriodCourse(), CourseStats(1, 4, 1, 1)),
+            Fixture("同课多条目", BoundaryFixtures.sameCourseMultipleEntries(), CourseStats(1, 2, 1, 2)),
+            Fixture("同名不同编号", BoundaryFixtures.sameTitleDistinctCodes(), CourseStats(1, 2, 2, 2)),
+            Fixture("单双周", BoundaryFixtures.alternatingWeeks(), CourseStats(0, 0, 0, 0)),
+            Fixture("无学期", BoundaryFixtures.noSemester(), CourseStats(0, 0, 0, 0)),
+            Fixture("有学期无排课", BoundaryFixtures.configuredSemesterNoSchedule(), CourseStats(0, 0, 0, 0)),
+            Fixture("仅任务数据", BoundaryFixtures.taskDateBoundary(), CourseStats(0, 0, 0, 0)),
+        )
+        fixtures.forEach { fixture ->
+            assertEquals(fixture.expected, CourseProjector.summary(fixture.snapshot, BoundaryFixtures.NOW))
         }
     }
+
+    private data class Fixture(
+        val name: String,
+        val snapshot: DataSnapshot,
+        val expected: CourseStats,
+    )
 
     @Test
     fun `跨节次条目按条计 按节累加`() {
