@@ -10,10 +10,12 @@ import android.os.SystemClock
  * 判定链路：BootReceiver 成功执行时写"处理过"标记 → 用户打开 App 时用纯函数
  * [shouldShowBootHint] 比较标记与本次开机时刻 → 任务页出提示卡。
  *
- * 为什么标记由 BootReceiver 写而不是 App 写：App 打开本身就会重建闹钟（attach 对账），
- * 它分不清"本次开机接收器跑过没有"；只有接收器自己知道。
- * 失败方向设计：标记缺失/过期 → 提示（宁可多提醒一次也不让用户蒙在鼓里），
- * 但首次安装（从未有过标记）例外——无法区分"装完没重启过"与"重启被拦"，不提示。
+ * 标记原则上由 BootReceiver 写：App 打开本身就会重建闹钟（attach 对账），
+ * 它分不清"本次开机接收器跑过没有"；只有接收器自己知道。唯一的例外是 App 首次打开时
+ * 若没有任何标记（干净安装），补一条基线（[markBaseline]）——否则自启动从一开始就被拦的
+ * 用户永远没有参照，提示不会出现。
+ * 失败方向设计：标记过期（早于本次开机）→ 提示（宁可多提醒一次也不让用户蒙在鼓里），
+ * 但标记缺失时只补基线、不提示——无法区分"装完没重启过"与"重启被拦"，避免误报。
  */
 object BootStateStore {
 
@@ -24,6 +26,15 @@ object BootStateStore {
             .putLong(KEY_BOOT_HANDLED_WALL, nowWall)
             .putLong(KEY_BOOT_HANDLED_ELAPSED, nowElapsed)
             .apply()
+    }
+
+    /**
+     * App 首次打开且从未有任何标记时补基线：仅用于下一次开机对比，不代表本次开机接收器跑过。
+     * 干净安装后接收器可能一直没机会执行（自启动被拦、又没经历应用更新），
+     * 没有基线就永远判不出"被拦"，提示也就永远不会出现。
+     */
+    fun markBaseline(context: Context) {
+        markBootHandled(context, System.currentTimeMillis(), SystemClock.elapsedRealtime())
     }
 
     /** 提示卡展示时调用：记录展示时估算的开机时刻，同一次开机内不再重复展示。 */

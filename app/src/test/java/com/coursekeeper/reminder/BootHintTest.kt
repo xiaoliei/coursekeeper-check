@@ -90,6 +90,14 @@ class BootStateStoreTest {
     }
 
     @Test
+    fun `markBaseline writes a marker for a clean install`() {
+        // 干净安装：接收器从未跑过 → 首次打开 App 补基线，下一次被拦的重启才有参照
+        assertEquals(0L, BootStateStore.lastBootHandledWall(context))
+        BootStateStore.markBaseline(context)
+        assertTrue(BootStateStore.lastBootHandledWall(context) > 0L)
+    }
+
+    @Test
     fun `markBootHintShown persists the boot time for same-boot dedup`() {
         val bootTime = 1_794_007_200_000L
         BootStateStore.markBootHintShown(context, bootTime)

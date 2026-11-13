@@ -112,12 +112,16 @@ class MainActivity : ComponentActivity() {
                 // W5 开机自启引导：重启被 ROM 拦截（BootReceiver 没跑）时，任务页提示一次。
                 // 展示即持久化"本次开机已提示"，同一次开机内重进不重复；
                 // 允许自启动后重启，接收器跑过会刷新标记，不再出现。
-                var showBootHint by remember { mutableStateOf(false) }
+                var showBootHint by rememberSaveable { mutableStateOf(false) }
                 LaunchedEffect(Unit) {
                     val ctx = applicationContext
                     val bootTime = BootStateStore.currentBootTimeWall()
-                    if (shouldShowBootHint(
-                            lastBootHandledWall = BootStateStore.lastBootHandledWall(ctx),
+                    val lastHandled = BootStateStore.lastBootHandledWall(ctx)
+                    if (lastHandled == 0L) {
+                        // 干净安装、接收器从没跑过：先补基线，下一次被拦的重启才有参照。
+                        BootStateStore.markBaseline(ctx)
+                    } else if (shouldShowBootHint(
+                            lastBootHandledWall = lastHandled,
                             bootTimeWall = bootTime,
                             hasPendingReminder = BootStateStore.hasPendingReminder(ctx),
                             shownThisBoot = BootStateStore.bootHintShownWall(ctx) >= bootTime,
