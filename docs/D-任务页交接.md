@@ -61,6 +61,7 @@ TaskViewModel ── TaskGateway（窄接口，便于测试）
 | 课程关联下拉 | 目前读 `snapshots.courses`；B 的课程模块接入后会自动出现 |
 | 首页任务数据 | 首页仍用 A 的演示网关，任务页用真库——第 3 周统一 |
 | 调课覆盖层 | E 尚未建表 |
+| 横屏（紧凑）任务页可视行数变少 | W5 起新建入口统一底栏、底栏高度恒定（跳动修复的前提），横屏任务页固定区域 80→144dp 且头部多一行，列表可视高度合计少约 70–80dp。页面仍完全可用；如需恢复可后续把横屏头部两行合并压缩（双路自检 P2-1，有意取舍） |
 
 ## 六、真机验证记录（2026-11-10，华为 TEL-AN00a / Android 10）
 
@@ -209,3 +210,19 @@ bottomBar 按钮常驻 + 条件文案），`requestAddTask` 语义一处（已�
    操作条「已选 N 项」正常出现；被恢复任务离开视图后选择集自动收缩（4→2）。
 5. jump3.mp4：876 帧、4 次页切换，底栏按钮位置仅 1 种状态 (38,79)，零移动——跳动修复不受二轮改动影响。
 复验数据：任务 CheckC（建→完成→撤销→菜单恢复→删除）全链路后清理；用户既有任务未动。
+
+### 9.4 双路自检记录（2026-11-14，用户同意后送检；范围 7264f6f + d31f35d，7579c3b 纯文档；f293696/bee7f0e 上轮已过检）
+
+**两路结论均为「可提交」，无 P0/P1。**
+
+**路线一（业务逻辑/并发/口径）**：deleteSelected 的 targets 预固化正确落实"提交瞬间快照"口径，WhileSubscribed 停收集的暴露面为零（唯一入口是可见 UI 按钮）；prune 双层自洽、方向保守；勾选框按视图固定后跨视图无残留；批量删除不发逐条 Deleted 事件——全仓 grep 确认 TaskEvent 唯一非 task 消费方是 snackbar，提醒/同步只吃快照，无缺失；墓碑在 Repository.deleteTask 内部处理，未绕过；纯函数边界有守卫且与单测对照无假绿。6 项 P3 记档：
+1. deleteSelected 循环不可中断（进行中"取消"只退选择不停止删除；窗口毫秒级、删的都是已确认任务，无数据损坏）——按其建议写为已知限制；
+2. deleteSelected 无 in-flight 防抖（同帧双 tap 理论触发"已删除 0 项，N 项失败"噪声提示，版本校验兜底无重复删除）；
+3. 空列表时「全选」仍显示且点击无效果；
+4. allVisibleSelected 无直接单测（纯函数层已被 toggledSelection 空集测试兜底）；
+5. combine 参数 `selected` 实为 TaskQuery，命名易误导；
+6. toggleSelect/All 依赖 uiState.value 快照——**A05 Agent 阶段若需程序化选择须把可见集参数化**（前车之鉴，记录）。
+
+**路线二（Compose/UI 与集成）**：taskScreen=null 旁路全通过（演示表单、DemoTasks、contentReady=false 整页行为均原样）；底栏高度恒定无破坏路径（跳动修复前提成立，与两段逐帧证据自洽）；LazyColumn 键无碰撞；旋转/进程重建闭环（pendingBatchDelete saveable + VM 选择集存活 + 清残留 effect）；无障碍四态齐全；首页/课表/数据零牵连；NavigationTest/HomeIntegrationTest 逐断言核对无碰撞（两者不在 JVM 门禁内，建议推送前有条件跑一次 connected）。**唯一 P2 = 横屏取舍未记录完整 → 已补进 §五 已知边界**（横屏固定区域 80→144dp、列表可视少约 70–80dp，页面可用，属跳动修复必要代价）。P3 记档：MainActivity 残留未用 import LocalConfiguration、TaskScreen 两处注释过时、选择模式期间 ⋯ 产生的新提示仍会短暂浮于操作条上方（可自行关闭）、⋯ 按钮无 contentDescription（旧版即有）。**@A 复核要点（AppShell.kt 四处）**：①删 snackbarBottomInset 参数（全仓仅 MainActivity 一处调用，已同步）；②bottomBar 按钮常驻+条件文案；③requestAddTask 已在任务页不重置筛选；④删 Dp import。
+
+处置：代码零改动（结论之后一行不动）；P2 记入 §五；P3 全部记档留待下轮顺手清理（unused import、两处注释、⋯ 描述、空列表全选隐藏、isDeleting 防抖、循环可中断、参数改名）。
