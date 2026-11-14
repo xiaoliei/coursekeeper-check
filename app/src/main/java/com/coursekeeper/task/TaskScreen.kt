@@ -107,42 +107,55 @@ fun TaskScreen(
         ) {
             item(key = "section:header") {
                 Column(Modifier.padding(top = 6.dp)) {
-                    if (!compact) {
-                        Text("任务清单", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} 项 · 已完成 ${state.doneCount} 项",
-                            fontSize = 12.sp, color = KeeperMuted,
-                        )
-                        Spacer(Modifier.height(10.dp))
+        if (!compact) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 「全选」放标题行右侧（W5 二轮）：筛选行只留 chips+类型，4 字类型不再把"全部"挤出国；
+                // 新建按钮保持在底栏（常驻、几何恒定，跳动修复依赖它不动）。
+                Column(Modifier.weight(1f)) {
+                    Text("任务清单", fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} 项 · 已完成 ${state.doneCount} 项",
+                        fontSize = 12.sp, color = KeeperMuted,
+                    )
+                }
+                if (state.statusFilter.supportsBatchSelect) {
+                    TextButton(onClick = onSelectAll) {
+                        Text(if (state.allVisibleSelected) "取消全选" else "全选", fontSize = 12.sp)
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 筛选 chips 可横向滚动并让出宽度：compact 下"全选/类型"入口不能被挤成 0 宽
-                        Row(
-                            Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TaskStatusFilter.entries.forEach { filter ->
-                                FilterChip(
-                                    selected = state.statusFilter == filter,
-                                    onClick = { onStatusFilter(filter) },
-                                    label = { Text(filter.label, fontSize = 12.sp) },
-                                )
-                            }
-                        }
-                        TypeFilterMenu(state.typeFilter, onTypeFilter)
-                        // 批量选择入口（W5）：只在「已完成/全部」视图提供，待办不做批量删除
-                        if (state.statusFilter.supportsBatchSelect) {
-                            TextButton(onClick = onSelectAll) {
-                                Text(if (state.allVisibleSelected) "取消全选" else "全选", fontSize = 12.sp)
-                            }
-                        }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // 筛选 chips 可横向滚动：极窄窗口/大字体下让位；正常宽度下 chips+类型 完整放下不裁切
+            Row(
+                Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TaskStatusFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = state.statusFilter == filter,
+                        onClick = { onStatusFilter(filter) },
+                        label = { Text(filter.label, fontSize = 12.sp) },
+                    )
+                }
+            }
+            TypeFilterMenu(state.typeFilter, onTypeFilter)
+        }
+        if (compact) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} · 已完成 ${state.doneCount}",
+                    fontSize = 11.sp, color = KeeperMuted,
+                    modifier = Modifier.weight(1f),
+                )
+                if (state.statusFilter.supportsBatchSelect) {
+                    TextButton(onClick = onSelectAll) {
+                        Text(if (state.allVisibleSelected) "取消全选" else "全选", fontSize = 12.sp)
                     }
-                    if (compact) {
-                        Text(
-                            if (state.totalCount == 0) "还没有任务" else "待办 ${state.openCount} · 已完成 ${state.doneCount}",
-                            fontSize = 11.sp, color = KeeperMuted,
-                        )
-                    }
+                }
+            }
+        }
                     if (state.dateFilter != TaskDateFilter.ALL) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text("${state.dateFilter.label} · ${state.tasks.size} 项", color = KeeperBlue, fontSize = 12.sp, modifier = Modifier.weight(1f))
@@ -175,11 +188,12 @@ fun TaskScreen(
                     }
                 }
             } else {
-                val selecting = state.selectedIds.isNotEmpty()
                 items(state.tasks, key = { it.record.id }) { view ->
                     TaskCard(
                         view = view,
-                        selecting = selecting,
+                        // 批量视图（已完成/全部）勾选框固定表示"选择"，完成状态走 ⋯ 菜单；
+                        // 待办视图勾选框保持"完成"语义。含义不随选择模式切换，消除歧义。
+                        selectionBox = state.statusFilter.supportsBatchSelect,
                         selected = view.record.id in state.selectedIds,
                         onToggle = { onToggle(view) },
                         onToggleSelect = { onToggleSelect(view.record.id) },
@@ -312,7 +326,7 @@ private fun TypeFilterMenu(selected: TaskType?, onSelect: (TaskType?) -> Unit) {
 @Composable
 private fun TaskCard(
     view: TaskView,
-    selecting: Boolean,
+    selectionBox: Boolean,
     selected: Boolean,
     onToggle: () -> Unit,
     onToggleSelect: () -> Unit,
@@ -326,13 +340,13 @@ private fun TaskCard(
             .border(1.dp, Color(0xFFEBEFF6), RoundedCornerShape(14.dp)).padding(start = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 选择模式下勾选框表示"选中与否"；正常模式表示"完成与否"
+        // 批量视图（已完成/全部）：勾选框=选择（完成状态走 ⋯ 菜单）；待办视图：勾选框=完成
         Checkbox(
-            checked = if (selecting) selected else done,
-            onCheckedChange = { if (selecting) onToggleSelect() else onToggle() },
+            checked = if (selectionBox) selected else done,
+            onCheckedChange = { if (selectionBox) onToggleSelect() else onToggle() },
             modifier = Modifier.semantics {
                 contentDescription = when {
-                    selecting -> (if (selected) "取消选择：" else "选择：") + view.record.title
+                    selectionBox -> (if (selected) "取消选择：" else "选择：") + view.record.title
                     done -> "恢复待办：" + view.record.title
                     else -> "完成：" + view.record.title
                 }
@@ -355,13 +369,16 @@ private fun TaskCard(
                 },
             )
         }
-        if (!selecting) {
-            Box {
-                TextButton(onClick = { menu = true }) { Text("⋯", fontSize = 18.sp) }
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("编辑", fontSize = 13.sp) }, onClick = { menu = false; onEdit() })
-                    DropdownMenuItem(text = { Text("删除", fontSize = 13.sp) }, onClick = { menu = false; onDelete() })
-                }
+        Box {
+            TextButton(onClick = { menu = true }) { Text("⋯", fontSize = 18.sp) }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                // 批量视图里勾选框已让给"选择"，完成状态在这里切（排第一位：这两个视图里最常用）
+                DropdownMenuItem(
+                    text = { Text(if (done) "恢复待办" else "标记完成", fontSize = 13.sp) },
+                    onClick = { menu = false; onToggle() },
+                )
+                DropdownMenuItem(text = { Text("编辑", fontSize = 13.sp) }, onClick = { menu = false; onEdit() })
+                DropdownMenuItem(text = { Text("删除", fontSize = 13.sp) }, onClick = { menu = false; onDelete() })
             }
         }
     }

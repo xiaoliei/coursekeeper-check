@@ -129,6 +129,11 @@ class MainActivity : ComponentActivity() {
                         showBootHint = true
                     }
                 }
+                // W5 二轮：进入批量选择模式时收起当前提示——带"撤销"的 Snackbar 会浮在
+                // 底部操作条（删除所选）上方盖住它；选择模式一旦开始，提示即为过时信息。
+                LaunchedEffect(taskState.selectedIds) {
+                    if (taskState.selectedIds.isNotEmpty()) snackbar.currentSnackbarData?.dismiss()
+                }
                 LaunchedEffect(taskModel) {
                     taskModel.events.collect { event -> launch {
                         snackbar.currentSnackbarData?.dismiss()
