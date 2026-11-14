@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 网络：C 的学校登录（WebView）与后台同步数据拉取（计划书 T05/T06） -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- 通知（API 33+ 运行时权限）；精确闹钟（API 31+ 系统开关，不可用时降级窗口提醒） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />

@@ -29,6 +29,7 @@ import com.coursekeeper.course.CourseScreen
 import com.coursekeeper.course.CourseViewModel
 import com.coursekeeper.course.RepositoryCourseService
 import com.coursekeeper.data.CourseKeeperData
+import com.coursekeeper.data.settings.AppSettings
 import com.coursekeeper.home.*
 import com.coursekeeper.reminder.AlarmReminderScheduler
 import com.coursekeeper.reminder.BootStateStore
@@ -43,9 +44,16 @@ import com.coursekeeper.task.TaskViewModel
 import com.coursekeeper.task.TaskQuery
 import com.coursekeeper.task.TaskStatusFilter
 import com.coursekeeper.task.TaskDateFilter
+import com.coursekeeper.school.SchoolCatalog
+import com.coursekeeper.school.SchoolLoginController
+import com.coursekeeper.school.SchoolLoginSheet
+import com.coursekeeper.school.SchoolLogout
+import com.coursekeeper.school.TableSchoolPageParser
+import com.coursekeeper.school.WebViewSchoolAdapter
 import com.coursekeeper.ui.AppShell
 import com.coursekeeper.ui.StatisticsScreen
 import com.coursekeeper.ui.theme.CourseKeeperTheme
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** One application data source for Home and D's task page. */
@@ -57,6 +65,18 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     // B：课程业务，读侧投影 + 写侧委托 Repository。
     val courseService = RepositoryCourseService(data.repository)
     val statistics = StatisticsViewModel(data.repository, courseStatsSource = courseService, scope = viewModelScope)
+    // C：学校适配器（E 约定应用级同一实例交给协调器）与登录流程控制器。
+    // 学期标签由 SchoolCatalog 提供（T05 实测后填），给课程稳定标识加前缀，避免跨学期重修撞键。
+    val schoolAdapter = WebViewSchoolAdapter(
+        schoolProvider = { SchoolCatalog.default },
+        parser = TableSchoolPageParser(SchoolCatalog.default.termTag),
+    )
+    val sync = data.syncCoordinator(schoolAdapter)
+    val loginController = SchoolLoginController(afterLogin = {
+        data.settings.selectSchool(SchoolCatalog.default.id)
+        data.settings.completeOnboarding()
+        sync.synchronize(force = true)
+    })
 }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,6 +85,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             CourseKeeperTheme {
                 val owner: HomeDataOwner = viewModel()
+                // 退出登录要写 DataStore，用一个随界面销毁的协程作用域。
+                val scope = rememberCoroutineScope()
                 val model: HomeViewModel = viewModel(factory=remember(owner) {
                     viewModelFactory { initializer { HomeViewModel(owner.gateway) } }
                 })
@@ -87,6 +109,14 @@ class MainActivity : ComponentActivity() {
                     } }
                 })
                 val courseState by courseModel.uiState.collectAsStateWithLifecycle()
+
+                // C：缓存展示后启动后台会话检测与同步（E：onForeground 延迟 400ms 检测会话）。
+                // 已完成引导并选择学校后才执行，首次启动不发网络请求；挂起等待首次登录完成。
+                LaunchedEffect(data) {
+                    data.settings.settings.first { it.onboardingComplete && it.schoolId != null }
+                    owner.sync.onForeground()
+                }
+                val appSettings by data.settings.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
 
                 // D 第 3 周：提醒对账随数据快照刷新；数据层首次出现带截止时间的任务（任何入口，
                 // 含首页快速添加）后申请一次通知权限（v1.0 §四）。
@@ -223,7 +253,21 @@ class MainActivity : ComponentActivity() {
                         onDeleteCourse=courseModel::deleteCourse,
                         modifier=modifier,
                     ) },
-                    statisticsScreen={ modifier -> StatisticsScreen(statisticsState, modifier) { owner.statistics.retry() } })
+                    statisticsScreen={ modifier -> StatisticsScreen(statisticsState, modifier) { owner.statistics.retry() } },
+                    // C：登录弹层交给 C 的实现；弹层关闭即回到原页面，已有数据不受影响。
+                    loginSheet={ onDismiss -> SchoolLoginSheet(
+                        controller=owner.loginController,
+                        savedSchool=if (appSettings.schoolId != null) SchoolCatalog.default else null,
+                        // 只有"登录过期"入口才直达登录页；顶栏"学校"进来先看连接状态与退出入口。
+                        autoLogin = state.status == SyncStatus.Expired,
+                        onLogout = {
+                            // 清会话 Cookie + 取消记住的学校；本地课程任务由 E 保留，不删库。
+                            SchoolLogout.clear()
+                            owner.loginController.reset()
+                            scope.launch { data.settings.selectSchool(null) }
+                        },
+                        onDismiss=onDismiss,
+                    ) })
             }
         }
     }

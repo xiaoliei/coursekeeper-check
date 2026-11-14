@@ -36,6 +36,8 @@ fun AppShell(
     coursesScreen: (@Composable (Modifier) -> Unit)? = null,
     // F 的看板接入点：为空时使用 A 的导航占位页（DemoStatistics）。
     statisticsScreen: (@Composable (Modifier) -> Unit)? = null,
+    // C 的学校登录接入点：为空时使用 A 的占位弹层，独立演示工程无须知道登录实现。
+    loginSheet: (@Composable (onDismiss: () -> Unit) -> Unit)? = null,
     onTaskFilter: (TaskFilter) -> Unit = {},
     onCreateTask: (() -> Unit)? = null,
     onRetryHome: () -> Unit = {},
@@ -79,7 +81,11 @@ fun AppShell(
                     })
                 }
             }
-        } }) },
+        }
+            // C 的学校入口：登录成功后过期横幅不会再出现，必须留一个常驻入口，
+            // 用户才能做"重新登录 / 退出登录"。独立演示工程不传 loginSheet 时不显示。
+            else if(loginSheet != null) TextButton(onClick={login=true}) { Text("学校",fontSize=12.sp) }
+        }) },
         snackbarHost={ SnackbarHost(snackbarHostState) },
         bottomBar={ if(contentReady) Column {
             // 新建入口统一放底栏、所有页常驻（D 2026-11-14）：任务页不再自带按钮——
@@ -119,14 +125,18 @@ fun AppShell(
         }
     }
     if(add) AddTaskDialog(onDismiss={add=false},onSubmit={draft-> add=false;onAddTask(draft)})
-    if(login) AlertDialog(onDismissRequest={login=false},title={Text("连接学校")},text={
-        Text(if(!state.isDemo) "学校连接暂不可用，你可以先手动管理任务。已有本地数据不会清除。"
-            else if(state.status==SyncStatus.Offline) "当前离线，联网后可以连接学校。已有数据仍可使用。"
-            else "这是登录流程演示，不收集账号密码。正式版由 C 接入学校官方登录页。")
-    },confirmButton={
-        if(state.isDemo && state.status!=SyncStatus.Offline) TextButton(onClick={login=false;onSimulateLogin()}) { Text("模拟登录成功") }
-        else TextButton(onClick={login=false}) { Text("知道了") }
-    },dismissButton={TextButton(onClick={login=false;if(state.onboarding) onSkipLogin()}) { Text("以后再说") }})
+    if(login) {
+        // C 已接入真实登录链路：非演示模式交给 C 的登录弹层；演示模式保留原占位弹层。
+        if(loginSheet != null && !state.isDemo) loginSheet { login=false }
+        else AlertDialog(onDismissRequest={login=false},title={Text("连接学校")},text={
+            Text(if(state.isDemo && state.status==SyncStatus.Offline) "当前离线，联网后可以连接学校。已有数据仍可使用。"
+                else if(state.isDemo) "这是登录流程演示，不收集账号密码。正式版由 C 接入学校官方登录页。"
+                else "学校连接暂不可用，你可以先手动管理任务。已有本地数据不会清除。")
+        },confirmButton={
+            if(state.isDemo && state.status!=SyncStatus.Offline) TextButton(onClick={login=false;onSimulateLogin()}) { Text("模拟登录成功") }
+            else TextButton(onClick={login=false}) { Text("知道了") }
+        },dismissButton={TextButton(onClick={login=false;if(state.onboarding) onSkipLogin()}) { Text("以后再说") }})
+    }
     state.tasks.find { it.id==taskDetailId }?.let { task ->
         AlertDialog(onDismissRequest={taskDetailId=null},title={Text(task.title)},text={
             Text("${task.course.ifBlank { "未关联课程" }}\n${task.type}\n${if(task.dueLabel=="截止待定") task.dueLabel else "${task.dueLabel} 截止"}\n${if(task.completed) "已完成" else "待办"}")
