@@ -37,19 +37,13 @@ private val OverdueColor = Color(0xFFB3261E)
 private val DoneColor = Color(0xFF21856C)
 private val DuePattern = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm").withResolverStyle(ResolverStyle.STRICT)
 
-/** 短屏阈值：低于此高度工具栏收成紧凑模式，底部"＋ 新建任务"并入头部行内。 */
+/** 短屏阈值：低于此高度页头收成紧凑模式（隐藏大标题、计数改小字），给列表让出空间。 */
 const val TaskCompactHeightDp = 480
-
-/**
- * 任务页底部"＋ 新建任务"按钮块占的高度 = 48dp 最小点击区 + 上下各 10dp 边距。
- * AppShell 用它把 Snackbar 抬到按钮上方，否则提示会正压住这个按钮，
- * 影响连续新建任务的手感（浮层与内容层的层叠问题，不是提示机制问题）。
- */
-val TaskBottomButtonHeight = 68.dp
 
 /**
  * 任务页（成员 D）。只负责展示与交互，业务校验由 Repository 权威执行。
  * create / update 通过 onResult 回传结果：null = 成功（关闭表单），非 null = 用户文案（表单保持打开、草稿不丢）。
+ * 新建入口统一在 AppShell 底栏（所有页一致），本页不再自带按钮——两层互换曾是切页跳动的根因。
  */
 @Composable
 fun TaskScreen(
@@ -68,6 +62,11 @@ fun TaskScreen(
     bootReminderHint: Boolean = false,
     onDismissBootReminderHint: () -> Unit = {},
     onOpenAutoStartSettings: () -> Unit = {},
+    // 批量选择与批量删除（W5，仅「已完成/全部」视图出入口）；默认参数保证独立演示与既有测试不受影响。
+    onSelectAll: () -> Unit = {},
+    onToggleSelect: (String) -> Unit = {},
+    onExitSelection: () -> Unit = {},
+    onDeleteSelected: () -> Unit = {},
 ) {
     var editorTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var editorNew by rememberSaveable { mutableStateOf(false) }
@@ -75,6 +74,7 @@ fun TaskScreen(
     var editorVersion by rememberSaveable { mutableStateOf(0L) }
     var pendingDeleteId by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingDeleteVersion by rememberSaveable { mutableStateOf(0L) }
+    var pendingBatchDelete by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(createRequested) {
         if (createRequested) {
@@ -89,6 +89,10 @@ fun TaskScreen(
     LaunchedEffect(editorTarget, pendingDeleteId, state.tasks) {
         if (editorTarget != null && state.tasks.none { it.record.id == editorTarget }) editorTarget = null
         if (pendingDeleteId != null && state.tasks.none { it.record.id == pendingDeleteId }) pendingDeleteId = null
+    }
+    // 选择被清空（同步删除了所选任务、或 ViewModel 侧退出）时，确认框不能悬在 0 项上
+    LaunchedEffect(state.selectedIds) {
+        if (pendingBatchDelete && state.selectedIds.isEmpty()) pendingBatchDelete = false
     }
 
     // 横屏/短屏只 ~230dp 可用高度，大标题与固定按钮会把列表压到看不见；此时改用紧凑头部 + 行内新建入口。
@@ -112,7 +116,7 @@ fun TaskScreen(
                         Spacer(Modifier.height(10.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 筛选 chips 可横向滚动并让出宽度：compact 下行内"＋ 新建"是唯一入口，不能被挤成 0 宽
+                        // 筛选 chips 可横向滚动并让出宽度：compact 下"全选/类型"入口不能被挤成 0 宽
                         Row(
                             Modifier.weight(1f).horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -126,8 +130,11 @@ fun TaskScreen(
                             }
                         }
                         TypeFilterMenu(state.typeFilter, onTypeFilter)
-                        if (compact) {
-                            TextButton(onClick = { editorNew = true; editorTarget = null }) { Text("＋ 新建", fontSize = 13.sp) }
+                        // 批量选择入口（W5）：只在「已完成/全部」视图提供，待办不做批量删除
+                        if (state.statusFilter.supportsBatchSelect) {
+                            TextButton(onClick = onSelectAll) {
+                                Text(if (state.allVisibleSelected) "取消全选" else "全选", fontSize = 12.sp)
+                            }
                         }
                     }
                     if (compact) {
@@ -168,10 +175,14 @@ fun TaskScreen(
                     }
                 }
             } else {
+                val selecting = state.selectedIds.isNotEmpty()
                 items(state.tasks, key = { it.record.id }) { view ->
                     TaskCard(
                         view = view,
+                        selecting = selecting,
+                        selected = view.record.id in state.selectedIds,
                         onToggle = { onToggle(view) },
+                        onToggleSelect = { onToggleSelect(view.record.id) },
                         onEdit = {
                             editorTarget = view.record.id
                             editorVersion = view.record.version
@@ -186,11 +197,25 @@ fun TaskScreen(
             }
         }
 
-        if (!compact) {
-            Button(
-                onClick = { editorNew = true; editorTarget = null },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp).heightIn(min = 48.dp),
-            ) { Text("＋ 新建任务") }
+        // 选择模式的底部操作条（W5）：替代原"＋ 新建任务"的位置；退出选择或删除后消失。
+        if (state.selectedIds.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "已选 ${state.selectedIds.size} 项",
+                    fontSize = 13.sp, color = KeeperMuted, modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onExitSelection) { Text("取消", fontSize = 13.sp) }
+                Button(
+                    onClick = { pendingBatchDelete = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = OverdueColor,
+                        contentColor = Color.White,
+                    ),
+                ) { Text("删除所选 ${state.selectedIds.size} 项") }
+            }
         }
     }
 
@@ -224,6 +249,18 @@ fun TaskScreen(
                 TextButton(onClick = { onDelete(deleting); pendingDeleteId = null }) { Text("删除") }
             },
             dismissButton = { TextButton(onClick = { pendingDeleteId = null }) { Text("取消") } },
+        )
+    }
+
+    if (pendingBatchDelete && state.selectedIds.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { pendingBatchDelete = false },
+            title = { Text("批量删除") },
+            text = { Text("确定删除所选 ${state.selectedIds.size} 项任务？删除后无法恢复。") },
+            confirmButton = {
+                TextButton(onClick = { pendingBatchDelete = false; onDeleteSelected() }) { Text("删除") }
+            },
+            dismissButton = { TextButton(onClick = { pendingBatchDelete = false }) { Text("取消") } },
         )
     }
 }
@@ -273,7 +310,15 @@ private fun TypeFilterMenu(selected: TaskType?, onSelect: (TaskType?) -> Unit) {
 }
 
 @Composable
-private fun TaskCard(view: TaskView, onToggle: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun TaskCard(
+    view: TaskView,
+    selecting: Boolean,
+    selected: Boolean,
+    onToggle: () -> Unit,
+    onToggleSelect: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val done = view.status == TaskStatus.COMPLETED
     var menu by remember { mutableStateOf(false) }
     Row(
@@ -281,11 +326,16 @@ private fun TaskCard(view: TaskView, onToggle: () -> Unit, onEdit: () -> Unit, o
             .border(1.dp, Color(0xFFEBEFF6), RoundedCornerShape(14.dp)).padding(start = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 选择模式下勾选框表示"选中与否"；正常模式表示"完成与否"
         Checkbox(
-            checked = done,
-            onCheckedChange = { onToggle() },
+            checked = if (selecting) selected else done,
+            onCheckedChange = { if (selecting) onToggleSelect() else onToggle() },
             modifier = Modifier.semantics {
-                contentDescription = (if (done) "恢复待办：" else "完成：") + view.record.title
+                contentDescription = when {
+                    selecting -> (if (selected) "取消选择：" else "选择：") + view.record.title
+                    done -> "恢复待办：" + view.record.title
+                    else -> "完成：" + view.record.title
+                }
             },
         )
         Column(Modifier.weight(1f).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -305,11 +355,13 @@ private fun TaskCard(view: TaskView, onToggle: () -> Unit, onEdit: () -> Unit, o
                 },
             )
         }
-        Box {
-            TextButton(onClick = { menu = true }) { Text("⋯", fontSize = 18.sp) }
-            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(text = { Text("编辑", fontSize = 13.sp) }, onClick = { menu = false; onEdit() })
-                DropdownMenuItem(text = { Text("删除", fontSize = 13.sp) }, onClick = { menu = false; onDelete() })
+        if (!selecting) {
+            Box {
+                TextButton(onClick = { menu = true }) { Text("⋯", fontSize = 18.sp) }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text("编辑", fontSize = 13.sp) }, onClick = { menu = false; onEdit() })
+                    DropdownMenuItem(text = { Text("删除", fontSize = 13.sp) }, onClick = { menu = false; onDelete() })
+                }
             }
         }
     }

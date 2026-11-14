@@ -98,3 +98,26 @@ fun List<TaskView>.visible(status: TaskStatusFilter, type: TaskType?, date: Task
     }
     statusMatched && dateMatched && (type == null || view.record.type == type)
 }
+
+/** 批量选择入口只在「已完成」「全部」两个视图提供（待办视图不做批量删除）。 */
+val TaskStatusFilter.supportsBatchSelect: Boolean
+    get() = this == TaskStatusFilter.DONE || this == TaskStatusFilter.ALL
+
+/**
+ * 「全选」的开关语义：当前可见任务已全部在选中集 → 取消这批选择；
+ * 否则 → 把全部可见项加入选中集。可见集即当前筛选结果；切换筛选时整体清空（ViewModel 负责）。
+ */
+fun toggledSelection(visible: List<TaskView>, selected: Set<String>): Set<String> {
+    val visibleIds = visible.mapTo(HashSet()) { it.record.id }
+    return if (visibleIds.isNotEmpty() && visibleIds.all { it in selected }) {
+        selected - visibleIds
+    } else {
+        selected + visibleIds
+    }
+}
+
+/** 列表里已消失的任务（被同步删除、或状态变化移出当前视图）自动退出选中集。 */
+fun pruneSelection(selected: Set<String>, visible: List<TaskView>): Set<String> {
+    val visibleIds = visible.mapTo(HashSet()) { it.record.id }
+    return selected.filterTo(HashSet()) { it in visibleIds }
+}

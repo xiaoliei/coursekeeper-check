@@ -37,8 +37,6 @@ import com.coursekeeper.reminder.TaskNotifications
 import com.coursekeeper.reminder.shouldShowBootHint
 import com.coursekeeper.statistics.StatisticsViewModel
 import com.coursekeeper.task.RepositoryTaskGateway
-import com.coursekeeper.task.TaskBottomButtonHeight
-import com.coursekeeper.task.TaskCompactHeightDp
 import com.coursekeeper.task.TaskEvent
 import com.coursekeeper.task.TaskScreen
 import com.coursekeeper.task.TaskViewModel
@@ -183,11 +181,6 @@ class MainActivity : ComponentActivity() {
                     }) },
                     onCreateTask={createRequested=true},
                     onRetryHome=model::retry,
-                    // 任务页自带的"＋ 新建任务"会挡住提示，把提示抬高这个高度；
-                    // 紧凑模式下按钮并入头部，不需要留位。
-                    snackbarBottomInset=if (
-                        LocalConfiguration.current.screenHeightDp >= TaskCompactHeightDp
-                    ) TaskBottomButtonHeight else 0.dp,
                     taskScreen={ modifier -> TaskScreen(
                         state=taskState,
                         onStatusFilter=taskModel::setStatusFilter,
@@ -202,6 +195,10 @@ class MainActivity : ComponentActivity() {
                         onClearDateFilter=taskModel::clearDateFilter,
                         bootReminderHint=showBootHint,
                         onDismissBootReminderHint={ showBootHint=false },
+                        onSelectAll=taskModel::toggleSelectAll,
+                        onToggleSelect=taskModel::toggleSelect,
+                        onExitSelection=taskModel::exitSelection,
+                        onDeleteSelected=taskModel::deleteSelected,
                         onOpenAutoStartSettings={
                             // 系统应用详情页：所有 ROM 都有"允许自启动"类开关的入口（荣耀在
                             // 「应用启动管理」），不猜 OEM 专属 Activity，避免深链失效。

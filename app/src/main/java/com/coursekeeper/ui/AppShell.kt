@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.coursekeeper.demo.DemoScenario
@@ -40,9 +39,6 @@ fun AppShell(
     onTaskFilter: (TaskFilter) -> Unit = {},
     onCreateTask: (() -> Unit)? = null,
     onRetryHome: () -> Unit = {},
-    // 任务页底部自带按钮的高度，由调用方传入：让本文件对任务模块保持零编译期依赖，
-    // 独立演示工程（不传 taskScreen）也无须知道这个值。默认 0 = 提示按原位置显示。
-    snackbarBottomInset: Dp = 0.dp,
 ) {
     var selected by rememberSaveable { mutableStateOf(Destination.Home) }
     var filter by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
@@ -55,7 +51,11 @@ fun AppShell(
     fun goTasks(value: TaskFilter) { filter=value;onTaskFilter(value);selected=Destination.Tasks }
     fun requestAddTask() {
         if (taskScreen == null) add=true
-        else { goTasks(TaskFilter.Pending); onCreateTask?.invoke() }
+        else {
+            // 已在任务页时不重置筛选：底栏入口与任务页原按钮等价，直接打开表单
+            if (selected != Destination.Tasks) goTasks(TaskFilter.Pending)
+            onCreateTask?.invoke()
+        }
     }
     // 切页时收起上一条提示：带"撤销"的 Snackbar 在 Material3 里默认常驻（Indefinite），
     // 不主动关就会一直浮在底部挡住新页面，用户于是只能靠"点撤销"让它消失。
@@ -80,21 +80,14 @@ fun AppShell(
                 }
             }
         } }) },
-        snackbarHost={ SnackbarHost(
-            snackbarHostState,
-            // 任务页自带的"＋ 新建任务"在内容层底部，Scaffold 只认得 bottomBar，
-            // 提示会正好压住它。抬到按钮上方，避免影响连续新建。
-            // 只在任务页真正渲染出那个按钮时生效：引导/加载/读取失败态整页不渲染内容与底栏。
-            Modifier.padding(bottom = if (
-                selected==Destination.Tasks && taskScreen!=null && contentReady
-            ) snackbarBottomInset else 0.dp)
-        ) },
+        snackbarHost={ SnackbarHost(snackbarHostState) },
         bottomBar={ if(contentReady) Column {
-            // 任务页自带新建入口，避免与 A 的演示表单重复
-            if (taskScreen == null || selected != Destination.Tasks) {
-                Button(onClick=::requestAddTask,modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
-                    Text("＋ 手动添加任务")
-                }
+            // 新建入口统一放底栏、所有页常驻（D 2026-11-14）：任务页不再自带按钮——
+            // 此前"底栏按钮/内容层按钮"两层互换，切页时 Scaffold 子组合有一帧不同步，
+            // 按钮会先高出约 60dp 再落位（真机逐帧实测）。按钮不动，跳动即不可能发生。
+            // Snackbar 由 Scaffold 自动避让底栏，无需任何让位参数。
+            Button(onClick=::requestAddTask,modifier=Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp).heightIn(min=48.dp)) {
+                Text(if (taskScreen != null && selected == Destination.Tasks) "＋ 新建任务" else "＋ 手动添加任务")
             }
             NavigationBar(containerColor=MaterialTheme.colorScheme.surface) {
                 Destination.entries.forEach { dest ->

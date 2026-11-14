@@ -68,8 +68,13 @@ data class TaskUiState(
     val openCount: Int = 0,
     val doneCount: Int = 0,
     val dateFilter: TaskDateFilter = TaskDateFilter.ALL,
+    /** 批量选择（W5）：当前视图内被勾选的任务 id。非空即处于选择模式。 */
+    val selectedIds: Set<String> = emptySet(),
 ) {
     val totalCount: Int get() = openCount + doneCount
+
+    /** 「全选/取消全选」按钮的标签依据：当前可见任务已全部选中。 */
+    val allVisibleSelected: Boolean get() = tasks.isNotEmpty() && tasks.all { it.record.id in selectedIds }
 }
 
 sealed interface TaskEvent {
@@ -92,6 +97,9 @@ class TaskViewModel(
 ) : ViewModel() {
 
     private val query = MutableStateFlow(TaskQuery())
+    /** 批量选择（W5）：存任务 id。版本号不在此冻结，删除时按提交瞬间的快照版本走，
+     *  与单条删除同一口径：界面看见什么版本就提交什么版本。 */
+    private val selection = MutableStateFlow<Set<String>>(emptySet())
     private val eventChannel = Channel<TaskEvent>(Channel.BUFFERED)
     val events = eventChannel.receiveAsFlow()
 
@@ -107,26 +115,73 @@ class TaskViewModel(
     }
 
     val uiState: StateFlow<TaskUiState> =
-        combine(data, query, minuteTick) { snapshot, selected, _ ->
+        combine(data, query, minuteTick, selection) { snapshot, selected, _, selectedIds ->
             val stamp = now()
             val views = snapshot.tasks.sortedForDisplay().map { it.toView(snapshot.courses, stamp) }
+            val visible = views.visible(selected.status, selected.type, selected.date, stamp)
             TaskUiState(
-                tasks = views.visible(selected.status, selected.type, selected.date, stamp),
+                tasks = visible,
                 courses = snapshot.courses,
                 statusFilter = selected.status,
                 typeFilter = selected.type,
                 dateFilter = selected.date,
                 openCount = views.count { it.status != TaskStatus.COMPLETED },
                 doneCount = views.count { it.status == TaskStatus.COMPLETED },
+                // 后台快照变化（同步删除、状态变化移出视图）时，选中集随当前视图自动收缩
+                selectedIds = pruneSelection(selectedIds, visible),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskUiState())
 
-    fun setStatusFilter(value: TaskStatusFilter) { query.update { it.copy(status = value) } }
+    fun setStatusFilter(value: TaskStatusFilter) { exitSelection(); query.update { it.copy(status = value) } }
 
-    fun setTypeFilter(value: TaskType?) { query.update { it.copy(type = value) } }
+    fun setTypeFilter(value: TaskType?) { exitSelection(); query.update { it.copy(type = value) } }
     /** One atomic query change prevents stale type/status chips narrowing a homepage count. */
-    fun showQuery(value: TaskQuery) { query.value = value }
-    fun clearDateFilter() { query.update { it.copy(date = TaskDateFilter.ALL) } }
+    fun showQuery(value: TaskQuery) { exitSelection(); query.value = value }
+    fun clearDateFilter() { exitSelection(); query.update { it.copy(date = TaskDateFilter.ALL) } }
+
+    // ---- 批量选择与批量删除（W5，「已完成/全部」视图） ----
+
+    /** 勾选/取消一行。 */
+    fun toggleSelect(id: String) = selection.update { old ->
+        val kept = pruneSelection(old, uiState.value.tasks)
+        if (id in kept) kept - id else kept + id
+    }
+
+    /** 「全选」开关：可见任务已全部选中 → 取消这批；否则全部选中。 */
+    fun toggleSelectAll() = selection.update { old ->
+        toggledSelection(uiState.value.tasks, pruneSelection(old, uiState.value.tasks))
+    }
+
+    /** 退出选择模式。 */
+    fun exitSelection() { selection.value = emptySet() }
+
+    /**
+     * 批量删除：逐条按当前快照版本提交，单项失败（版本冲突/已删）不影响其余；
+     * 结束后清空选择并发一条汇总提示（无逐条 Deleted 事件）。
+     */
+    fun deleteSelected() = viewModelScope.launch {
+        val targets = uiState.value.tasks.filter { it.record.id in selection.value }
+        var deleted = 0
+        var failed = 0
+        for (view in targets) {
+            try {
+                gateway.delete(view.record.id, view.record.version)
+                deleted++
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (_: DataException) {
+                failed++
+            } catch (_: Exception) {
+                failed++
+            }
+        }
+        selection.value = emptySet()
+        eventChannel.send(TaskEvent.Message(text = when {
+            targets.isEmpty() -> "没有可删除的任务"
+            failed == 0 -> "已删除 $deleted 项任务"
+            else -> "已删除 $deleted 项，$failed 项失败（可能已被其他操作改动）"
+        }))
+    }
 
     /** onResult 在协程内回调：null = 成功；非 null = 用户文案（表单保持打开、草稿不丢）。
      *  不传回调时失败会回落到事件通道提示，不会被静默吞掉。 */
