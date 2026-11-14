@@ -6,9 +6,10 @@
 
 - 版本 0.2.0，包名统一为 `com.coursekeeper`（原 A 演示为 `com.coursekeeper.a.demo`）。
 - 首页和 D 的任务页共享 E 的真实 Room 数据；新增、完成、撤销和日期筛选联动，跳过引导的选择会保存。
-- B 的课程服务及 F 的压力服务尚未接入，真实模式显示明确的缺失状态。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
+- B 的课程服务已接入课表页（周次、节次、冲突与学期设置）；F 的压力服务尚未接入，真实模式显示明确的缺失状态。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
 - 正式口径（统计、压力指数、规则阈值）为草案，需小组确认后生效，见 docs 目录。
-- E 的数据层已升级 Room v3，支持非连续周次、排课独立教师及 v1/v2 无损迁移；接入方式见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)，本轮验证见 [E v3 迁移与联调验收](docs/E-v3迁移与联调验收.md)。首页、任务、提醒和看板共用真实快照，学校同步等待 C 的适配器。
+- E 的数据层已升级 Room v3，支持非连续周次、排课独立教师及 v1/v2 无损迁移；接入方式见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)，本轮验证见 [E v3 迁移与联调验收](docs/E-v3迁移与联调验收.md)。首页、任务、提醒和看板共用真实快照。
+- C 的学校适配已接入：`school/` 提供 `SchoolAdapter` 实现、WebView 官方登录、会话检测与课表/作业解析，结果经 E 的 `SyncCoordinator` 合并入库；支持过期重登与退出登录（清会话 Cookie，本地课程任务保留）。**目标学校仍是占位条目**，T05 实测结论到位后只替换 `SchoolCatalog` 的地址并按真实页面调整解析规则，契约与合并规则不动。见 [C 学校登录与数据适配交接](docs/C-学校登录与数据适配交接.md)。
 
 ## 环境与版本锁定
 
@@ -139,6 +140,7 @@ coursekeeper/
 │   ├── MainActivity.kt        # 组合根，团队接口的接入点
 │   ├── demo/                  # 公共假数据（六种场景）
 │   ├── home/                  # 首页契约 HomeGateway / HomeUiState / ViewModel
+│   ├── school/                # 学校登录、会话规则与课表/作业解析（C）
 │   ├── ui/                    # AppShell 导航、首页、公共组件、主题
 │   └── (statistics/ 待 W2 由 F 新增)
 ├── app/src/test/              # JVM 逻辑测试
@@ -153,7 +155,7 @@ coursekeeper/
 |---|---|---|
 | A | 首页真实任务投影、公共导航与状态；消费 B/D/E/F 接口 | `home/RepositoryHomeGateway.kt`、`MainActivity.kt` |
 | B | 替换课表占位页，提供 `CourseService`（周次、节次、冲突） | `AppShell.kt` 中 `DemoCourses` |
-| C | 接入选校登录与 WebView，返回结构化数据给 E | 登录弹层与 `DemoScenario.Expired` |
+| C | 学校登录、会话检测、课表/作业解析；结果结构化后交 E 合并 | `school/`、`SchoolLoginSheet`、顶栏「学校」入口 |
 | D | 维护已接入的真实任务页，继续实现通知 | `task/TaskScreen.kt`、`TaskViewModel.kt` 与共享 `TaskGateway` |
 | E | 维护 Room、Repository 与同步状态及后续迁移 | `CourseKeeperData` 为首页与任务页提供同一个数据源 |
 | F | 替换数据占位页，实现统计、规则、压力指数与构建检查 | `AppShell.kt` 中 `DemoStatistics` |
