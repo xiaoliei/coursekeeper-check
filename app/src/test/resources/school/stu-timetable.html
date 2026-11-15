@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!-- T05 脱敏样例（成员 C）：汕头大学正方教务「学期理论课表」结构。
+     课程名、教师、班级号、教室均为虚构；保留真实页面的两层结构：
+     ① table#dataTables2「有课表课程」提供 班级→课程编号 映射；
+     ② table#timetable 网格中每个条目一个 div.kbcontent，条目行以 <br> 分隔。 -->
+<html>
+<head><title>学期理论课表</title></head>
+<body>
+<table id="dataTables2" border="1">
+  <tr><th>序号</th><th>上课班级</th><th>课程编号</th><th>课程名称</th><th>授课教师</th></tr>
+  <tr><td>1</td><td>202611595</td><td>CST3254A</td><td>应用密码学</td><td>方若宇</td></tr>
+  <tr><td>2</td><td>202611593</td><td>CST3504A</td><td>编译原理</td><td>蔡玲如</td></tr>
+  <tr><td>3</td><td>202611611</td><td>PED1042A</td><td>羽毛球（2）</td><td>李浩哲</td></tr>
+</table>
+
+<table id="timetable" border="1">
+  <tr>
+    <th>&nbsp;</th><th>星期一</th><th>星期二</th><th>星期三</th>
+  </tr>
+  <tr>
+    <th>第一大节<br>(01,02小节)</th>
+    <td>
+      <div class="kbcontent1"><font>应用密码学</font><br><font>3-18(周)</font><br><font>东海岸-E教133-阶梯</font><br></div>
+      <div id="k1" class="kbcontent">
+        <div class="item-box"><img src="qrcode.png"></div>
+        <font>应用密码学</font><br>
+        <font>方若宇</font><br>
+        <font>3-18(周)[01-02节]</font><br>
+        <font>【东海岸校区-E栋教学楼】</font><br>
+        <font>东海岸-E教133-阶梯</font><br>
+        <font>通知单编号：TEST0001</font><br>
+        <font>班级：202611595</font><br>
+        <font>备注：</font><br>
+      </div>
+    </td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>第二大节<br>(03,04,05小节)</th>
+    <td>&nbsp;</td>
+    <td>
+      <div id="k2" class="kbcontent">
+        <font>编译原理</font><br>
+        <font>蔡玲如</font><br>
+        <font>3-18(周)[03-04节]</font><br>
+        <font>【东海岸校区-E栋教学楼】</font><br>
+        <font>东海岸-E教109-阶梯</font><br>
+        <font>通知单编号：TEST0002</font><br>
+        <font>班级：202611593</font><br>
+      </div>
+    </td>
+    <td>
+      <div id="k3" class="kbcontent">
+        <font>编译原理</font><br>
+        <font>蔡玲如</font><br>
+        <font>4,6,8,10,12,14,16,18(周)[03-04节]</font><br>
+        <font>【东海岸校区-E栋教学楼】</font><br>
+        <font>东海岸-E教109-阶梯</font><br>
+        <font>通知单编号：TEST0002</font><br>
+        <font>班级：202611593</font><br>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <th>第三大节<br>(06,07小节)</th>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>第四大节<br>(08,09,10小节)</th>
+    <td>
+      <!-- 跨大节的课会在多行重复出现：同一 天/节次/周次/地点 只应保留一条。 -->
+      <div id="k4" class="kbcontent">
+        <font>羽毛球（2）</font><br>
+        <font>李浩哲</font><br>
+        <font>3-18(周)[08-09节]</font><br>
+        <font>【东海岸校区-体育场地】</font><br>
+        <font>东海岸-体育馆羽毛球场</font><br>
+        <font>通知单编号：TEST0003</font><br>
+        <font>班级：202611611</font><br>
+      </div>
+    </td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>第五大节<br>(11,12,13小节)</th>
+    <td>
+      <div id="k5" class="kbcontent">
+        <font>羽毛球（2）</font><br>
+        <font>李浩哲</font><br>
+        <font>3-18(周)[08-09节]</font><br>
+        <font>【东海岸校区-体育场地】</font><br>
+        <font>东海岸-体育馆羽毛球场</font><br>
+        <font>通知单编号：TEST0003</font><br>
+        <font>班级：202611611</font><br>
+      </div>
+    </td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+</table>
+</body>
+</html>
