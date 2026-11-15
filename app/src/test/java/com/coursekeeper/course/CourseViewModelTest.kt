@@ -110,6 +110,35 @@ class CourseViewModelTest {
     }
 
     @Test
+    fun `页签切换今日上周下周`() = runTest {
+        val snapshots = MutableStateFlow(snapshot())
+        val model = viewModel(snapshots)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        // now = 2026-11-10 周二，第 10 周；排课在周二 1-2 节、周次 9-10。
+        model.selectTab(CourseTab.NEXT_WEEK)
+        advanceUntilIdle()
+        assertEquals(11, model.uiState.value.selectedWeek)
+        assertEquals(CourseViewMode.WEEK, model.uiState.value.viewMode)
+        assertEquals(0, model.uiState.value.entryCount)
+
+        model.selectTab(CourseTab.PREV_WEEK)
+        advanceUntilIdle()
+        assertEquals(9, model.uiState.value.selectedWeek)
+        assertEquals(1, model.uiState.value.entryCount)
+
+        model.selectTab(CourseTab.TODAY)
+        advanceUntilIdle()
+        assertEquals(CourseViewMode.TODAY, model.uiState.value.viewMode)
+        assertEquals(10, model.uiState.value.selectedWeek)
+        assertEquals(2, model.uiState.value.todayDay)
+        assertEquals(1, model.uiState.value.todayEntries.size)
+        assertTrue(model.uiState.value.weekDates.size == 7)
+        assertEquals(LocalDate.of(2026, 11, 9), model.uiState.value.weekDates.first())
+    }
+
+    @Test
     fun `边界周不能继续翻`() = runTest {
         val snapshots = MutableStateFlow(snapshot())
         val model = viewModel(snapshots)

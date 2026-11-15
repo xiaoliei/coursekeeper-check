@@ -3,6 +3,7 @@ package com.coursekeeper.course
 import com.coursekeeper.data.model.CourseRecord
 import com.coursekeeper.data.model.DataSnapshot
 import com.coursekeeper.data.model.PeriodRecord
+import com.coursekeeper.data.model.RecordSource
 import com.coursekeeper.data.model.ScheduleRecord
 import com.coursekeeper.data.model.ScheduleWeeks
 import com.coursekeeper.data.model.SemesterRecord
@@ -38,7 +39,7 @@ object CourseProjector {
         }
 
         val week = WeekCalculator.currentWeek(active, today) ?: 1
-        val courses = snapshot.courses.filter { it.semesterId == active.id }
+        val courses = snapshot.coursesOf(active.id)
         val courseIds = courses.mapTo(HashSet()) { it.id }
         val weekEntries = snapshot.schedules
             .filter { it.courseId in courseIds && ScheduleWeeks.contains(it.weeks, week) }
@@ -64,7 +65,7 @@ object CourseProjector {
     /** 指定教学周的课表；学期未配置时返回空表。 */
     fun timetable(snapshot: DataSnapshot, weekNo: Int, today: LocalDate): WeekTimetable {
         val semester = activeOrLatest(snapshot, today) ?: return WeekTimetable(weekNo, emptyMap())
-        val courses = snapshot.courses.filter { it.semesterId == semester.id }
+        val courses = snapshot.coursesOf(semester.id)
         val courseIds = courses.mapTo(HashSet()) { it.id }
         val entries = snapshot.schedules
             .filter { it.courseId in courseIds && ScheduleWeeks.contains(it.weeks, weekNo) }
@@ -78,7 +79,7 @@ object CourseProjector {
     /** 指定教学周的冲突；同课程完全重复的条目已去重。 */
     fun conflicts(snapshot: DataSnapshot, weekNo: Int, today: LocalDate): List<CourseConflict> {
         val semester = activeOrLatest(snapshot, today) ?: return emptyList()
-        val courses = snapshot.courses.filter { it.semesterId == semester.id }
+        val courses = snapshot.coursesOf(semester.id)
         val courseIds = courses.mapTo(HashSet()) { it.id }
         val entries = snapshot.schedules
             .filter { it.courseId in courseIds && ScheduleWeeks.contains(it.weeks, weekNo) }
@@ -138,3 +139,16 @@ object CourseProjector {
         )
     }
 }
+
+/**
+ * 课程归属：显式绑定该学期的课程，加上**学校同步导入且尚未绑定学期**的课程。
+ *
+ * C 的导入发生在“用户还没创建学期”之前，入库时 `semesterId = null`；如果只按
+ * `semesterId == 学期.id` 过滤，用户补录学期后课表仍然是空的（实测 9 门课已入库但看不到）。
+ * 只放行 `source == SYNC`：手动新建但未关联学期的课程仍按原口径忽略（F 的统计用例依赖该语义）。
+ */
+internal fun DataSnapshot.coursesOf(semesterId: String): List<CourseRecord> =
+    courses.filter {
+        it.semesterId == semesterId ||
+            (it.semesterId == null && it.source == RecordSource.SYNC)
+    }

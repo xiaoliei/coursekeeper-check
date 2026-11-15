@@ -48,7 +48,6 @@ import com.coursekeeper.school.SchoolCatalog
 import com.coursekeeper.school.SchoolLoginController
 import com.coursekeeper.school.SchoolLoginSheet
 import com.coursekeeper.school.SchoolLogout
-import com.coursekeeper.school.TableSchoolPageParser
 import com.coursekeeper.school.WebViewSchoolAdapter
 import com.coursekeeper.ui.AppShell
 import com.coursekeeper.ui.StatisticsScreen
@@ -66,10 +65,16 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     val courseService = RepositoryCourseService(data.repository)
     val statistics = StatisticsViewModel(data.repository, courseStatsSource = courseService, scope = viewModelScope)
     // C：学校适配器（E 约定应用级同一实例交给协调器）与登录流程控制器。
-    // 学期标签由 SchoolCatalog 提供（T05 实测后填），给课程稳定标识加前缀，避免跨学期重修撞键。
+    // 解析器随学校目录提供（首批为正方教务课表格式），学期标签用于课程稳定标识前缀。
+    // debugDumpDir：真机诊断用——把同步拉到的原始页面存到应用外部目录，便于离线排查解析漏课。
     val schoolAdapter = WebViewSchoolAdapter(
         schoolProvider = { SchoolCatalog.default },
-        parser = TableSchoolPageParser(SchoolCatalog.default.termTag),
+        courseParser = SchoolCatalog.courseParser,
+        taskParser = SchoolCatalog.taskParser,
+        debugDumpDir = java.io.File(
+            application.getExternalFilesDir(null) ?: application.filesDir,
+            "sync-debug",
+        ),
     )
     val sync = data.syncCoordinator(schoolAdapter)
     val loginController = SchoolLoginController(afterLogin = {
@@ -245,9 +250,9 @@ class MainActivity : ComponentActivity() {
                     ) },
                     coursesScreen={ modifier -> CourseScreen(
                         state=courseState,
+                        onSelectTab=courseModel::selectTab,
                         onPreviousWeek=courseModel::previousWeek,
                         onNextWeek=courseModel::nextWeek,
-                        onCurrentWeek=courseModel::goCurrentWeek,
                         onSaveSemester=courseModel::configureSemester,
                         onSaveCourse=courseModel::saveCourse,
                         onDeleteCourse=courseModel::deleteCourse,
