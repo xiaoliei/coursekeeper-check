@@ -23,11 +23,38 @@ object SchoolRule {
     fun hostOf(url: String): String =
         runCatching { URL(url).host }.getOrDefault("")
 
-    /** WebView 登录成功判定：离开登录页且回到教务门户域名，全程 HTTPS。 */
-    fun isLoginComplete(loginUrl: String, portalUrl: String, currentUrl: String): Boolean {
-        if (!currentUrl.startsWith("https://")) return false
+    /** 教务过期的 JS 跳转壳页：`window.location.href='…/login…'`（无表单、主机名不变）。 */
+    private val JS_LOGIN_REDIRECT = Regex("""window\.location(\.href)?\s*=\s*['"][^'"]*login[^'"]*['"]""")
+
+    /**
+     * WebView 登录成功判定：离开登录页且回到教务门户域名。
+     *
+     * 实测学校（汕头大学）统一身份认证的 `service` 参数是 `http://jw.stu.edu.cn/`，
+     * 登录成功后 WebView 会被带回 **http** 的门户地址；因此对学校自己的域名允许明文回跳，
+     * 其余仍只放行 HTTPS。[allowHttpHosts] 由 [SchoolInfo.allowHttpHosts] 提供。
+     */
+    fun isLoginComplete(
+        loginUrl: String,
+        portalUrl: String,
+        currentUrl: String,
+        allowHttpHosts: Set<String> = emptySet(),
+    ): Boolean {
+        val host = hostOf(currentUrl)
+        val secure = currentUrl.startsWith("https://")
+        val insecureButAllowed = currentUrl.startsWith("http://") && host in allowHttpHosts
+        if (!secure && !insecureButAllowed) return false
         if (currentUrl.contains("login")) return false
-        return hostOf(currentUrl) == hostOf(portalUrl)
+        return host == hostOf(portalUrl)
+    }
+
+    /**
+     * 作业源（MYSTU）登录完成判定：已回到作业页域名、且不在登录路径上。
+     * 首次加载作业页通常先跳 SSO；只有落在 `my.stu.edu.cn` 的非登录页才算完成。
+     */
+    fun isTaskSourceReady(taskUrl: String, currentUrl: String): Boolean {
+        if (!currentUrl.startsWith("https://")) return false
+        if (hostOf(currentUrl) != hostOf(taskUrl)) return false
+        return !currentUrl.lowercase().contains("login")
     }
 
     /**
@@ -40,38 +67,68 @@ object SchoolRule {
         else -> SessionState.OFFLINE
     }
 
-    /** 登录表单特征：带 password 输入框或验证码提示的表单页。 */
+    /**
+     * 登录页特征：带 password 输入框或验证码提示的表单页；或教务过期后的
+     * JS 跳转壳页（实测汕头大学：过期请求 302 回门户根，由一段
+     * `window.location.href='https://sso.stu.edu.cn/login…'` 指回 SSO，全程无表单）。
+     */
     fun looksLikeLoginPage(body: String): Boolean {
         val lowered = body.lowercase()
+        if (JS_LOGIN_REDIRECT.containsMatchIn(lowered)) return true
         return "<form" in lowered && ("type=\"password\"" in lowered || "验证码" in body)
     }
 }
 
-data class HttpReply(val code: Int, val body: String)
+/** [finalUrl] 是跟随重定向后的实际地址：被踢回 SSO 时主机名会变，用于判定会话过期。 */
+data class HttpReply(val code: Int, val body: String, val finalUrl: String)
 
 /** 轻量 GET 客户端：不引入第三方网络库；异常统一映射为 [IOException] 或原样抛出。 */
 object SchoolHttp {
+    /**
+     * 手动跟随重定向：HttpURLConnection 的自动跟随**不跨协议**（实测学校把过期请求
+     * 302 到明文 http 门户，自动跟随会停在中间一跳，导致"过期"被误判成"离线"）。
+     * 会话 Cookie 只发往与首个请求同主机的跳（避免把 jw 的会话带去别的域名）。
+     */
+    private const val MAX_REDIRECTS = 6
+
     suspend fun get(url: String, cookie: String?): HttpReply = withContext(Dispatchers.IO) {
         require(url.startsWith("https://")) { "学校数据地址必须为 HTTPS" }
-        val connection = URL(url).openConnection() as HttpURLConnection
-        try {
-            connection.connectTimeout = SchoolRule.CONNECT_TIMEOUT_MILLIS
-            connection.readTimeout = SchoolRule.READ_TIMEOUT_MILLIS
-            connection.instanceFollowRedirects = true
-            cookie?.takeIf { it.isNotBlank() }?.let { connection.setRequestProperty("Cookie", it) }
-            connection.setRequestProperty("User-Agent", "CourseKeeper/0.2 (Android)")
-            val body = connection.errorStream?.use { it.readBytes().decodeToString() }
-                ?: connection.inputStream.use { it.readBytes().decodeToString() }
-            HttpReply(connection.responseCode, body)
-        } catch (cancel: kotlinx.coroutines.CancellationException) {
-            throw cancel
-        } catch (error: IOException) {
-            throw error
-        } catch (error: Exception) {
-            throw IOException("学校数据请求失败", error)
-        } finally {
-            connection.disconnect()
+        val originHost = SchoolRule.hostOf(url)
+        var current = url
+        var reply: HttpReply? = null
+        var hop = 0
+        while (reply == null && hop <= MAX_REDIRECTS) {
+            val connection = URL(current).openConnection() as HttpURLConnection
+            try {
+                connection.connectTimeout = SchoolRule.CONNECT_TIMEOUT_MILLIS
+                connection.readTimeout = SchoolRule.READ_TIMEOUT_MILLIS
+                connection.instanceFollowRedirects = false
+                if (hop == 0 || SchoolRule.hostOf(current) == originHost) {
+                    cookie?.takeIf { it.isNotBlank() }?.let { connection.setRequestProperty("Cookie", it) }
+                }
+                connection.setRequestProperty("User-Agent", "CourseKeeper/0.2 (Android)")
+                val code = connection.responseCode
+                val location = connection.getHeaderField("Location")
+                if (code in 300..399 && !location.isNullOrBlank()) {
+                    current = URL(URL(current), location).toString()
+                } else {
+                    val body = connection.errorStream?.use { it.readBytes().decodeToString() }
+                        ?: connection.inputStream.use { it.readBytes().decodeToString() }
+                    reply = HttpReply(code, body, current)
+                }
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (error: IOException) {
+                throw error
+            } catch (error: Exception) {
+                throw IOException("学校数据请求失败", error)
+            } finally {
+                connection.disconnect()
+            }
+            hop++
         }
+        // 重定向超出上限：按 508（循环检测）返回，上游按远端错误处理，不误判会话状态。
+        reply ?: HttpReply(508, "", current)
     }
 }
 

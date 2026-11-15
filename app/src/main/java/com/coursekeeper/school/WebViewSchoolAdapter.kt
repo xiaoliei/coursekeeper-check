@@ -21,10 +21,13 @@ import java.io.IOException
  */
 class WebViewSchoolAdapter(
     private val schoolProvider: () -> SchoolInfo,
-    private val parser: SchoolPageParser = TableSchoolPageParser(),
+    private val courseParser: SchoolPageParser = TableSchoolPageParser(),
+    private val taskParser: SchoolPageParser = courseParser,
     private val cookieProvider: (String) -> String? = { url ->
         android.webkit.CookieManager.getInstance().getCookie(url)
     },
+    /** 调试诊断用：非空时把每次拉到的原始页面存到该目录（仅本机留存，不外发）。 */
+    private val debugDumpDir: java.io.File? = null,
 ) : SchoolAdapter {
 
     override val schoolId: String get() = schoolProvider().id
@@ -33,7 +36,13 @@ class WebViewSchoolAdapter(
         val school = schoolProvider()
         try {
             val reply = SchoolHttp.get(school.portalUrl, cookieProvider(school.portalUrl))
-            SchoolRule.classify(reply.code, reply.body)
+            // 会话失效时教务会把请求重定向到 SSO 登录页；HttpURLConnection 已跟随跳转，
+            // 最终主机不再是门户，直接判过期（比只看响应体更可靠）。
+            if (SchoolRule.hostOf(reply.finalUrl) != SchoolRule.hostOf(school.portalUrl)) {
+                SessionState.EXPIRED
+            } else {
+                SchoolRule.classify(reply.code, reply.body)
+            }
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (_: IOException) {
@@ -43,15 +52,36 @@ class WebViewSchoolAdapter(
     }
 
     override suspend fun fetchCourses(): ModuleResult<ImportedCourse> =
-        fetch(schoolProvider().scheduleUrl) { parser.parseSchedule(it).courses }
+        fetch(schoolProvider().scheduleUrl) { body ->
+            val parsed = courseParser.parseSchedule(body)
+            // 页面结构不对（例如地址失效、被带到“选择学期”页）时，解析结果会是“0 门课 + 警告”；
+            // 这种情况必须报失败，不能当成“同步成功、没有课”。
+            if (parsed.courses.isEmpty() && parsed.warnings.isNotEmpty()) {
+                error(parsed.warnings.joinToString("；"))
+            }
+            parsed.courses
+        }
 
-    override suspend fun fetchTasks(): ModuleResult<ImportedTask> =
-        fetch(schoolProvider().taskListUrl) { parser.parseTasks(it).tasks }
+    override suspend fun fetchTasks(): ModuleResult<ImportedTask> {
+        val school = schoolProvider()
+        val url = school.taskListUrl
+            ?: return ModuleResult.Failure(SyncFailure.PARSE_ERROR)
+        return fetch(url) { body ->
+            val parsed = taskParser.parseTasks(body)
+            // 未登录时 MYSTU 会返回登录页或空壳：同样是“0 条 + 警告”，必须报失败，
+            // 否则会显示“作业同步成功、0 条作业”。
+            if (parsed.tasks.isEmpty() && parsed.warnings.isNotEmpty()) {
+                error(parsed.warnings.joinToString("；"))
+            }
+            parsed.tasks
+        }
+    }
 
     private suspend fun <T> fetch(url: String, parse: (String) -> List<T>): ModuleResult<T> =
         withContext(Dispatchers.IO) {
             try {
                 val reply = SchoolHttp.get(url, cookieProvider(url))
+                dumpForDebug(url, reply.body)
                 when {
                     reply.code == 401 || reply.code == 403 ||
                         SchoolRule.looksLikeLoginPage(reply.body) -> ModuleResult.Failure(SyncFailure.EXPIRED)
@@ -70,4 +100,16 @@ class WebViewSchoolAdapter(
                 ModuleResult.Failure(SyncFailure.OFFLINE, retryable = true)
             }
         }
+
+    /** 仅当传入 debugDumpDir 时生效：保存原始响应，便于离线复现解析问题。 */
+    private fun dumpForDebug(url: String, body: String) {
+        val dir = debugDumpDir ?: return
+        runCatching {
+            dir.mkdirs()
+            val stamp = java.time.format.DateTimeFormatter.ofPattern("HHmmss-SSS")
+                .withZone(java.time.ZoneId.systemDefault()).format(java.time.Instant.now())
+            val name = url.substringAfterLast('/').substringBefore('?').ifBlank { "page" }
+            java.io.File(dir, "$name-$stamp.html").writeText(body)
+        }
+    }
 }
