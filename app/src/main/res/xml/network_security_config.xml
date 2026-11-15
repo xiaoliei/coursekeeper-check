@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  汕头大学统一身份认证的 service 参数是明文 http://jw.stu.edu.cn/：
+  登录成功后 WebView 会被带回 http 门户。Android 9+ 默认禁止明文流量，
+  不放行的话 WebView 直接白屏，登录永远完成不了。
+  这里只对学校域名放行明文，其余域名仍按默认“仅 HTTPS”。
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">jw.stu.edu.cn</domain>
+    </domain-config>
+</network-security-config>

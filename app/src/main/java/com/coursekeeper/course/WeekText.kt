@@ -40,8 +40,10 @@ object WeekText {
         var normalized = source
             .replace('（', '(').replace('）', ')')
             .replace('，', ',').replace('、', ',').replace('；', ',').replace(';', ',')
+            .replace('［', '[').replace('］', ']')
             .replace("—", "-").replace("–", "-").replace("~", "-")
             .replace(" ", "").replace("\t", "")
+            .replace("[", "").replace("]", "")
             .replace("第", "")
             .lowercase()
 

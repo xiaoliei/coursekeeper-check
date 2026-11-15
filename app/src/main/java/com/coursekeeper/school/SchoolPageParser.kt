@@ -261,8 +261,11 @@ class TableSchoolPageParser(private val termTag: String? = null) : SchoolPagePar
 
 /** 截止时间解析：`2026-11-20 23:59`、`2026年11月20日`、`2026/11/20`；缺时刻默认 23:59。 */
 object DueDates {
-    private val pattern =
-        Regex("""(\d{4})[年/\-.](\d{1,2})[月/\-.](\d{1,2})日?(?:\s+(\d{1,2}):(\d{2}))?""")
+    // 允许日期与时刻之间夹“星期X”（MYSTU 写法：2026年11月15日 星期日 23:59）。
+    private val pattern = Regex(
+        """(\d{4})[年/\-.](\d{1,2})[月/\-.](\d{1,2})日?""" +
+            """(?:[^\d]{0,12}(\d{1,2})[:：](\d{2}))?""",
+    )
     private val fallbackTime: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
     fun parse(text: String): LocalDateTime? {

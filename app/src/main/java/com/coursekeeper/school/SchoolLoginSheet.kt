@@ -68,15 +68,22 @@ fun SchoolLoginSheet(
         LoginStep.SelectSchool -> null
     }
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            // 导入完成页从任何途径关闭都复位状态机，避免下次打开仍停在“导入完成”。
+            if (step is LoginStep.Done) controller.reset()
+            onDismiss()
+        },
         title = { Text(if (step is LoginStep.SelectSchool && savedSchool != null) "学校连接" else stepTitle(step)) },
         text = { StepContent(step, controller, scope, savedSchool) { onLogout(); onDismiss() } },
         confirmButton = { StepConfirm(step, controller, scope, onDismiss) },
         dismissButton = {
-            TextButton(onClick = {
-                if (step is LoginStep.Done) controller.reset() else if (currentSchool != null) controller.backToSelect()
-                onDismiss()
-            }) { Text("关闭") }
+            // 导入完成页的“关闭”与“完成”同义，只保留一个按钮；其余步骤保留关闭入口。
+            if (step !is LoginStep.Done) {
+                TextButton(onClick = {
+                    if (currentSchool != null) controller.backToSelect()
+                    onDismiss()
+                }) { Text("关闭") }
+            }
         },
     )
 }
@@ -99,7 +106,7 @@ private fun StepContent(
     onLogout: () -> Unit,
 ) {
     Column(
-        Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+        Modifier.heightIn(max = 620.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -155,7 +162,10 @@ private fun StepConfirm(
         is LoginStep.Failure -> TextButton(onClick = {
             step.school?.let { controller.open(it) }
         }) { Text("重试") }
-        is LoginStep.Done -> TextButton(onClick = onDismiss) { Text("完成") }
+        is LoginStep.Done -> TextButton(onClick = {
+            controller.reset() // 与其他关闭途径一致：离开完成页即复位，下次打开回到连接状态
+            onDismiss()
+        }) { Text("完成") }
         is LoginStep.WebView -> TextButton(onClick = onDismiss) { Text("以后再说") }
         else -> {}
     }
@@ -165,35 +175,108 @@ private fun StepConfirm(
 @Composable
 private fun LoginWebView(school: SchoolInfo, controller: SchoolLoginController, scope: kotlinx.coroutines.CoroutineScope) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // 计划书 §十一：请求前展示目标域名；仅接受 HTTPS。
-        Text("数据接收域名：${school.host}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // 计划书 §十一：请求前展示目标域名；登录页与数据页分属两个域名时都要说清楚。
+        Text(
+            "登录页 ${school.loginHost} · 数据接收域名 ${school.host}",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val taskUrl = school.taskListUrl
         var detected by rememberSaveable(school.id) { mutableStateOf(false) }
+        var awaitingTaskSource by rememberSaveable(school.id) { mutableStateOf(false) }
+        // WebView 高度跟随页面内容自适应：固定高度时网页自身可以滚动，WebView 会吞掉
+        // 竖向手势，外层弹层永远滑不到底，登录按钮被挡住。内容全展开后页面无可滚区域，
+        // 登录按钮（在网页内）直接完整可见。
+        var pageHeightDp by rememberSaveable(school.id) { mutableStateOf(WEBVIEW_MIN_HEIGHT_DP) }
+        if (awaitingTaskSource) {
+            Text(
+                "教务登录成功，正在连接学习平台（MYSTU）读取作业…",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         AndroidView(
-            modifier = Modifier.fillMaxWidth().height(380.dp),
+            modifier = Modifier.fillMaxWidth().height(pageHeightDp.dp),
             factory = { context ->
                 WebView(context).apply {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    isVerticalScrollBarEnabled = false
                     CookieManager.getInstance().setAcceptCookie(true)
+                    // 读取网页内容高度并回填 Compose 高度；加载中/加载完各测一次，
+                    // 覆盖脚本延迟渲染的页面。scrollHeight 是 CSS 像素，与 dp 同标度，
+                    // 直接取整即可（乘以屏幕密度反而会被钳到下限）。超出上限时保留网页内部滚动兜底。
+                    fun measureContentHeight() {
+                        evaluateJavascript(
+                            "Math.max(document.body?document.body.scrollHeight:0," +
+                                "document.documentElement?document.documentElement.scrollHeight:0)",
+                        ) { raw ->
+                            val cssHeight = raw?.trim('"', ' ')?.toFloatOrNull() ?: return@evaluateJavascript
+                            if (cssHeight <= 0f) return@evaluateJavascript
+                            val height = cssHeight.toInt().coerceIn(WEBVIEW_MIN_HEIGHT_DP, WEBVIEW_MAX_HEIGHT_DP)
+                            if (height != pageHeightDp) pageHeightDp = height
+                        }
+                    }
+                    val complete = {
+                        if (!detected) {
+                            detected = true
+                            CookieManager.getInstance().flush()
+                            scope.launch { controller.onLoginSuccess(school) }
+                        }
+                    }
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                            // 计划书 §十一：仅接受 HTTPS；阻断明文与自定义 scheme 跳转，校内 SSO 子页面不受影响。
-                            return !request.url.toString().startsWith("https://")
+                            val url = request.url
+                            if (url.scheme == "https") return false
+                            // 学校 SSO 的 service 参数可能是明文（汕头大学为 http://jw.stu.edu.cn/），
+                            // 只对 SchoolInfo.allowHttpHosts 里的学校域名放行；其余明文与自定义 scheme 一律阻断。
+                            return !(url.scheme == "http" && url.host in school.allowHttpHosts)
+                        }
+                        override fun onPageFinished(view: WebView, url: String?) {
+                            super.onPageFinished(view, url)
+                            measureContentHeight()
+                            // 表单等延迟渲染的内容会在完成后再撑高一次，稍后复测。
+                            view.postDelayed({ measureContentHeight() }, 400)
+                            val current = url ?: return
+                            // 第二处登录（MYSTU）完成后才继续导入；中途停在登录页不算完成。
+                            if (awaitingTaskSource && taskUrl != null && SchoolRule.isTaskSourceReady(taskUrl, current)) {
+                                complete()
+                            }
                         }
                         override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
                             super.doUpdateVisitedHistory(view, url, isReload)
                             val current = url ?: return
-                            if (!detected && SchoolRule.isLoginComplete(school.loginUrl, school.portalUrl, current)) {
-                                detected = true
-                                CookieManager.getInstance().flush()
-                                scope.launch { controller.onLoginSuccess(school) }
+                            if (detected || awaitingTaskSource) return
+                            if (!SchoolRule.isLoginComplete(
+                                    school.loginUrl, school.portalUrl, current, school.allowHttpHosts,
+                                )
+                            ) return
+                            // 教务登录成功。作业源在另一个域名（MYSTU）时，继续在同一 WebView 里完成第二处登录。
+                            if (taskUrl != null && SchoolRule.hostOf(taskUrl) != SchoolRule.hostOf(school.portalUrl)) {
+                                awaitingTaskSource = true
+                                view.loadUrl(taskUrl)
+                            } else {
+                                complete()
                             }
+                        }
+                    }
+                    webChromeClient = object : android.webkit.WebChromeClient() {
+                        override fun onProgressChanged(view: WebView, newProgress: Int) {
+                            if (newProgress >= 80) measureContentHeight()
                         }
                     }
                     loadUrl(school.loginUrl)
                 }
             },
         )
-        Text("登录完成后将自动返回。若长时间未跳转，请先在页面内完成验证码。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "登录完成后将自动返回。若长时间未跳转，请先在页面内完成验证码；作业平台可能需要再登录一次。",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
+
+/** WebView 自适应高度的上下限（dp）：下限保证首次渲染就有可点的登录区域；上限按主流手机整页可容纳。 */
+private const val WEBVIEW_MIN_HEIGHT_DP = 380
+private const val WEBVIEW_MAX_HEIGHT_DP = 600
