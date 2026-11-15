@@ -185,6 +185,48 @@ class SyncCoordinatorTest : DataTestBase() {
         assertEquals(course.id, repository.snapshot().tasks.single().courseId)
     }
 
+    @Test fun staleCoursesAbsentFromRemoteAreRemovedOnSyncAndUserEditsSurvive() = runTest {
+        val schedule = ScheduleDraft(2, 3, 4, 1, 16)
+        val adapter = FakeAdapter().apply {
+            courseResult = ModuleResult.Success(listOf(
+                ImportedCourse("course-1", CourseDraft("WEB应用技术", schedules = listOf(ScheduleDraft(4, 6, 7, 3, 18)))),
+                // 此前导入过别的课表留下的课程：新课表里没有，同步后必须消失，否则会
+                // 与新课表产生假冲突（实测“大学生人生哲学八讲”问题）。
+                ImportedCourse("course-2", CourseDraft("大学生人生哲学八讲", schedules = listOf(schedule))),
+                // 用户手动编辑过的同步课程视为本地意图，不清理。
+                ImportedCourse("course-3", CourseDraft("手动改过", schedules = listOf(schedule))),
+            ))
+        }
+        val sync = coordinator(adapter)
+        sync.synchronize()
+        val ids = repository.snapshot().courses.associateBy { it.externalId }
+        repository.updateCourse(ids.getValue("course-3").id, 1, CourseDraft("手动改过", schedules = listOf(schedule)))
+
+        adapter.courseResult = ModuleResult.Success(listOf(
+            ImportedCourse("course-1", CourseDraft("WEB应用技术", schedules = listOf(ScheduleDraft(4, 6, 7, 3, 18)))),
+        ))
+        sync.synchronize(true)
+
+        val externalIds = repository.snapshot().courses.map { it.externalId }.toSet()
+        assertEquals(setOf("course-1", "course-3"), externalIds)
+        assertTrue(repository.snapshot().schedules.none { it.courseId == ids.getValue("course-2").id })
+    }
+
+    @Test fun removedStaleCourseLeavesNoTombstoneSoSchoolCanBringItBack() = runTest {
+        val adapter = FakeAdapter().apply {
+            courseResult = ModuleResult.Success(listOf(ImportedCourse("c", CourseDraft("课程"))))
+        }
+        val sync = coordinator(adapter)
+        sync.synchronize()
+        adapter.courseResult = ModuleResult.Success(emptyList())
+        sync.synchronize(true)
+        assertTrue("远端没有的课程同步后应被清理", repository.snapshot().courses.isEmpty())
+        // 清理不写墓碑：学校之后重新排课时下一次同步仍会照常导入。
+        adapter.courseResult = ModuleResult.Success(listOf(ImportedCourse("c", CourseDraft("课程"))))
+        sync.synchronize(true)
+        assertEquals(1, repository.snapshot().courses.size)
+    }
+
     @Test fun staleSyncBaselineRejectsALateResponseAfterAnotherSyncCommitted() = runTest {
         val adapter = FakeAdapter().apply { taskResult = ModuleResult.Success(listOf(ImportedTask("t", draft()))) }
         val sync = coordinator(adapter)
