@@ -315,16 +315,19 @@ adb uninstall com.coursekeeper
 
 ## 14. 变更清单（相对 origin/main）
 
-已提交（本地分支 `feat/school-adapter`，**尚未推送**）：`86ba250` 功能、`2f2b085` 测试、`01c46b3` 文档。
+分支 `feat/school-adapter`，全部已提交（共 9 个提交，2026-11-15）：
 
-第二轮工作区改动（待提交，建议拆分见提交计划）：
+| 提交 | 内容 |
+|---|---|
+| `86ba250` feat(school) | 学校适配器、WebView 官方登录（T05 第一轮） |
+| `2f2b085` test(school) | 解析、会话规则、登录状态机与退出登录用例 |
+| `01c46b3` docs(school) | C 交接文档与 README 接入指引 |
+| `a282ff9` feat(school) | 会话过期壳页识别、一格多段排课解析、登录弹层自适应高度（第二轮） |
+| `ca35cb5` test(school) | 会话壳页、多段排课、双层括号周次用例 |
+| `006ae74` fix(data-sync) | 同步镜像口径——清理远端已不存在的同步课程（E 复核） |
+| `d7f1237` feat(course) | 课表页今日/本周/上周/下周页签与整周网格（B 复核） |
+| `ca6f9d1` docs(school) | 第二轮真机检验记录与 T05 证据；`.shots/` 入 gitignore |
+| 待推 | 补交课表/作业脱敏样例文件（解析测试的 classpath 依赖） |
 
-| 状态 | 文件 | 归属/复核 |
-|---|---|---|
-| 修改 | `school/{SchoolSession,SchoolLoginSheet,SchoolCatalog,SchoolPageParser,WebViewSchoolAdapter}.kt`、`MainActivity.kt`、`AndroidManifest.xml`（暂无新改动）、`.gitignore`（补 `.shots/`） | C |
-| 新增（未跟踪） | `school/StuJwPageParser.kt`、`school/MyStuTaskParser.kt`、`res/xml/network_security_config.xml` | C |
-| 修改（E 复核） | `data/sync/SyncMerge.kt`（镜像清理）、`data/sync/SchoolAdapter.kt`（`MergeCounts.deleted` + `debugDumpDir`） | E |
-| 修改（B 复核） | `course/{CourseScreen,CourseViewModel,CourseContract,WeekText}.kt`（页签+网格+`([周])` 兼容） | B |
-| 测试 | `school/{StuJwParserTest,SchoolSessionRuleTest}.kt`（新增用例）、`data/SyncCoordinatorTest.kt`（残留清理 2 例）、`course/CourseViewModelTest.kt`（页签切换） | — |
-| 文档 | `docs/C-学校登录与数据适配交接.md`、本文档、`docs/evidence/c-t05/verification.md` | — |
-| **不入库** | `.shots/`（真机截图与抓取页，含真实学号/课表）、`local.properties`、`build/` | — |
+跨模块需复核：E 复核 `data/sync/{SyncMerge,SchoolAdapter}.kt`；B 复核 `course/{CourseScreen,CourseViewModel,CourseContract,WeekText}.kt`。
+**不入库**：`.shots/`（真机截图与抓取页，含真实学号/课表）、`local.properties`、`build/`。
