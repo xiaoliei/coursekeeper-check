@@ -27,4 +27,11 @@ data class ImportedCourse(val externalId: String, val fields: CourseDraft)
  */
 data class ImportedTask(val externalId: String?, val fields: TaskDraft, val courseExternalId: String? = null)
 
-data class MergeCounts(val inserted: Int = 0, val updated: Int = 0, val protectedCount: Int = 0, val missingIdentity: Int = 0)
+data class MergeCounts(
+    val inserted: Int = 0,
+    val updated: Int = 0,
+    /** 同步时清理掉的“远端已不存在”的残留课程数（镜像口径，见 mergeCourses）。 */
+    val deleted: Int = 0,
+    val protectedCount: Int = 0,
+    val missingIdentity: Int = 0,
+)
