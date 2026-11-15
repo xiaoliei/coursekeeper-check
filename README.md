@@ -9,7 +9,7 @@
 - B 的课程服务已接入课表页（周次、节次、冲突与学期设置）；F 的压力服务尚未接入，真实模式显示明确的缺失状态。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
 - 正式口径（统计、压力指数、规则阈值）为草案，需小组确认后生效，见 docs 目录。
 - E 的数据层已升级 Room v3，支持非连续周次、排课独立教师及 v1/v2 无损迁移；接入方式见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)，本轮验证见 [E v3 迁移与联调验收](docs/E-v3迁移与联调验收.md)。首页、任务、提醒和看板共用真实快照。
-- C 的学校适配已接入：`school/` 提供 `SchoolAdapter` 实现、WebView 官方登录、会话检测与课表/作业解析，结果经 E 的 `SyncCoordinator` 合并入库；支持过期重登与退出登录（清会话 Cookie，本地课程任务保留）。**目标学校仍是占位条目**，T05 实测结论到位后只替换 `SchoolCatalog` 的地址并按真实页面调整解析规则，契约与合并规则不动。见 [C 学校登录与数据适配交接](docs/C-学校登录与数据适配交接.md)。
+- C 的学校适配已接入：`school/` 提供 `SchoolAdapter` 实现、WebView 官方登录（汕头大学统一身份认证）、会话检测、课表与作业解析，结果经 E 的 `SyncCoordinator` 合并入库；支持过期重登与退出登录（清会话 Cookie，本地课程任务保留）。首批学校为汕头大学：课表取正方教务「学期理论课表」，作业取 MYSTU 学习平台（Moodle）课程概览，登录时在同一 WebView 里补一次 MYSTU 登录。见 [C 学校登录与数据适配交接](docs/C-学校登录与数据适配交接.md)。
 
 ## 环境与版本锁定
 
@@ -37,8 +37,7 @@
 - 调试 APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。
 - JVM 测试覆盖 A 的投影、演示与接入、D 的任务交互以及 E 的数据和同步；本轮验证记录见 [A 本地联调说明](docs/A-首页真实任务接入-本地说明.md)。
 - 统一“边界假数据”素材（跨节次、单双周、非连续周、本周/下周区间两侧、截止待定等）在 `app/src/test/java/com/coursekeeper/fakedata/`，供 F 的统计/看板测试与首页投影回归复用；非连续周素材已随 E v3 启用。
-- 已在 Temurin JDK 21.0.13+9 下完成应用／测试 APK 构建和 65 项单元测试，0 失败、0 跳过。
-- E v3 最新联调在 JDK 21 下通过全仓 126 项单元测试（含 E 44 项），0 失败、0 跳过；应用／测试 APK 均已构建，见 [v3 验收记录](docs/E-v3迁移与联调验收.md)。
+- 当前 JDK 21 下全仓 **234 项单元测试**，0 失败、0 跳过（含 C 的 27 项：通用解析 7、汕头课表 6、MYSTU 作业 3、会话规则 6、登录状态机 4、退出登录 1）；`:app:assembleDebug` 构建通过。历史记录：A 交付时 65 项、E v3 联调时 126 项，见 [v3 验收记录](docs/E-v3迁移与联调验收.md)。
 - 设备测试：`.\gradlew.bat :app:connectedDebugAndroidTest`（需模拟器或真机）。
 - GitHub Actions 自动构建（`.github/workflows/build.yml`）：`push 到 main` 与任意 PR 都会先跑 `:app:testDebugUnitTest`、通过后再 `:app:assembleDebug`，作为合并门禁。
 

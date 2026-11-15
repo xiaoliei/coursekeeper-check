@@ -6,3 +6,9 @@ local.properties
 *.iml
 *.jks
 *.keystore
+
+# 本机保存的真实页面样例（含个人课表/作业信息），只作本地解析校验，禁止入库。
+docs/evidence/c-samples/
+
+# 真机检验截图与抓取页（含真实学号/课表/登录页），只留本机，禁止入库。
+.shots/
