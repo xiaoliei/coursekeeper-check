@@ -1,6 +1,7 @@
 package com.coursekeeper.course
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,8 +14,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.coursekeeper.data.CourseDraft
@@ -24,29 +30,52 @@ import com.coursekeeper.data.model.ScheduleWeeks
 import com.coursekeeper.ui.components.EmptyState
 import com.coursekeeper.ui.components.KeeperCard
 import com.coursekeeper.ui.theme.KeeperBlue
+import com.coursekeeper.ui.theme.KeeperInk
 import com.coursekeeper.ui.theme.KeeperMuted
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
+import kotlin.math.abs
 
 private val DayNames = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
 private val ConflictColor = Color(0xFFB3261E)
+private val GridLineColor = Color(0xFFE5EBF5)
 private val DatePattern = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT)
 private val TimePattern = DateTimeFormatter.ofPattern("HH:mm").withResolverStyle(ResolverStyle.STRICT)
+
+/** 整周网格的课程卡配色（图 1 样式：按课程稳定着色、白字）。 */
+private val GridPalette = listOf(
+    Color(0xFF4C9AFF), // 蓝
+    Color(0xFF43A786), // 绿
+    Color(0xFFE6A23C), // 橙
+    Color(0xFF9B7BE5), // 紫
+    Color(0xFFE57373), // 红
+    Color(0xFF56B4D3), // 青
+)
+
+private fun gridColor(courseId: String): Color = GridPalette[abs(courseId.hashCode()) % GridPalette.size]
+
+/** 整周网格：每节一行的高度；卡片按起始节绝对定位、跨节撑高。 */
+private val GridRowHeight = 52.dp
+private val GridAxisWidth = 44.dp
 
 /**
  * 课表页（成员 B，第 3–4 步）。
  *
- * 五种状态：正常周视图 / 未设学期 / 不在教学周 / 空课表 / 读取失败。
+ * 顶部“今日 / 本周 / 上周 / 下周”页签切换：
+ * - 今日：保留逐条列表样式，可滑动；
+ * - 本周 / 上周 / 下周：整周一屏网格（节次时间轴 + 七天列 + 课程卡），周网格头部带 ‹ › 可继续翻周。
+ *
+ * 五种状态：正常视图 / 未设学期 / 不在教学周 / 空课表 / 读取失败。
  * 只负责展示与表单交互，校验与版本冲突由 ViewModel 和 E 的 Repository 负责。
  */
 @Composable
 fun CourseScreen(
     state: CourseUiState,
+    onSelectTab: (CourseTab) -> Unit,
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
-    onCurrentWeek: () -> Unit,
     onSaveSemester: (LocalDate, Int, List<PeriodRecord>, (String?) -> Unit) -> Unit,
     onSaveCourse: (CourseSummary?, CourseDraft, (String?) -> Unit) -> Unit,
     onDeleteCourse: (CourseSummary, (String?) -> Unit) -> Unit,
@@ -62,12 +91,7 @@ fun CourseScreen(
     val editing = state.courses.firstOrNull { it.id == editorCourseId }
 
     Column(modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        WeekHeader(
-            state = state,
-            onPreviousWeek = onPreviousWeek,
-            onNextWeek = onNextWeek,
-            onCurrentWeek = onCurrentWeek,
-        )
+        WeekHeader(state, onSelectTab)
         banner?.let {
             Text(it, color = ConflictColor, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
         }
@@ -83,15 +107,16 @@ fun CourseScreen(
                 if (state.conflicts.isNotEmpty()) {
                     ConflictBanner(state.conflicts)
                 }
-                if (state.isEmptyWeek) {
-                    EmptyState(
-                        title = "本周暂无课程",
-                        detail = "可以手动添加课程和排课；学期起始日设置后按教学周显示。",
-                        action = "＋ 添加课程",
-                        onAction = { editorCourseId = null; editorOpen = true },
-                    )
-                } else {
-                    TimetableBody(state, Modifier.weight(1f)) { entry ->
+                when (state.viewMode) {
+                    CourseViewMode.TODAY -> TodayBody(state, Modifier.weight(1f)) { entry ->
+                        detailCourseId = entry.courseId
+                    }
+                    CourseViewMode.WEEK -> WeekGridBody(
+                        state = state,
+                        modifier = Modifier.weight(1f),
+                        onPreviousWeek = onPreviousWeek,
+                        onNextWeek = onNextWeek,
+                    ) { entry ->
                         detailCourseId = entry.courseId
                     }
                 }
@@ -154,75 +179,355 @@ fun CourseScreen(
 }
 
 @Composable
-private fun WeekHeader(
-    state: CourseUiState,
-    onPreviousWeek: () -> Unit,
-    onNextWeek: () -> Unit,
-    onCurrentWeek: () -> Unit,
-) {
+private fun WeekHeader(state: CourseUiState, onSelectTab: (CourseTab) -> Unit) {
     Column(Modifier.padding(top = 16.dp, bottom = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("我的课表", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    if (state.weekCount == 0) "尚未设置学期" else "第 ${state.selectedWeek} 周 · ${state.weekLabel}",
-                    fontSize = 13.sp,
-                    color = KeeperMuted,
-                )
+                Text(headerSubtitle(state), fontSize = 13.sp, color = KeeperMuted)
             }
             Text(
-                "${state.entryCount} 条排课",
+                if (state.viewMode == CourseViewMode.TODAY) "今日 ${state.todayEntries.size} 条"
+                else "${state.entryCount} 条排课",
                 fontSize = 12.sp,
                 color = KeeperMuted,
             )
         }
         Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onPreviousWeek, enabled = state.canGoPrevious) { Text("上一周") }
-            OutlinedButton(onClick = onCurrentWeek, enabled = state.currentWeek != null && !state.isCurrentWeek) {
-                Text("本周")
+        CourseTabs(state, onSelectTab)
+    }
+}
+
+private fun headerSubtitle(state: CourseUiState): String = when {
+    state.weekCount == 0 -> "尚未设置学期"
+    state.viewMode == CourseViewMode.TODAY && state.weekDates.size == 7 -> {
+        val date = state.weekDates[state.todayDay - 1]
+        "今天 ${date.monthValue} 月 ${date.dayOfMonth} 日 · 第 ${state.selectedWeek} 周"
+    }
+    else -> "第 ${state.selectedWeek} 周 · ${state.weekLabel}"
+}
+
+@Composable
+private fun CourseTabs(state: CourseUiState, onSelectTab: (CourseTab) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFEAEFF8), RoundedCornerShape(10.dp))
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        CourseTab.entries.forEach { tab ->
+            val selected = tabSelected(tab, state)
+            val enabled = tabEnabled(tab, state)
+            Box(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (selected) Color.White else Color.Transparent)
+                    .clickable(enabled = enabled) { onSelectTab(tab) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    tab.label,
+                    fontSize = 13.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    color = when {
+                        !enabled -> KeeperMuted.copy(alpha = 0.45f)
+                        selected -> KeeperBlue
+                        else -> KeeperMuted
+                    },
+                )
             }
-            OutlinedButton(onClick = onNextWeek, enabled = state.canGoNext) { Text("下一周") }
         }
     }
 }
 
+/** 页签高亮：周次一律相对“今天所在的教学周”（不在教学周内时退回当前展示周）。 */
+private fun tabSelected(tab: CourseTab, state: CourseUiState): Boolean {
+    if (tab == CourseTab.TODAY) return state.viewMode == CourseViewMode.TODAY
+    if (state.viewMode != CourseViewMode.WEEK) return false
+    val base = state.currentWeek ?: state.selectedWeek
+    return when (tab) {
+        CourseTab.PREV_WEEK -> state.selectedWeek == base - 1
+        CourseTab.NEXT_WEEK -> state.selectedWeek == base + 1
+        else -> state.selectedWeek == base || (state.selectedWeek != base - 1 && state.selectedWeek != base + 1)
+    }
+}
+
+private fun tabEnabled(tab: CourseTab, state: CourseUiState): Boolean = when (tab) {
+    CourseTab.TODAY, CourseTab.THIS_WEEK -> true
+    CourseTab.PREV_WEEK -> (state.currentWeek ?: state.selectedWeek) > 1
+    CourseTab.NEXT_WEEK -> (state.currentWeek ?: state.selectedWeek) < state.weekCount
+}
+
+/** 今日视图：保留逐条卡片列表（原样式），上下滑动观看。 */
 @Composable
-private fun TimetableBody(
+private fun TodayBody(
     state: CourseUiState,
     modifier: Modifier = Modifier,
     onEntryClick: (CourseEntry) -> Unit,
 ) {
+    if (state.currentWeek == null) {
+        Box(modifier.fillMaxWidth()) {
+            EmptyState(
+                title = "今天不在教学周内",
+                detail = "今天没有排课可看。可切换到周视图翻看课表，或手动添加课程。",
+            )
+        }
+        return
+    }
+    val entries = state.todayEntries
+    if (entries.isEmpty()) {
+        Box(modifier.fillMaxWidth()) {
+            EmptyState(
+                title = "今天没有课程",
+                detail = "可以切换到“本周”查看整周安排；周次不同的课程会在对应周自动显示。",
+            )
+        }
+        return
+    }
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        (1..7).forEach { day ->
-            val entries = state.days[day].orEmpty()
-            if (entries.isNotEmpty()) {
-                item(key = "day-$day") {
-                    Text(
-                        "${DayNames[day - 1]} · ${entries.sumOf { it.periodCount }} 节",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = KeeperMuted,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
+        items(entries, key = { it.scheduleId }) { entry ->
+            CourseEntryCard(
+                entry = entry,
+                timeText = timeText(entry, state.periods),
+                conflicted = state.conflicts.any {
+                    it.first.scheduleId == entry.scheduleId || it.second.scheduleId == entry.scheduleId
+                },
+            ) {
+                onEntryClick(entry)
+            }
+        }
+    }
+}
+
+/**
+ * 周视图：整周一屏网格（图 1 样式）。左侧节次/时间轴，七列课程卡；
+ * 纵向可滑（13 节超屏），头部 ‹ › 可继续翻周。
+ */
+@Composable
+private fun WeekGridBody(
+    state: CourseUiState,
+    modifier: Modifier = Modifier,
+    onPreviousWeek: () -> Unit,
+    onNextWeek: () -> Unit,
+    onEntryClick: (CourseEntry) -> Unit,
+) {
+    val gridPeriods = maxOf(
+        state.periodCount,
+        state.days.values.maxOfOrNull { day -> day.maxOfOrNull { it.endPeriod } ?: 0 } ?: 0,
+    ).coerceAtLeast(1)
+    val totalHeight = GridRowHeight * gridPeriods
+    val conflictIds = state.conflicts.flatMap {
+        listOf(it.first.scheduleId, it.second.scheduleId)
+    }.toSet()
+
+    Column(modifier.fillMaxWidth()) {
+        // 周次导航：‹ 第 N 周 · 日期范围 ›
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onPreviousWeek, enabled = state.canGoPrevious) {
+                Text("‹", fontSize = 22.sp, color = if (state.canGoPrevious) KeeperInk else KeeperMuted)
+            }
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("第 ${state.selectedWeek} 周", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                if (state.weekLabel.isNotBlank()) {
+                    Text(state.weekLabel, fontSize = 11.sp, color = KeeperMuted)
                 }
-                items(entries, key = { it.scheduleId }) { entry ->
-                    CourseEntryCard(
-                        entry = entry,
-                        timeText = timeText(entry, state.periods),
-                        conflicted = state.conflicts.any {
-                            it.first.scheduleId == entry.scheduleId || it.second.scheduleId == entry.scheduleId
-                        },
-                    ) {
-                        onEntryClick(entry)
+            }
+            IconButton(onClick = onNextWeek, enabled = state.canGoNext) {
+                Text("›", fontSize = 22.sp, color = if (state.canGoNext) KeeperInk else KeeperMuted)
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+
+        // 表头：周一 ~ 周日 + 具体日期，今天的列高亮
+        Row(Modifier.fillMaxWidth()) {
+            Spacer(Modifier.width(GridAxisWidth))
+            (0..6).forEach { index ->
+                val day = index + 1
+                val date = state.weekDates.getOrNull(index)
+                val isToday = state.isCurrentWeek && day == state.todayDay
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 1.dp)
+                        .background(
+                            if (isToday) KeeperBlue.copy(alpha = 0.12f) else Color.Transparent,
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        DayNames[index].removePrefix("周"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isToday) KeeperBlue else KeeperInk,
+                    )
+                    if (date != null) {
+                        Text(
+                            "${date.monthValue}/${date.dayOfMonth}",
+                            fontSize = 9.sp,
+                            color = if (isToday) KeeperBlue else KeeperMuted,
+                        )
                     }
                 }
             }
         }
+        Spacer(Modifier.height(2.dp))
+
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                Row(
+                    Modifier
+                        .height(totalHeight)
+                        .fillMaxWidth()
+                        .drawBehind {
+                            // 横向节次分隔线 + 纵向日期分隔线，构成图 1 的网格底纹
+                            val rowPx = GridRowHeight.toPx()
+                            val axisPx = GridAxisWidth.toPx()
+                            val columnPx = (size.width - axisPx) / 7f
+                            val stroke = 1.dp.toPx()
+                            for (row in 1 until gridPeriods) {
+                                val y = row * rowPx
+                                drawLine(GridLineColor, Offset(0f, y), Offset(size.width, y), stroke)
+                            }
+                            for (column in 1..6) {
+                                val x = axisPx + column * columnPx
+                                drawLine(GridLineColor, Offset(x, 0f), Offset(x, size.height), stroke)
+                            }
+                        },
+                ) {
+                    TimeAxis(
+                        periods = state.periods,
+                        count = gridPeriods,
+                        modifier = Modifier.width(GridAxisWidth),
+                    )
+                    (1..7).forEach { day ->
+                        DayColumn(
+                            entries = state.days[day].orEmpty(),
+                            conflictIds = conflictIds,
+                            rowHeight = GridRowHeight,
+                            modifier = Modifier.weight(1f),
+                        ) { entry ->
+                            onEntryClick(entry)
+                        }
+                    }
+                }
+            }
+            if (state.isEmptyWeek) {
+                Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+                    EmptyState(
+                        title = "本周暂无课程",
+                        detail = "周次不同的课程会在对应周自动显示；也可以手动添加课程。",
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeAxis(periods: List<PeriodRecord>, count: Int, modifier: Modifier = Modifier) {
+    val byNumber = periods.associateBy { it.number }
+    Column(modifier) {
+        repeat(count) { index ->
+            Column(
+                Modifier.height(GridRowHeight).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text("${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = KeeperMuted)
+                byNumber[index + 1]?.let { period ->
+                    Text(period.startsAt.format(TimePattern), fontSize = 8.sp, color = KeeperMuted)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayColumn(
+    entries: List<CourseEntry>,
+    conflictIds: Set<String>,
+    rowHeight: Dp,
+    modifier: Modifier = Modifier,
+    onEntryClick: (CourseEntry) -> Unit,
+) {
+    BoxWithConstraints(modifier) {
+        placeEntries(entries).forEach { placed ->
+            val entry = placed.entry
+            val cardWidth = maxWidth / placed.columns
+            Box(
+                Modifier
+                    .offset(x = cardWidth * placed.column, y = rowHeight * (entry.startPeriod - 1) + 2.dp)
+                    .width(cardWidth - 3.dp)
+                    .height(rowHeight * entry.periodCount - 5.dp)
+                    .background(gridColor(entry.courseId), RoundedCornerShape(7.dp))
+                    .clickable { onEntryClick(entry) }
+                    .padding(horizontal = 4.dp, vertical = 3.dp),
+            ) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        entry.title.ifBlank { "未命名课程" },
+                        fontSize = 10.sp,
+                        lineHeight = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val meta = listOfNotNull(
+                        entry.location?.takeIf { it.isNotBlank() },
+                        entry.teacher?.takeIf { it.isNotBlank() },
+                    ).joinToString(" ")
+                    if (meta.isNotBlank()) {
+                        Text(
+                            meta,
+                            fontSize = 8.sp,
+                            lineHeight = 10.sp,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                if (entry.scheduleId in conflictIds) {
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .size(8.dp)
+                            .background(ConflictColor, RoundedCornerShape(4.dp)),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class PlacedEntry(val entry: CourseEntry, val column: Int, val columns: Int)
+
+/**
+ * 同一时段重叠的排课并排显示（图 1 的“非本周”与冲突条目都这样处理）：
+ * 按起始节排序，重叠组内的第几条就放在第几列，组内共几条就均分列宽。
+ */
+private fun placeEntries(entries: List<CourseEntry>): List<PlacedEntry> {
+    if (entries.isEmpty()) return emptyList()
+    val sorted = entries.sortedWith(compareBy({ it.startPeriod }, { it.endPeriod }, { it.scheduleId }))
+    return sorted.map { entry ->
+        val group = sorted.filter {
+            it.startPeriod <= entry.endPeriod && entry.startPeriod <= it.endPeriod
+        }
+        val column = group.indexOfFirst { it.scheduleId == entry.scheduleId }.coerceAtLeast(0)
+        PlacedEntry(entry, column, group.size)
     }
 }
 

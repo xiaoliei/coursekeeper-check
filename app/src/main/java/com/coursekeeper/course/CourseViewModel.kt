@@ -53,6 +53,12 @@ data class CourseUiState(
     val courses: List<CourseSummary> = emptyList(),
     /** 本学期节次表；空表表示只显示节次号（未设置具体时刻）。 */
     val periods: List<PeriodRecord> = emptyList(),
+    /** 今日列表 / 整周网格（本周、上周、下周共用网格）。 */
+    val viewMode: CourseViewMode = CourseViewMode.WEEK,
+    /** 今天是星期几（1..7，1=周一）：今日列表与周网格“今天”列高亮都用它。 */
+    val todayDay: Int = 1,
+    /** 所展示周的周一至周日具体日期；学期未配置或周次越界时为空表。 */
+    val weekDates: List<LocalDate> = emptyList(),
     val error: String? = null,
 ) {
     val entryCount: Int get() = days.values.sumOf { it.size }
@@ -62,6 +68,8 @@ data class CourseUiState(
     val canGoPrevious: Boolean get() = weekCount > 0 && selectedWeek > 1
     val canGoNext: Boolean get() = weekCount > 0 && selectedWeek < weekCount
     val hasSemester: Boolean get() = semesterId != null
+    /** 今日列表的数据源：展示周必须就是今天所在的教学周。 */
+    val todayEntries: List<CourseEntry> get() = if (isCurrentWeek) days[todayDay].orEmpty() else emptyList()
 }
 
 /**
@@ -81,8 +89,11 @@ class CourseViewModel(
     /** null = 跟随当前教学周；非空 = 用户正在看某一周。 */
     private val selectedWeek = MutableStateFlow<Int?>(null)
 
-    val uiState: StateFlow<CourseUiState> = combine(snapshots, selectedWeek) { snapshot, week ->
-        build(snapshot, week, now())
+    /** 今日列表 / 整周网格；顶部“今日 / 本周 / 上周 / 下周”切换。 */
+    private val viewMode = MutableStateFlow(CourseViewMode.WEEK)
+
+    val uiState: StateFlow<CourseUiState> = combine(snapshots, selectedWeek, viewMode) { snapshot, week, mode ->
+        build(snapshot, week, mode, now())
     }
         .catch { emit(CourseUiState(loading = false, error = "课程数据读取失败，请重试")) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CourseUiState())
@@ -99,6 +110,20 @@ class CourseViewModel(
 
     fun goCurrentWeek() {
         selectedWeek.value = uiState.value.currentWeek ?: 1
+    }
+
+    /**
+     * 顶部页签：今日 / 本周 / 上周 / 下周。
+     * 周次目标一律相对“今天所在的教学周”计算；“今日”同时切回当前周跟随。
+     */
+    fun selectTab(tab: CourseTab) {
+        viewMode.value = if (tab == CourseTab.TODAY) CourseViewMode.TODAY else CourseViewMode.WEEK
+        val base = uiState.value.currentWeek ?: uiState.value.selectedWeek
+        selectedWeek.value = when (tab) {
+            CourseTab.TODAY, CourseTab.THIS_WEEK -> base
+            CourseTab.PREV_WEEK -> (base - 1).coerceAtLeast(1)
+            CourseTab.NEXT_WEEK -> base + 1
+        }
     }
 
     /** 学期起始日 + 节次表补录；成功后课表周次与节次时刻立即生效。 */
@@ -162,15 +187,14 @@ class CourseViewModel(
         safely(onResult) { writer.deleteCourse(course.id, course.version) }
     }
 
-    private fun build(snapshot: DataSnapshot, requestedWeek: Int?, at: LocalDateTime): CourseUiState {
+    private fun build(snapshot: DataSnapshot, requestedWeek: Int?, mode: CourseViewMode, at: LocalDateTime): CourseUiState {
         val state = service.project(snapshot, at)
         val semester = state.semester
         val weekCount = semester?.weekCount ?: 0
         val week = (requestedWeek ?: state.weekNo ?: 1).coerceIn(1, maxOf(1, weekCount))
         val timetable = if (semester == null) WeekTimetable(week, emptyMap()) else service.timetable(snapshot, week)
         val conflicts = if (semester == null) emptyList() else service.conflicts(snapshot, week)
-        val courseSummaries = snapshot.courses
-            .filter { semester != null && it.semesterId == semester.id }
+        val courseSummaries = (if (semester == null) emptyList() else snapshot.coursesOf(semester.id))
             .map { course ->
                 CourseSummary(
                     id = course.id,
@@ -207,7 +231,18 @@ class CourseViewModel(
             periods = snapshot.periods
                 .filter { semester != null && it.semesterId == semester.id }
                 .sortedBy { it.number },
+            viewMode = mode,
+            todayDay = at.dayOfWeek.value,
+            weekDates = weekDates(snapshot, semester?.id, week),
         )
+    }
+
+    /** 展示周的周一至周日日期，供周网格表头与“今日”副标题使用。 */
+    private fun weekDates(snapshot: DataSnapshot, semesterId: String?, week: Int): List<LocalDate> {
+        if (semesterId == null) return emptyList()
+        val record = snapshot.semesters.firstOrNull { it.id == semesterId } ?: return emptyList()
+        val range = WeekCalculator.weekRange(record, week) ?: return emptyList()
+        return List(7) { range.start.plusDays(it.toLong()) }
     }
 
     /** 节次表校验：编号唯一从 1 起、每节结束晚于开始；空表合法（只显示节次号）。 */

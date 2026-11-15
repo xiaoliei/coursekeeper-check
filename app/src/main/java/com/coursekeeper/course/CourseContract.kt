@@ -17,6 +17,17 @@ enum class CoursePhase {
     NOT_IN_TERM,
 }
 
+/** 课表页顶部切换：今日 / 本周 / 上周 / 下周。 */
+enum class CourseTab(val label: String) {
+    TODAY("今日"),
+    THIS_WEEK("本周"),
+    PREV_WEEK("上周"),
+    NEXT_WEEK("下周"),
+}
+
+/** 课表页的两种展示：今日保留逐条列表；其余三个周次共用整周网格。 */
+enum class CourseViewMode { TODAY, WEEK }
+
 /** 一条排课在界面上需要的全部信息；`teacher` 已按“条目覆盖课程”补齐。 */
 data class CourseEntry(
     val scheduleId: String,
