@@ -81,11 +81,17 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
         val result = sync.synchronize(force = true)
         // 后台同步失败不能谎报“导入完成”（与首页的过期/错误横幅矛盾，D 复核①）：
         // 有模块失败时向上抛，让登录状态机进入 Failure 并保留重试入口。
-        if (result is SyncRunResult.Finished) {
-            val failed = result.summary.modules.filter {
-                it.status == SyncStatus.OFFLINE || it.status == SyncStatus.EXPIRED || it.status == SyncStatus.ERROR
+        // 子代理复核补充：InProgress / SchoolMismatch 也不能静默当成功——前者是
+        // force 同步根本没跑（撞上另一次持锁），后者意味着数据源与缓存不一致。
+        when (result) {
+            is SyncRunResult.Finished -> {
+                val failed = result.summary.modules.filter {
+                    it.status == SyncStatus.OFFLINE || it.status == SyncStatus.EXPIRED || it.status == SyncStatus.ERROR
+                }
+                if (failed.isNotEmpty()) error(syncFailureText(failed))
             }
-            if (failed.isNotEmpty()) error(syncFailureText(failed))
+            SyncRunResult.InProgress -> error("上一次同步还在进行中，本次结果未确认。稍后可在首页查看或重试。")
+            SyncRunResult.SchoolMismatch -> error("学校数据与本机缓存不一致，请退出登录后重新连接。")
         }
     })
 }
