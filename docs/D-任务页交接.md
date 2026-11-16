@@ -226,3 +226,83 @@ bottomBar 按钮常驻 + 条件文案），`requestAddTask` 语义一处（已�
 **路线二（Compose/UI 与集成）**：taskScreen=null 旁路全通过（演示表单、DemoTasks、contentReady=false 整页行为均原样）；底栏高度恒定无破坏路径（跳动修复前提成立，与两段逐帧证据自洽）；LazyColumn 键无碰撞；旋转/进程重建闭环（pendingBatchDelete saveable + VM 选择集存活 + 清残留 effect）；无障碍四态齐全；首页/课表/数据零牵连；NavigationTest/HomeIntegrationTest 逐断言核对无碰撞（两者不在 JVM 门禁内，建议推送前有条件跑一次 connected）。**唯一 P2 = 横屏取舍未记录完整 → 已补进 §五 已知边界**（横屏固定区域 80→144dp、列表可视少约 70–80dp，页面可用，属跳动修复必要代价）。P3 记档：MainActivity 残留未用 import LocalConfiguration、TaskScreen 两处注释过时、选择模式期间 ⋯ 产生的新提示仍会短暂浮于操作条上方（可自行关闭）、⋯ 按钮无 contentDescription（旧版即有）。**@A 复核要点（AppShell.kt 四处）**：①删 snackbarBottomInset 参数（全仓仅 MainActivity 一处调用，已同步）；②bottomBar 按钮常驻+条件文案；③requestAddTask 已在任务页不重置筛选；④删 Dp import。
 
 处置：代码零改动（结论之后一行不动）；P2 记入 §五；P3 全部记档留待下轮顺手清理（unused import、两处注释、⋯ 描述、空列表全选隐藏、isDeleting 防抖、循环可中断、参数改名）。
+
+## 十、W6 固化样例：任务异常数据（2026-11-17）
+
+### 10.1 范围
+
+- 新增 `TaskAnomalyTest`（18 项，纯逻辑）与 `TaskViewModelAnomalyTest`（6 项，状态机），
+  `ReminderContractTest` 补 1 项提醒等号边界——提醒侧其余样例沿用第 3 周已固化的
+  `ReminderContract/ReminderScheduler/ReminderCoordinator/BootHint`（36 项）。
+- 顺手清掉 §9.4 记档的 P3：`combine` 参数命名（`selected` → `currentQuery`）、
+  空列表隐藏「全选」、⋯ 按钮补 `contentDescription`、TaskScreen 两处过时注释、
+  `allVisibleSelected` 直接单测（§9.4 P3 #4 至此补齐）。
+- 明确不做：C 的学校链路（P0 未修）、同步链路真机验证、`MainActivity` 里 C 的接线、
+  `isDeleting` 防抖与可中断删除（属行为变更，留待有需求时单独做）。
+
+### 10.2 覆盖矩阵
+
+断言分两类：**v1.0 口径**（实现漂移即缺陷）与**固化的当前行为**（已知限制，防"悄悄变了"）。
+下表最后一列标出依据，不要混为一谈。
+
+| 异常类别 | 用例要点 | 依据 |
+| --- | --- | --- |
+| 标题空白 | 纯 ASCII 空白、纯全角空格（U+3000）、首尾全角空格削边、内部空格保留 | v1.0 §1 字段表（名称必填）/§3 createTask |
+| 标题长度 | 60 字恰好通过、61 字拒绝；UTF-16 计数（30 个 emoji = 60） | v1.0 §1/§3（≤60 字）；计数单位为固化行为 |
+| 截止边界 | dueAt 恰等于 now 不算逾期（严格早于才算）；now 前进 1ns 即逾期 | v1.0 §1「已过」 |
+| 跨日/跨年 | 最后与第一分钟（12-31 23:59 / 01-01 00:00）；「明天」跨年仍正确 | v1.0 §1 日界（本地 00:00） |
+| 远期日期 | 非今天/明天/昨天只显示 月/日（无年份） | 界面文案现状（已知限制，非 v1.0 条款） |
+| 日期输入 | 带秒被拒且给出示例格式；11-31 严格解析不顺延；勾"截止待定"忽略残留文本 | 表单预校验 |
+| 筛选叠加 | 状态×类型×日期三条件为"与"；日界按本地日而非滚动 24 小时 | v1.0 §3 |
+| 排序稳定 | dueAt 相同保持输入顺序；输入反转输出也反转 | 固化当前行为（JVM/ART 稳定排序）；v1.0 未规定相等键 |
+| 逾期排序 | 逾期不单独分组、不置底；已完成恒在待办之后 | v1.0 §3 |
+| 重放 | `changed=false` 不弹提示、不给撤销按钮 | E 的 `WriteReceipt.changed`（重放不计） |
+| 撤销/删除失效 | 用回执版本对已删除任务提交 → "任务不存在"，不提供二次撤销 | E 的 `DataError` |
+| 幽灵选择 | 传入不在当前视图的 id 不会让选择模式出现在界面上 | W5 选择集口径（按可见集收缩） |
+| 全选标签 | 空视图 false；部分选中 false；全部选中 true | W5 选择集口径 |
+| 跨零点刷新 | ①逾期文案自行刷新（今天 23:59 → 已逾期 · 昨天 23:59）；②「今日截止」过零点自动清空 | v1.0 §1 + 每分钟重算 |
+| 提醒等号边界 | 槽位恰等于 now 按"已过"丢弃，不追发；任务侧等号则不算逾期（两侧一致地"这一刻不动作"） | v1.0 §4「不追发」 |
+
+### 10.3 结论：未发现 P0/P1 代码缺陷
+
+- **一个预判被证伪**：原以为"纯全角空格标题能绕过必填"，实测不能——Kotlin 的 `trim()` 按
+  `Char.isWhitespace()` 削边，涵盖 U+3000（Java 的 `String.trim()` 才只削 ASCII）。用例保留，
+  防的是日后被改成"只削普通空格"。
+- **本轮首次拿到自动化证据**的两条既有承诺：跨零点文案自刷新、日期筛选过零点自动收缩
+  （此前只有代码注释与真机观察）。
+- 已确认正确的既有防线：表单 `courseId.ifBlank { null }`（不会把空串当课程 id）、
+  `ResolverStyle.STRICT` 日期解析（11-31 不静默顺延）、批量删除逐条续删、`changed=false` 静默。
+
+### 10.4 固化为样例的已知限制（非缺陷）
+
+| 限制 | 说明 |
+| --- | --- |
+| 标题长度按 UTF-16 计 | 一个 emoji 占 2，30 个即用满 60；中文场景无影响 |
+| 远期日期不显示年份 | 跨学年的远期 DDL 显示"11/10 08:00"有歧义；改界面文案需产品口径，暂记档 |
+| 带秒的日期输入被拒 | 粘贴 `2026-11-09 23:59:00` 会提示格式，需用户手动删秒 |
+
+### 10.5 测试
+
+`./gradlew assembleDebug testDebugUnitTest` → **BUILD SUCCESSFUL**，全仓 **265 项 / 0 失败**
+（240 → 265，本轮 +25：任务侧 24 + 提醒等号 1）。
+
+### 10.6 双路自检记录（2026-11-17，用户同意后送检；范围 591e752..HEAD）
+
+**路线一（业务逻辑/并发/口径）修复后可提交、路线二（Compose/UI 与集成）可提交，均无 P0。**
+
+处置：
+
+| 发现 | 级别 | 处置 |
+| --- | --- | --- |
+| 文档/类注释称"断言的是 v1.0 口径，不是当前实现的快照"，与三条 characterization 用例矛盾 | P1 | 已改为两类断言分开表述（§10.2 依据列 + 类注释） |
+| "v1.0 §3「重放不计」"引用不实；v1.0 只有 §5 requestId 去重，`changed/replayed` 来自 E 的回执 | P1 | 引用改到 `WriteReceipt.changed`，并注明本用例只覆盖 `changed=false` |
+| `allVisibleSelected` 缺"部分选中 → false"用例（实现改成 any 也不变红） | P2 | 已补 1 条（三行只选一/二/三） |
+| 提醒侧无等号边界用例 | P2 | 已补 1 条（槽位恰等于 now） |
+| 覆盖矩阵引用错（标题写成 §2、稳定排序过度归因 §3） | P2 | 已逐行改正并加"依据"列 |
+| `toggle` 只查 `changed` 不查 `!replayed`；`TaskGateway.setCompleted` 暂不传 requestId，故当前无影响 | P2 | 记档为 **A05 前置项**：Agent 阶段若加 requestId 需改成 `changed && !replayed` 并补测试 |
+| 交接文档被整篇转成 CRLF，产生 507 行假 diff | P3 | 已还原 LF，diff 只保留真实追加 |
+| 矩阵漏列「空视图全选」；`lastMinute` 变量名不符实；「幽灵选择」用例名大于断言范围；「逾期不禁用」无对应断言 | P3 | 已改（矩阵补行、变量改名、用例名与注释收敛、措辞改为"不置底、不单独分组"） |
+| 空列表隐藏全选、⋯ 描述无 Compose UI 测试 | P3 | 记档：androidTest 尚无 TaskScreen 用例，后续补最小 Compose 断言 |
+| `MainActivity.kt:20` 未用 `LocalConfiguration` import 仍在 | P3 | 不改（`MainActivity` 是 C 正在迭代的共享文件，避免冲突），维持 §9.4 记档 |
+
+说明：本轮未新增真机结果，`docs/真机测试总表.md` 不加行；真机复验与同步链路验证待 C 修复 P0 后一并做。
