@@ -29,8 +29,14 @@ import com.coursekeeper.course.CourseScreen
 import com.coursekeeper.course.CourseViewModel
 import com.coursekeeper.course.RepositoryCourseService
 import com.coursekeeper.data.CourseKeeperData
+import com.coursekeeper.data.model.SyncModule
+import com.coursekeeper.data.model.SyncRecord
+import com.coursekeeper.data.model.SyncStatus
 import com.coursekeeper.data.settings.AppSettings
+import com.coursekeeper.data.sync.SyncFailure
+import com.coursekeeper.data.sync.SyncRunResult
 import com.coursekeeper.home.*
+import com.coursekeeper.home.SyncStatus as HomeSyncStatus
 import com.coursekeeper.reminder.AlarmReminderScheduler
 import com.coursekeeper.reminder.BootStateStore
 import com.coursekeeper.reminder.ReminderCoordinator
@@ -44,11 +50,11 @@ import com.coursekeeper.task.TaskViewModel
 import com.coursekeeper.task.TaskQuery
 import com.coursekeeper.task.TaskStatusFilter
 import com.coursekeeper.task.TaskDateFilter
+import com.coursekeeper.school.SchoolAdapterHolder
 import com.coursekeeper.school.SchoolCatalog
 import com.coursekeeper.school.SchoolLoginController
 import com.coursekeeper.school.SchoolLoginSheet
 import com.coursekeeper.school.SchoolLogout
-import com.coursekeeper.school.WebViewSchoolAdapter
 import com.coursekeeper.ui.AppShell
 import com.coursekeeper.ui.StatisticsScreen
 import com.coursekeeper.ui.theme.CourseKeeperTheme
@@ -65,24 +71,45 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     val courseService = RepositoryCourseService(data.repository)
     val statistics = StatisticsViewModel(data.repository, courseStatsSource = courseService, scope = viewModelScope)
     // C：学校适配器（E 约定应用级同一实例交给协调器）与登录流程控制器。
-    // 解析器随学校目录提供（首批为正方教务课表格式），学期标签用于课程稳定标识前缀。
-    // debugDumpDir：真机诊断用——把同步拉到的原始页面存到应用外部目录，便于离线排查解析漏课。
-    val schoolAdapter = WebViewSchoolAdapter(
-        schoolProvider = { SchoolCatalog.default },
-        courseParser = SchoolCatalog.courseParser,
-        taskParser = SchoolCatalog.taskParser,
-        debugDumpDir = java.io.File(
-            application.getExternalFilesDir(null) ?: application.filesDir,
-            "sync-debug",
-        ),
-    )
+    // 适配器经 SchoolAdapterHolder 按进程持有单例：ViewModel 会随返回键退出销毁，
+    // 每次新建实例会撞上数据层的 require（D 复核：启动崩溃）。
+    val schoolAdapter = SchoolAdapterHolder.get(application)
     val sync = data.syncCoordinator(schoolAdapter)
     val loginController = SchoolLoginController(afterLogin = {
         data.settings.selectSchool(SchoolCatalog.default.id)
         data.settings.completeOnboarding()
-        sync.synchronize(force = true)
+        val result = sync.synchronize(force = true)
+        // 后台同步失败不能谎报“导入完成”（与首页的过期/错误横幅矛盾，D 复核①）：
+        // 有模块失败时向上抛，让登录状态机进入 Failure 并保留重试入口。
+        if (result is SyncRunResult.Finished) {
+            val failed = result.summary.modules.filter {
+                it.status == SyncStatus.OFFLINE || it.status == SyncStatus.EXPIRED || it.status == SyncStatus.ERROR
+            }
+            if (failed.isNotEmpty()) error(syncFailureText(failed))
+        }
     })
 }
+
+/** 同步模块失败时的人话描述：登录完成页据此提示真实结果，而不是谎报“导入完成”。 */
+internal fun syncFailureText(failed: List<SyncRecord>): String =
+    "同步未完成：" + failed.joinToString("；") { record ->
+        val module = when (record.module) {
+            SyncModule.COURSES -> "课表"
+            SyncModule.TASKS -> "作业"
+        }
+        val reason = when (record.errorCode) {
+            SyncFailure.OFFLINE.name -> "网络不可用"
+            SyncFailure.EXPIRED.name -> "登录已过期"
+            SyncFailure.TIMEOUT.name -> "连接超时"
+            SyncFailure.PARSE_ERROR.name -> "页面解析失败"
+            SyncFailure.REMOTE_ERROR.name -> "学校服务暂不可用"
+            SyncFailure.VERSION_CONFLICT.name -> "本地数据冲突"
+            SyncFailure.INVALID_DATA.name -> "数据校验未通过"
+            SyncFailure.INTERRUPTED.name -> "同步被中断"
+            else -> "未知原因"
+        }
+        "$module：$reason"
+    } + "。稍后可在首页重试。"
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -264,7 +291,7 @@ class MainActivity : ComponentActivity() {
                         controller=owner.loginController,
                         savedSchool=if (appSettings.schoolId != null) SchoolCatalog.default else null,
                         // 只有"登录过期"入口才直达登录页；顶栏"学校"进来先看连接状态与退出入口。
-                        autoLogin = state.status == SyncStatus.Expired,
+                        autoLogin = state.status == HomeSyncStatus.Expired,
                         onLogout = {
                             // 清会话 Cookie + 取消记住的学校；本地课程任务由 E 保留，不删库。
                             SchoolLogout.clear()
