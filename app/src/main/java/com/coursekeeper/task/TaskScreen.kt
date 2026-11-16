@@ -95,7 +95,8 @@ fun TaskScreen(
         if (pendingBatchDelete && state.selectedIds.isEmpty()) pendingBatchDelete = false
     }
 
-    // 横屏/短屏只 ~230dp 可用高度，大标题与固定按钮会把列表压到看不见；此时改用紧凑头部 + 行内新建入口。
+    // 横屏/短屏只 ~230dp 可用高度，大标题与固定行会把列表压到看不见；此时改用紧凑头部
+    //（小字计数行 + 右侧全选），新建入口仍在底栏、不受紧凑模式影响。
     val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < TaskCompactHeightDp
 
     Column(modifier.fillMaxSize()) {
@@ -118,7 +119,8 @@ fun TaskScreen(
                         fontSize = 12.sp, color = KeeperMuted,
                     )
                 }
-                if (state.statusFilter.supportsBatchSelect) {
+                // 空列表时不显示「全选」：没有可选项，按钮点了也只是无反应（P3 记档后清理）
+                if (state.statusFilter.supportsBatchSelect && state.tasks.isNotEmpty()) {
                     TextButton(onClick = onSelectAll) {
                         Text(if (state.allVisibleSelected) "取消全选" else "全选", fontSize = 12.sp)
                     }
@@ -149,7 +151,7 @@ fun TaskScreen(
                     fontSize = 11.sp, color = KeeperMuted,
                     modifier = Modifier.weight(1f),
                 )
-                if (state.statusFilter.supportsBatchSelect) {
+                if (state.statusFilter.supportsBatchSelect && state.tasks.isNotEmpty()) {
                     TextButton(onClick = onSelectAll) {
                         Text(if (state.allVisibleSelected) "取消全选" else "全选", fontSize = 12.sp)
                     }
@@ -211,7 +213,8 @@ fun TaskScreen(
             }
         }
 
-        // 选择模式的底部操作条（W5）：替代原"＋ 新建任务"的位置；退出选择或删除后消失。
+        // 选择模式的底部操作条（W5）：贴在本页内容区底部，与 Scaffold 底栏的
+        //「＋ 新建任务」并存（后者常驻以保证底栏高度恒定）；退出选择或删除后消失。
         if (state.selectedIds.isNotEmpty()) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
@@ -370,7 +373,11 @@ private fun TaskCard(
             )
         }
         Box {
-            TextButton(onClick = { menu = true }) { Text("⋯", fontSize = 18.sp) }
+            TextButton(
+                onClick = { menu = true },
+                // 无障碍：TalkBack 只念"⋯"毫无意义，补上任务名（与勾选框的描述同一格式）
+                modifier = Modifier.semantics { contentDescription = "更多操作：" + view.record.title },
+            ) { Text("⋯", fontSize = 18.sp) }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 // 批量视图里勾选框已让给"选择"，完成状态在这里切（排第一位：这两个视图里最常用）
                 DropdownMenuItem(

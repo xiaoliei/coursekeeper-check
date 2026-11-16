@@ -115,16 +115,16 @@ class TaskViewModel(
     }
 
     val uiState: StateFlow<TaskUiState> =
-        combine(data, query, minuteTick, selection) { snapshot, selected, _, selectedIds ->
+        combine(data, query, minuteTick, selection) { snapshot, currentQuery, _, selectedIds ->
             val stamp = now()
             val views = snapshot.tasks.sortedForDisplay().map { it.toView(snapshot.courses, stamp) }
-            val visible = views.visible(selected.status, selected.type, selected.date, stamp)
+            val visible = views.visible(currentQuery.status, currentQuery.type, currentQuery.date, stamp)
             TaskUiState(
                 tasks = visible,
                 courses = snapshot.courses,
-                statusFilter = selected.status,
-                typeFilter = selected.type,
-                dateFilter = selected.date,
+                statusFilter = currentQuery.status,
+                typeFilter = currentQuery.type,
+                dateFilter = currentQuery.date,
                 openCount = views.count { it.status != TaskStatus.COMPLETED },
                 doneCount = views.count { it.status == TaskStatus.COMPLETED },
                 // 后台快照变化（同步删除、状态变化移出视图）时，选中集随当前视图自动收缩
