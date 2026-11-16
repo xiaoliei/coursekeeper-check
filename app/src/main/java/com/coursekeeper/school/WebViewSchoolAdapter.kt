@@ -54,10 +54,11 @@ class WebViewSchoolAdapter(
     override suspend fun fetchCourses(): ModuleResult<ImportedCourse> =
         fetch(schoolProvider().scheduleUrl) { body ->
             val parsed = courseParser.parseSchedule(body)
-            // 页面结构不对（例如地址失效、被带到“选择学期”页）时，解析结果会是“0 门课 + 警告”；
-            // 这种情况必须报失败，不能当成“同步成功、没有课”。
-            if (parsed.courses.isEmpty() && parsed.warnings.isNotEmpty()) {
-                error(parsed.warnings.joinToString("；"))
+            // 解析出 0 门课一律按失败上报（D 复核 2026-11-15）：地址失效、被带到别的页面、
+            // 或学校返回了结构正常但空网格的课表页，都走这里。绝不能把空导入交给镜像合并——
+            // 那会把本地同步课程全部清掉。语义待 E 最终拍板：确属“无课学期”时再放宽此守卫。
+            if (parsed.courses.isEmpty()) {
+                error(parsed.warnings.joinToString("；").ifBlank { "课表页未解析出任何课程" })
             }
             parsed.courses
         }
