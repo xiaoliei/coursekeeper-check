@@ -146,9 +146,10 @@ bottomBar 与 content 两个子组合在切页的第一帧不同步，任务页�
 `AppShell` 的 `snackbarBottomInset` 参数、`TaskScreen` 的 `TaskBottomButtonHeight` 常量——按钮进了
 底栏后，提示由 Scaffold 自动避让，真机确认位置正确（提示在按钮上方）。
 
-**⚠️ 需 A 复核**：本次改了 A 的 `AppShell.kt` 三处（删参数、snackbarHost 还原为标准写法、
-bottomBar 按钮常驻 + 条件文案），`requestAddTask` 语义一处（已在任务页时不重置筛选）。推送前会在群里
-@A 点名；`taskScreen=null` 演示路径不受影响（底栏按钮照旧走 `add` 演示表单）。
+**✅ A 复核已通过（2026-11-17，群内确认无异议）**：本次改了 A 的 `AppShell.kt` 三处（删参数、
+snackbarHost 还原为标准写法、bottomBar 按钮常驻 + 条件文案），`requestAddTask` 语义一处
+（已在任务页时不重置筛选）。已按规矩推前 @A 点名；`taskScreen=null` 演示路径不受影响
+（底栏按钮照旧走 `add` 演示表单）。
 
 ### 9.2 「全选」批量删除（W5）
 
@@ -223,7 +224,7 @@ bottomBar 按钮常驻 + 条件文案），`requestAddTask` 语义一处（已�
 5. combine 参数 `selected` 实为 TaskQuery，命名易误导；
 6. toggleSelect/All 依赖 uiState.value 快照——**A05 Agent 阶段若需程序化选择须把可见集参数化**（前车之鉴，记录）。
 
-**路线二（Compose/UI 与集成）**：taskScreen=null 旁路全通过（演示表单、DemoTasks、contentReady=false 整页行为均原样）；底栏高度恒定无破坏路径（跳动修复前提成立，与两段逐帧证据自洽）；LazyColumn 键无碰撞；旋转/进程重建闭环（pendingBatchDelete saveable + VM 选择集存活 + 清残留 effect）；无障碍四态齐全；首页/课表/数据零牵连；NavigationTest/HomeIntegrationTest 逐断言核对无碰撞（两者不在 JVM 门禁内，建议推送前有条件跑一次 connected）。**唯一 P2 = 横屏取舍未记录完整 → 已补进 §五 已知边界**（横屏固定区域 80→144dp、列表可视少约 70–80dp，页面可用，属跳动修复必要代价）。P3 记档：MainActivity 残留未用 import LocalConfiguration、TaskScreen 两处注释过时、选择模式期间 ⋯ 产生的新提示仍会短暂浮于操作条上方（可自行关闭）、⋯ 按钮无 contentDescription（旧版即有）。**@A 复核要点（AppShell.kt 四处）**：①删 snackbarBottomInset 参数（全仓仅 MainActivity 一处调用，已同步）；②bottomBar 按钮常驻+条件文案；③requestAddTask 已在任务页不重置筛选；④删 Dp import。
+**路线二（Compose/UI 与集成）**：taskScreen=null 旁路全通过（演示表单、DemoTasks、contentReady=false 整页行为均原样）；底栏高度恒定无破坏路径（跳动修复前提成立，与两段逐帧证据自洽）；LazyColumn 键无碰撞；旋转/进程重建闭环（pendingBatchDelete saveable + VM 选择集存活 + 清残留 effect）；无障碍四态齐全；首页/课表/数据零牵连；NavigationTest/HomeIntegrationTest 逐断言核对无碰撞（两者不在 JVM 门禁内，建议推送前有条件跑一次 connected）。**唯一 P2 = 横屏取舍未记录完整 → 已补进 §五 已知边界**（横屏固定区域 80→144dp、列表可视少约 70–80dp，页面可用，属跳动修复必要代价）。P3 记档：MainActivity 残留未用 import LocalConfiguration、TaskScreen 两处注释过时、选择模式期间 ⋯ 产生的新提示仍会短暂浮于操作条上方（可自行关闭）、⋯ 按钮无 contentDescription（旧版即有）。**@A 复核要点（AppShell.kt 四处）**：①删 snackbarBottomInset 参数（全仓仅 MainActivity 一处调用，已同步）；②bottomBar 按钮常驻+条件文案；③requestAddTask 已在任务页不重置筛选；④删 Dp import。**✅ 2026-11-17 A 已复核，无异议。**
 
 处置：代码零改动（结论之后一行不动）；P2 记入 §五；P3 全部记档留待下轮顺手清理（unused import、两处注释、⋯ 描述、空列表全选隐藏、isDeleting 防抖、循环可中断、参数改名）。
 
