@@ -55,6 +55,18 @@ class ReminderContractTest {
     }
 
     @Test
+    fun `slot exactly at now is treated as past`() {
+        // 等号边界（W6 固化）：截止在 1 小时后 → 1h 槽位恰好等于 now，按"已过"丢弃（isAfter 严格）。
+        // 与任务侧"dueAt 恰等于 now 不算逾期"（isBefore 严格）方向相反，但两者语义一致：
+        // 这一刻都不产生新动作——不追发提醒、也不把任务判成逾期。
+        // 生产时钟带纳秒，等号在实践中不可达；若日后改成 !isBefore，这条用例会红，需同步改口径说明。
+        val dueAt = now.plusHours(1)
+        assertTrue(reminderSlots(dueAt, now).isEmpty())
+        assertNull(nextReminderSlot(dueAt, now))
+        assertFalse(record(dueAt = dueAt).needsReminder(now))
+    }
+
+    @Test
     fun `next slot is the earliest future one`() {
         val dueAt = LocalDateTime.of(2026, 11, 13, 12, 0)
         assertEquals(LocalDateTime.of(2026, 11, 12, 12, 0), nextReminderSlot(dueAt, now))
