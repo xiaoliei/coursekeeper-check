@@ -76,8 +76,11 @@ class StatisticsViewModelTest : DataTestBase() {
                 return CourseStats()
             }
         }
-        val vm = StatisticsViewModel(repository, courseStatsSource = source, scope = backgroundScope, now = { now })
+        // 先灌数据、后建 VM：Room 的 Flow 在真实后台线程发射，advanceUntilIdle() 只推进
+        // 虚拟时间、等不到它。若先建 VM，首个快照可能是空库快照，错误态一出现
+        // first{} 就返回，retry() 会拿着空快照算出 weekTaskCount=0（CI 慢机器上必现）。
         seedBoundaryWeek()
+        val vm = StatisticsViewModel(repository, courseStatsSource = source, scope = backgroundScope, now = { now })
         advanceUntilIdle()
         val failed = vm.uiState.first { it.error != null }
         assertEquals(0, failed.weekTaskCount)
