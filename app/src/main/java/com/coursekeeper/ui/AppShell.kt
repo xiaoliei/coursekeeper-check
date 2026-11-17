@@ -41,10 +41,13 @@ fun AppShell(
     onTaskFilter: (TaskFilter) -> Unit = {},
     onCreateTask: (() -> Unit)? = null,
     onRetryHome: () -> Unit = {},
+    onImportExcel: (() -> Unit)? = null,
+    onPasteCourseNotice: (() -> Unit)? = null,
 ) {
     var selected by rememberSaveable { mutableStateOf(Destination.Home) }
     var filter by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
     var menu by remember { mutableStateOf(false) }
+    var importMenu by remember { mutableStateOf(false) }
     var add by rememberSaveable { mutableStateOf(false) }
     var login by rememberSaveable { mutableStateOf(false) }
     var taskDetailId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -70,22 +73,42 @@ fun AppShell(
         topBar={ TopAppBar(title={ Column {
             Text("课程任务管家",fontSize=18.sp,fontWeight=FontWeight.Bold)
             Text(if(state.isDemo) "交互演示 · 2026.11.09" else state.dateLabel,fontSize=11.sp,color=KeeperMuted)
-        } }, actions={ if(state.isDemo) Box {
-            TextButton(onClick={menu=true}) { Text("演示设置",fontSize=12.sp) }
-            DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
-                DropdownMenuItem(text={Text("切换场景会重置示例",fontSize=11.sp)},onClick={},enabled=false)
-                DemoScenario.entries.forEach { scenario ->
-                    DropdownMenuItem(text={Text(scenario.label)},onClick={
-                        menu=false;selected=Destination.Home;filter=TaskFilter.Pending
-                        add=false;login=false;taskDetailId=null;courseDetailId=null;onScenario(scenario)
-                    })
+        } }, actions={ Row {
+            if(onImportExcel != null || onPasteCourseNotice != null) Box {
+                TextButton(onClick={importMenu=true}) { Text("导入",fontSize=12.sp) }
+                DropdownMenu(expanded=importMenu,onDismissRequest={importMenu=false}) {
+                    if(onImportExcel != null) DropdownMenuItem(
+                        text={Text("手动导入 Excel",fontSize=12.sp)},
+                        onClick={
+                            importMenu=false
+                            onImportExcel()
+                        },
+                    )
+                    if(onPasteCourseNotice != null) DropdownMenuItem(
+                        text={Text("粘贴课程通知",fontSize=12.sp)},
+                        onClick={
+                            importMenu=false
+                            onPasteCourseNotice()
+                        },
+                    )
                 }
             }
-        }
+            if(state.isDemo) Box {
+                TextButton(onClick={menu=true}) { Text("演示设置",fontSize=12.sp) }
+                DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
+                    DropdownMenuItem(text={Text("切换场景会重置示例",fontSize=11.sp)},onClick={},enabled=false)
+                    DemoScenario.entries.forEach { scenario ->
+                        DropdownMenuItem(text={Text(scenario.label)},onClick={
+                            menu=false;selected=Destination.Home;filter=TaskFilter.Pending
+                            add=false;login=false;taskDetailId=null;courseDetailId=null;onScenario(scenario)
+                        })
+                    }
+                }
+            }
             // C 的学校入口：登录成功后过期横幅不会再出现，必须留一个常驻入口，
             // 用户才能做"重新登录 / 退出登录"。独立演示工程不传 loginSheet 时不显示。
             else if(loginSheet != null) TextButton(onClick={login=true}) { Text("学校",fontSize=12.sp) }
-        }) },
+        } }) },
         snackbarHost={ SnackbarHost(snackbarHostState) },
         bottomBar={ if(contentReady) Column {
             // 新建入口统一放底栏、所有页常驻（D 2026-11-14）：任务页不再自带按钮——
@@ -115,7 +138,14 @@ fun AppShell(
         else if(state.readError != null) Box(area.padding(24.dp),contentAlignment=Alignment.Center) {
             EmptyState("暂时无法读取本地数据",state.readError,"重试",onRetryHome)
         }
-        else if(state.onboarding) Onboarding(area,{login=true},onSkipLogin,state.isDemo)
+        else if(state.onboarding) Onboarding(
+            area,
+            { login=true },
+            onSkipLogin,
+            state.isDemo,
+            onImportExcel,
+            onPasteCourseNotice,
+        )
         else when(selected) {
             Destination.Home -> HomeScreen(state,{selected=Destination.Courses},::goTasks,
                 {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},{login=true},::requestAddTask,area)
@@ -149,13 +179,28 @@ fun AppShell(
     }
 }
 
-@Composable private fun Onboarding(modifier: Modifier,onLogin: () -> Unit,onSkip: () -> Unit,isDemo: Boolean) {
+@Composable private fun Onboarding(
+    modifier: Modifier,
+    onLogin: () -> Unit,
+    onSkip: () -> Unit,
+    isDemo: Boolean,
+    onImportExcel: (() -> Unit)?,
+    onPasteCourseNotice: (() -> Unit)?,
+) {
     Column(modifier.verticalScroll(rememberScrollState()).padding(28.dp),verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally) {
         Text("今天该做什么，\n打开就知道。",fontSize=28.sp,lineHeight=36.sp,fontWeight=FontWeight.Bold)
         Spacer(Modifier.height(24.dp))
         Text("查看今天的课程和近期截止任务。\n基础版支持离线查看和手动维护。",color=KeeperMuted)
         Spacer(Modifier.height(32.dp))
         Button(onClick=onLogin,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("连接学校，导入课表")}
+        if(onImportExcel != null) OutlinedButton(
+            onClick=onImportExcel,
+            modifier=Modifier.fillMaxWidth().heightIn(min=48.dp),
+        ) { Text("手动导入 Excel") }
+        if(onPasteCourseNotice != null) OutlinedButton(
+            onClick=onPasteCourseNotice,
+            modifier=Modifier.fillMaxWidth().heightIn(min=48.dp),
+        ) { Text("粘贴课程通知") }
         OutlinedButton(onClick=onSkip,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {Text("先手动使用")}
         Text(if(isDemo) "本工程使用内存假数据，重启会还原。" else "手动任务保存在本机，可以离线使用。",fontSize=12.sp,color=KeeperMuted)
     }

@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="21" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-17T13:27:53" hostname="localhost">
+  <testsuite name="com.coursekeeper.HomeCourseUiTest" tests="3" failures="0" errors="0" skipped="0" time="4.483" timestamp="2026-11-17T13:27:53" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="finishedCoursesKeepTodayCountAndOfferTimetableInsteadOfLogin" classname="com.coursekeeper.HomeCourseUiTest" time="2.549" />
+    <testcase name="freeDayKeepsOtherDaysCoursesAndDoesNotAskForLogin" classname="com.coursekeeper.HomeCourseUiTest" time="0.926" />
+    <testcase name="emptyWeekOffersCourseMaintenance" classname="com.coursekeeper.HomeCourseUiTest" time="1.008" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.HomeIntegrationTest" tests="2" failures="0" errors="0" skipped="0" time="6.854" timestamp="2026-11-17T13:27:53" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="homeCountersOpenExactDateFiltersInsteadOfOnlyOpenOrDone" classname="com.coursekeeper.HomeIntegrationTest" time="2.874" />
+    <testcase name="homeCreateCompletionUndoAndActivityRecreationUseTheSameDatabase" classname="com.coursekeeper.HomeIntegrationTest" time="3.980" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.HomeSummaryUiTest" tests="6" failures="0" errors="0" skipped="0" time="6.690" timestamp="2026-11-17T13:27:53" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="teachingWeekAndPressureSummaryIncludeExplanation" classname="com.coursekeeper.HomeSummaryUiTest" time="0.956" />
+    <testcase name="offlineDetailsCanCloseWithoutChangingCachedCounts" classname="com.coursekeeper.HomeSummaryUiTest" time="1.098" />
+    <testcase name="noSemesterAndNoPressureDoNotShowExampleValues" classname="com.coursekeeper.HomeSummaryUiTest" time="1.005" />
+    <testcase name="partialExpiredModuleCanRequestLoginFromDetails" classname="com.coursekeeper.HomeSummaryUiTest" time="1.344" />
+    <testcase name="partialFailureDetailsPreserveSuccessTimeAndManualTaskEntry" classname="com.coursekeeper.HomeSummaryUiTest" time="1.134" />
+    <testcase name="syncingDetailsRetainPreviousSuccessAndDoNotOfferLogin" classname="com.coursekeeper.HomeSummaryUiTest" time="1.153" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.NavigationTest" tests="10" failures="0" errors="0" skipped="0" time="12.738" timestamp="2026-11-17T13:27:53" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="tappingNavigationItemDismissesUndoSnackbarEvenOnSameTab" classname="com.coursekeeper.NavigationTest" time="1.060" />
+    <testcase name="partialExpiredDetailsOpenRealSchoolSlotInsteadOfDemoDialog" classname="com.coursekeeper.NavigationTest" time="1.181" />
+    <testcase name="shellTaskButtonPreservesQueryOnTaskPageAndRoutesOtherPagesToPending" classname="com.coursekeeper.NavigationTest" time="1.416" />
+    <testcase name="fourDestinationsAreReachable" classname="com.coursekeeper.NavigationTest" time="1.503" />
+    <testcase name="offlineStillAllowsTaskCreation" classname="com.coursekeeper.NavigationTest" time="2.097" />
+    <testcase name="firstLaunchExposesReservedExcelAndNoticeEntries" classname="com.coursekeeper.NavigationTest" time="0.977" />
+    <testcase name="topBarImportMenuExposesReservedExcelAndNoticeEntries" classname="com.coursekeeper.NavigationTest" time="1.267" />
+    <testcase name="suppliedCourseSlotReplacesOnlyCoursesAndKeepsNavigation" classname="com.coursekeeper.NavigationTest" time="1.267" />
+    <testcase name="firstLaunchCanEnterManualMode" classname="com.coursekeeper.NavigationTest" time="0.880" />
+    <testcase name="realSchoolEntryAndImportMenuRemainAvailableTogether" classname="com.coursekeeper.NavigationTest" time="1.090" />
+  </testsuite>
+</testsuites>

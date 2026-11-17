@@ -6,6 +6,7 @@ import com.coursekeeper.data.model.TaskType
 import com.coursekeeper.data.settings.SettingsStore
 import com.coursekeeper.task.RepositoryTaskGateway
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -68,5 +69,41 @@ class RepositoryHomeGatewayTest : DataTestBase() {
         assertFalse(home.state.first{!it.loading && !it.onboarding}.onboarding)
         assertTrue(settings.settings.first().onboardingComplete)
         assertTrue(repository.snapshot().tasks.isEmpty())
+    }
+
+    @Test fun homePressureRecomputesOnClockTicksWithoutDatabaseWrites() = runTest {
+        val settings=SettingsStore(PreferenceDataStoreFactory.create(scope=backgroundScope,
+            produceFile={File(context.cacheDir,"home-${UUID.randomUUID()}.preferences_pb")}))
+        var stamp=LocalDateTime.of(2026,11,10,10,0)
+        val ticks=MutableSharedFlow<Unit>(replay=1)
+        ticks.emit(Unit)
+        val home=RepositoryHomeGateway(repository,settings,backgroundScope,{stamp},ticks)
+        repository.createTask(draft("分钟边界").copy(dueAt=stamp.plusMinutes(1)))
+        val first=home.state.first { !it.loading && it.tasks.size==1 }
+        val before=repository.snapshot()
+        stamp=stamp.plusMinutes(2)
+        ticks.emit(Unit)
+        val after=home.state.first { it.pressureScore!=first.pressureScore }
+        assertNotNull(after.pressureScore)
+        assertTrue(after.pressureExplanation.contains("逾期"))
+        assertEquals(before,repository.snapshot())
+    }
+
+    @Test fun homeTeachingWeekRollsOverOnTickWithoutEditingSemester() = runTest {
+        val settings=SettingsStore(PreferenceDataStoreFactory.create(scope=backgroundScope,
+            produceFile={File(context.cacheDir,"home-${UUID.randomUUID()}.preferences_pb")}))
+        repository.saveSemester(com.coursekeeper.data.model.SemesterRecord(
+            "s","秋季",java.time.LocalDate.of(2026,9,7),20,
+        ),emptyList(),null)
+        var stamp=LocalDateTime.of(2026,11,15,23,59)
+        val ticks=MutableSharedFlow<Unit>(replay=1)
+        ticks.emit(Unit)
+        val home=RepositoryHomeGateway(repository,settings,backgroundScope,{stamp},ticks)
+        assertEquals("第 10 教学周",home.state.first { !it.loading }.weekLabel)
+        val before=repository.snapshot()
+        stamp=stamp.plusMinutes(2)
+        ticks.emit(Unit)
+        assertEquals("第 11 教学周",home.state.first { it.weekLabel=="第 11 教学周" }.weekLabel)
+        assertEquals(before,repository.snapshot())
     }
 }

@@ -35,8 +35,8 @@ class BoundaryFixtureTest {
     fun semesterBoundariesDistinguishNoSemesterFromConfigured() {
         assertEquals(CourseAvailability.NoSemester, project(BoundaryFixtures.noSemester()).courseAvailability)
         assertEquals("待设置学期", project(BoundaryFixtures.noSemester()).weekLabel)
-        assertEquals(CourseAvailability.Unavailable, project(BoundaryFixtures.configuredSemesterNoSchedule()).courseAvailability)
-        assertEquals("学期已设置", project(BoundaryFixtures.configuredSemesterNoSchedule()).weekLabel)
+        assertEquals(CourseAvailability.Ready, project(BoundaryFixtures.configuredSemesterNoSchedule()).courseAvailability)
+        assertEquals("第 10 教学周", project(BoundaryFixtures.configuredSemesterNoSchedule()).weekLabel)
     }
 
     @Test

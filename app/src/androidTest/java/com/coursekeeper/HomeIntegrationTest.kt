@@ -1,20 +1,39 @@
 package com.coursekeeper
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.platform.app.InstrumentationRegistry
 import com.coursekeeper.data.CourseKeeperData
 import com.coursekeeper.data.TaskDraft
 import com.coursekeeper.data.model.TaskType
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDateTime
 
 /** Actual Activity + D editor + E's file database; no fixture HomeGateway. */
 class HomeIntegrationTest {
+    companion object {
+        @JvmStatic @BeforeClass fun prepareNotificationPermission() {
+            // 本组测试验证任务联动与持久化；通知授权／拒绝另由 D 的专项场景覆盖。
+            // 必须在 Activity 启动前授权，否则写入带截止任务时系统弹窗会遮住 Compose 根，
+            // 导致后续计数断言报 No compose hierarchies，而非真正检查业务结果。
+            if (Build.VERSION.SDK_INT >= 33) {
+                val instrumentation=InstrumentationRegistry.getInstrumentation()
+                instrumentation.uiAutomation.grantRuntimePermission(
+                    instrumentation.targetContext.packageName,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                )
+            }
+        }
+    }
+
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     private val data get()=CourseKeeperData.get(compose.activity.applicationContext)
     @Before fun prepare() {

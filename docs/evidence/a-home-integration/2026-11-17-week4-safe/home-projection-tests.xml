@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.home.HomeProjectionTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-17T13:25:12.295Z" hostname="LAPTOP-CJQ77CDT" time="0.005">
+  <properties/>
+  <testcase name="endedCourseKeepsItsDailyCountAndEndHint" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="dailyCountsMatchDateFiltersIncludingCompletedAndUndatedBoundaries" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="syncFailureReasonsAreReadableAndUnknownCodeIsNotExposed" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001"/>
+  <testcase name="syncUsesModuleSummaryAndDoesNotClaimSuccessWithoutTimestamp" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001"/>
+  <testcase name="missingCoursesAndPressureNeverBorrowFixtureValues" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="homePressureIncludesBPeriodLoadAndFLevelAndExplanation" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="weekStartsOnMondayAndExcludesUndatedPreviousAndNextWeek" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="teachingWeekUsesBMondayNormalisationAndDistinguishesOutsideTerm" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001"/>
+  <testcase name="homeUsesCourseProjectionForTodayWeekAndNextCourse" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="partialSyncDetailsRetainBothSuccessAndFailureAndCachedTasks" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="deletedCourseAssociationRemainsVisibleAsDeleted" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="dayRolloverChangesCountersAndLabelsWithoutChangingRecords" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="importedCoursesWithoutSemesterBindingAppearAfterSemesterSetup" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="partialSyncWithExpiredModuleStillRequestsSchoolLogin" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0"/>
+  <testcase name="taskOnlyPressureExplainsMissingSemesterInsteadOfInventingCourseLoad" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

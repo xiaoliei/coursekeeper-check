@@ -17,6 +17,13 @@ interface HomeGateway {
 }
 
 enum class SyncStatus { Ready, Offline, Expired, Partial, Syncing, Error }
+data class HomeSyncModuleUi(
+    val name: String,
+    val status: SyncStatus,
+    val statusLabel: String,
+    val lastSuccessLabel: String,
+    val errorMessage: String? = null,
+)
 enum class CourseAvailability { Ready, NoSemester, Unavailable, NotInTerm }
 data class CourseUi(val id: String, val title: String, val time: String, val location: String, val periods: String)
 data class TaskUi(
@@ -35,7 +42,15 @@ data class HomeUiState(
     val isDemo: Boolean = true, val loading: Boolean = false, val readError: String? = null,
     val courseAvailability: CourseAvailability = CourseAvailability.Ready,
     val greeting: String = "上午好，同学",
-)
+    val pressureScore: Int? = null,
+    val pressureLevel: String = "",
+    val pressureExplanation: String = "",
+    val syncModules: List<HomeSyncModuleUi> = emptyList(),
+) {
+    /** 整体部分成功时，仍需让已过期的模块能进入 C 的重登流程。 */
+    val hasExpiredSession: Boolean get() =
+        status == SyncStatus.Expired || syncModules.any { it.status == SyncStatus.Expired }
+}
 data class NewTask(val title: String, val course: String, val type: String, val deadline: LocalDateTime?, val courseId: String? = null)
 enum class TaskFilter(val label: String) { Pending("待办"), Completed("已完成"), All("全部"), Today("今日截止"), CompletedToday("今日完成") }
 fun List<TaskUi>.filtered(filter: TaskFilter) = filter {

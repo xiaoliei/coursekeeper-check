@@ -17,8 +17,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,7 +34,6 @@ import com.coursekeeper.data.settings.AppSettings
 import com.coursekeeper.data.sync.SyncFailure
 import com.coursekeeper.data.sync.SyncRunResult
 import com.coursekeeper.home.*
-import com.coursekeeper.home.SyncStatus as HomeSyncStatus
 import com.coursekeeper.reminder.AlarmReminderScheduler
 import com.coursekeeper.reminder.BootStateStore
 import com.coursekeeper.reminder.ReminderCoordinator
@@ -142,6 +139,15 @@ class MainActivity : ComponentActivity() {
                 })
                 val state by model.state.collectAsStateWithLifecycle()
                 val snackbar=remember {SnackbarHostState()}
+                val showReservedEntry: (String) -> Unit = { label ->
+                    scope.launch {
+                        snackbar.currentSnackbarData?.dismiss()
+                        snackbar.showSnackbar(
+                            "$label 入口已预留，待导入格式确认后接入",
+                            duration=SnackbarDuration.Short,
+                        )
+                    }
+                }
                 val statisticsState by owner.statistics.uiState.collectAsStateWithLifecycle()
 
                 // D：任务页接 E 的真实数据层（Room + Repository），不再经过演示网关。
@@ -266,6 +272,8 @@ class MainActivity : ComponentActivity() {
                     }) },
                     onCreateTask={createRequested=true},
                     onRetryHome=model::retry,
+                    onImportExcel={showReservedEntry("手动导入 Excel")},
+                    onPasteCourseNotice={showReservedEntry("粘贴课程通知")},
                     taskScreen={ modifier -> TaskScreen(
                         state=taskState,
                         onStatusFilter=taskModel::setStatusFilter,
@@ -308,8 +316,8 @@ class MainActivity : ComponentActivity() {
                     loginSheet={ onDismiss -> SchoolLoginSheet(
                         controller=owner.loginController,
                         savedSchool=if (appSettings.schoolId != null) SchoolCatalog.default else null,
-                        // 只有"登录过期"入口才直达登录页；顶栏"学校"进来先看连接状态与退出入口。
-                        autoLogin = state.status == HomeSyncStatus.Expired,
+                        // 整体部分成功但某模块已过期时，同样直达已记住学校的登录页。
+                        autoLogin = state.hasExpiredSession,
                         onLogout = {
                             // 清会话 Cookie + 取消记住的学校；本地课程任务由 E 保留，不删库。
                             SchoolLogout.clear()

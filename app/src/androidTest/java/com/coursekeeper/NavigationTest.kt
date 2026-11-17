@@ -8,6 +8,10 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.coursekeeper.demo.*
+import com.coursekeeper.home.HomeUiState
+import com.coursekeeper.home.HomeSyncModuleUi
+import com.coursekeeper.home.SyncStatus
+import com.coursekeeper.home.TaskFilter
 import com.coursekeeper.ui.AppShell
 import com.coursekeeper.ui.theme.CourseKeeperTheme
 import kotlinx.coroutines.CoroutineScope
@@ -15,19 +19,29 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
 class NavigationTest {
     @get:Rule val compose=createComposeRule()
-    private fun show(gateway: DemoHomeGateway=DemoHomeGateway(),customCourses:Boolean=false) {
+    private fun show(
+        gateway: DemoHomeGateway=DemoHomeGateway(),
+        customCourses:Boolean=false,
+        onImportExcel:(()->Unit)?=null,
+        onPasteCourseNotice:(()->Unit)?=null,
+    ) {
         compose.setContent {
             val state by gateway.state.collectAsState()
             CourseKeeperTheme { AppShell(state,
                 onTaskToggle={runBlocking {gateway.setTaskCompleted(it.id,!it.completed)}},
                 onAddTask={runBlocking {gateway.addTask(it)}},onScenario=gateway::setScenario,
                 onSkipLogin=gateway::skipLogin,onSimulateLogin=gateway::simulateLogin,
-                coursesScreen=if(customCourses) { _ -> Text("课程插槽验证") } else null)
+                coursesScreen=if(customCourses) { _ -> Text("课程插槽验证") } else null,
+                onImportExcel=onImportExcel,
+                onPasteCourseNotice=onPasteCourseNotice,
+            )
             }
         }
     }
@@ -65,6 +79,106 @@ class NavigationTest {
         compose.onNodeWithText("首页",useUnmergedTree=true).performClick()
         compose.onNodeWithText("上午好，同学").assertIsDisplayed()
         compose.onNodeWithText("＋ 手动添加任务").assertIsDisplayed()
+    }
+    @Test fun firstLaunchExposesReservedExcelAndNoticeEntries() {
+        val gateway=DemoHomeGateway().apply{setScenario(DemoScenario.FirstLaunch)}
+        var excelClicked=false
+        var noticeClicked=false
+        show(
+            gateway,
+            onImportExcel={excelClicked=true},
+            onPasteCourseNotice={noticeClicked=true},
+        )
+        compose.onNodeWithText("手动导入 Excel").performClick()
+        compose.runOnIdle { assertTrue(excelClicked) }
+        compose.onNodeWithText("粘贴课程通知").performClick()
+        compose.runOnIdle { assertTrue(noticeClicked) }
+    }
+    @Test fun topBarImportMenuExposesReservedExcelAndNoticeEntries() {
+        var excelClicked=false
+        var noticeClicked=false
+        show(
+            onImportExcel={excelClicked=true},
+            onPasteCourseNotice={noticeClicked=true},
+        )
+        compose.onNodeWithText("导入").performClick()
+        compose.onNodeWithText("手动导入 Excel").performClick()
+        compose.runOnIdle { assertTrue(excelClicked) }
+        compose.onNodeWithText("导入").performClick()
+        compose.onNodeWithText("粘贴课程通知").performClick()
+        compose.runOnIdle { assertTrue(noticeClicked) }
+    }
+
+    @Test fun realSchoolEntryAndImportMenuRemainAvailableTogether() {
+        var imported = false
+        compose.setContent {
+            CourseKeeperTheme {
+                AppShell(
+                    state=HomeUiState(isDemo=false),
+                    onTaskToggle={}, onAddTask={}, onScenario={},
+                    onSkipLogin={}, onSimulateLogin={},
+                    loginSheet={ _ -> Text("学校登录插槽验证") },
+                    onImportExcel={imported=true},
+                    onPasteCourseNotice={},
+                )
+            }
+        }
+        compose.onNodeWithText("导入").performClick()
+        compose.onNodeWithText("手动导入 Excel").performClick()
+        compose.runOnIdle { assertTrue(imported) }
+        compose.onNodeWithText("学校").performClick()
+        compose.onNodeWithText("学校登录插槽验证").assertExists()
+        compose.onNodeWithText("学校连接暂不可用", substring=true).assertDoesNotExist()
+    }
+
+    @Test fun shellTaskButtonPreservesQueryOnTaskPageAndRoutesOtherPagesToPending() {
+        val queries=mutableListOf<TaskFilter>()
+        var creates=0
+        compose.setContent {
+            CourseKeeperTheme {
+                AppShell(
+                    state=HomeUiState(isDemo=false),
+                    onTaskToggle={}, onAddTask={}, onScenario={},
+                    onSkipLogin={}, onSimulateLogin={},
+                    taskScreen={ modifier -> Text("真实任务页插槽",modifier) },
+                    onTaskFilter={queries+=it},
+                    onCreateTask={creates++},
+                )
+            }
+        }
+        compose.onNodeWithText("任务",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("＋ 新建任务").performClick()
+        compose.onAllNodesWithText("＋ 手动添加任务").assertCountEquals(0)
+        compose.runOnIdle {
+            assertEquals(listOf(TaskFilter.Pending),queries)
+            assertEquals(1,creates)
+        }
+        compose.onNodeWithText("首页",useUnmergedTree=true).performClick()
+        compose.onNodeWithText("＋ 手动添加任务").performClick()
+        compose.onNodeWithText("真实任务页插槽").assertExists()
+        compose.runOnIdle {
+            assertEquals(listOf(TaskFilter.Pending,TaskFilter.Pending),queries)
+            assertEquals(2,creates)
+        }
+    }
+
+    @Test fun partialExpiredDetailsOpenRealSchoolSlotInsteadOfDemoDialog() {
+        compose.setContent {
+            CourseKeeperTheme {
+                AppShell(
+                    state=HomeUiState(isDemo=false,status=SyncStatus.Partial,syncModules=listOf(
+                        HomeSyncModuleUi("课表",SyncStatus.Ready,"已同步","最近成功：11-17 10:00"),
+                        HomeSyncModuleUi("作业",SyncStatus.Expired,"登录已过期","尚未成功同步","请重新登录学校账号"),
+                    )),
+                    onTaskToggle={},onAddTask={},onScenario={},onSkipLogin={},onSimulateLogin={},
+                    loginSheet={ _ -> Text("过期重登插槽验证") },
+                )
+            }
+        }
+        compose.onNodeWithText("查看详情").performClick()
+        compose.onNodeWithText("重新登录").performClick()
+        compose.onNodeWithText("过期重登插槽验证").assertExists()
+        compose.onNodeWithText("学校连接暂不可用",substring=true).assertDoesNotExist()
     }
 
     /**

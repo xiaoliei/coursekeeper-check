@@ -6,7 +6,10 @@
 
 - 版本 0.2.0，包名统一为 `com.coursekeeper`（原 A 演示为 `com.coursekeeper.a.demo`）。
 - 首页和 D 的任务页共享 E 的真实 Room 数据；新增、完成、撤销和日期筛选联动，跳过引导的选择会保存。
-- B 的课程服务已接入课表页（周次、节次、冲突与学期设置）；F 的压力服务尚未接入，真实模式显示明确的缺失状态。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
+- B 的课程服务已经接入课表页、首页课程投影与教学周徽标；首页本周进度和压力摘要复用 F 的纯计算服务，展示分数、等级和解释，并随已有分钟时钟更新。没有可计算数据时显示“暂无压力数据”。独立演示通过 DemoHomeGateway、Preview 和默认空插槽继续可用。
+- 首次引导和顶部“导入”菜单预留“手动导入 Excel”“粘贴课程通知”入口；解析格式确认前，点击会提示功能待接入。
+- “学校”入口继续使用 C 的真实登录与会话管理；新建任务继续使用 D 的常驻底栏。今日课程已结束、今天没课和本周无课分别提示，不误报为未导入。
+- 同步异常横幅可查看课表／作业各自的状态、最近成功时间与失败原因；部分成功中的过期模块也能进入重登。当前未新增强制同步或自动同步请求，真实刷新联调仍等待 C/E 的数据安全修复。
 - 正式口径（统计、压力指数、规则阈值）为草案，需小组确认后生效，见 docs 目录。
 - E 的数据层已升级 Room v3，支持非连续周次、排课独立教师及 v1/v2 无损迁移；接入方式见 [E 成员数据与同步交接](docs/E成员数据与同步交接.md)，本轮验证见 [E v3 迁移与联调验收](docs/E-v3迁移与联调验收.md)。首页、任务、提醒和看板共用真实快照。
 - C 的学校适配已接入：`school/` 提供 `SchoolAdapter` 实现、WebView 官方登录（汕头大学统一身份认证）、会话检测、课表与作业解析，结果经 E 的 `SyncCoordinator` 合并入库；支持过期重登与退出登录（清会话 Cookie，本地课程任务保留）。首批学校为汕头大学：课表取正方教务「学期理论课表」，作业取 MYSTU 学习平台（Moodle）课程概览，登录时在同一 WebView 里补一次 MYSTU 登录。见 [C 学校登录与数据适配交接](docs/C-学校登录与数据适配交接.md)。
@@ -37,7 +40,7 @@
 - 调试 APK 输出在 `app/build/outputs/apk/debug/app-debug.apk`。
 - JVM 测试覆盖 A 的投影、演示与接入、D 的任务交互以及 E 的数据和同步；本轮验证记录见 [A 本地联调说明](docs/A-首页真实任务接入-本地说明.md)。
 - 统一“边界假数据”素材（跨节次、单双周、非连续周、本周/下周区间两侧、截止待定等）在 `app/src/test/java/com/coursekeeper/fakedata/`，供 F 的统计/看板测试与首页投影回归复用；非连续周素材已随 E v3 启用。
-- 当前 JDK 21 下全仓 **234 项单元测试**，0 失败、0 跳过（含 C 的 27 项：通用解析 7、汕头课表 6、MYSTU 作业 3、会话规则 6、登录状态机 4、退出登录 1）；`:app:assembleDebug` 构建通过。历史记录：A 交付时 65 项、E v3 联调时 126 项，见 [v3 验收记录](docs/E-v3迁移与联调验收.md)。
+- 2026-11-17 完成第 4 周只读接入后，Temurin JDK 21 下 **290 项 JVM 测试、API 37 模拟器 21 项界面／Activity 联调测试全部通过**，应用与测试 APK 构建成功。详见 [A 第 4 周只读接入验收](docs/evidence/a-home-integration/2026-11-17-week4-safe.md)；较早的 [合并修复验收](docs/evidence/a-home-integration/2026-11-17-alignment.md) 为历史结果。
 - 设备测试：`.\gradlew.bat :app:connectedDebugAndroidTest`（需模拟器或真机）。
 - GitHub Actions 自动构建（`.github/workflows/build.yml`）：`push 到 main` 与任意 PR 都会先跑 `:app:testDebugUnitTest`、通过后再 `:app:assembleDebug`，作为合并门禁。
 

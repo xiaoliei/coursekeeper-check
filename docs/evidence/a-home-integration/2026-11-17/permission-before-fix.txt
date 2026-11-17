@@ -1,0 +1,40 @@
+--------- beginning of main
+11-17 12:14:31.425  4345  4368 I TestRunner: run started: 14 tests
+11-17 12:14:31.427  4345  4368 I TestRunner: started: finishedCoursesKeepTodayCountAndOfferTimetableInsteadOfLogin(com.coursekeeper.HomeCourseUiTest)
+--------- beginning of system
+11-17 12:14:31.744   627  2189 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 xflg=0x4 cmp=com.coursekeeper/androidx.activity.ComponentActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_PERMISSION) result code=0
+11-17 12:14:32.340   627   648 I ActivityTaskManager: Displayed com.coursekeeper/androidx.activity.ComponentActivity for user 0: +623ms
+11-17 12:14:33.943   627   861 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+11-17 12:14:34.588  4345  4368 I TestRunner: finished: finishedCoursesKeepTodayCountAndOfferTimetableInsteadOfLogin(com.coursekeeper.HomeCourseUiTest)
+11-17 12:14:34.590  4345  4368 I TestRunner: started: freeDayKeepsOtherDaysCoursesAndDoesNotAskForLogin(com.coursekeeper.HomeCourseUiTest)
+11-17 12:14:34.633   627  1535 W ActivityTaskManager: Finishing task with all activities already finished
+11-17 12:14:34.633   627  1535 W ActivityTaskManager: Duplicate finish request for r=ActivityRecord{177513821 u0 com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity t52 f}}
+11-17 12:14:34.640   627  2189 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 xflg=0x4 cmp=com.coursekeeper/androidx.activity.ComponentActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_PERMISSION) result code=0
+11-17 12:14:34.675   627  1535 W ActivityTaskManager: setRunningRemoteTransition: no process for null
+11-17 12:14:34.950   627   648 I ActivityTaskManager: Displayed com.coursekeeper/androidx.activity.ComponentActivity for user 0: +316ms
+11-17 12:14:35.318   627  1535 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+11-17 12:14:35.616   627   648 I ActivityTaskManager: Displayed com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity for user 0: +314ms
+11-17 12:14:35.732   627  1157 W ActivityTaskManager: setRunningRemoteTransition: no process for null
+11-17 12:14:35.854  4345  4368 I TestRunner: finished: freeDayKeepsOtherDaysCoursesAndDoesNotAskForLogin(com.coursekeeper.HomeCourseUiTest)
+11-17 12:14:35.883  4345  4368 I TestRunner: started: emptyWeekOffersCourseMaintenance(com.coursekeeper.HomeCourseUiTest)
+11-17 12:14:35.922   627  1121 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 xflg=0x4 cmp=com.coursekeeper/androidx.activity.ComponentActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_PERMISSION) result code=0
+11-17 12:14:36.046   627   648 I ActivityTaskManager: Displayed com.coursekeeper/androidx.activity.ComponentActivity for user 0: +145ms
+11-17 12:14:36.363   627  2175 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+11-17 12:14:36.545   627   648 I ActivityTaskManager: Displayed com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity for user 0: +196ms
+11-17 12:14:36.648   627  1157 W ActivityTaskManager: setRunningRemoteTransition: no process for null
+11-17 12:14:36.706  4345  4368 I TestRunner: finished: emptyWeekOffersCourseMaintenance(com.coursekeeper.HomeCourseUiTest)
+11-17 12:14:36.732  4345  4368 I TestRunner: started: homeCountersOpenExactDateFiltersInsteadOfOnlyOpenOrDone(com.coursekeeper.HomeIntegrationTest)
+11-17 12:14:36.815   627   642 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 xflg=0x4 cmp=com.coursekeeper/.MainActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_PERMISSION) result code=0
+11-17 12:14:37.416   627   648 I ActivityTaskManager: Displayed com.coursekeeper/.MainActivity for user 0: +634ms
+11-17 12:14:37.897   627   861 I ActivityTaskManager: START u0 {act=android.content.pm.action.REQUEST_PERMISSIONS xflg=0x4 pkg=com.google.android.permissioncontroller cmp=com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity (has extras)} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (rr=103026248) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+11-17 12:14:38.276   627   648 I ActivityTaskManager: Displayed com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity for user 0: +383ms
+11-17 12:14:40.179   627   861 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity} with LAUNCH_MULTIPLE from uid 10237 (com.coursekeeper) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+11-17 12:14:40.394   627   648 I ActivityTaskManager: Displayed com.coursekeeper.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity for user 0: +225ms
+11-17 12:14:40.539   627  1157 W ActivityTaskManager: setRunningRemoteTransition: no process for null
+11-17 12:14:40.650  4345  4368 E TestRunner: failed: homeCountersOpenExactDateFiltersInsteadOfOnlyOpenOrDone(com.coursekeeper.HomeIntegrationTest)
+11-17 12:14:40.660  4345  4368 E TestRunner: ----- begin exception -----
+11-17 12:14:40.660  4345  4368 E TestRunner: java.lang.IllegalStateException: No compose hierarchies found in the app. Possible reasons include: (1) the Activity that calls setContent did not launch; (2) setContent was not called; (3) setContent was called before the ComposeTestRule ran. If setContent is called by the Activity, make sure the Activity is launched after the ComposeTestRule runs
+11-17 12:14:40.660  4345  4368 E TestRunner: 	at androidx.compose.ui.test.TestOwnerKt.getAllSemanticsNodes(TestOwner.kt:106)
+11-17 12:14:40.660  4345  4368 E TestRunner: 	at androidx.compose.ui.test.TestOwnerKt.getAllSemanticsNodes$default(TestOwner.kt:98)
+11-17 12:14:40.660  4345  4368 E TestRunner: 	at androidx.compose.ui.test.SemanticsNodeInteractionCollection.fetchSemanticsNodes(SemanticsNodeInteraction.kt:249)
+11-17 12:14:40.660  4345  4368 E TestRunner: 	at androidx.compose.ui.test.SemanticsNodeInteractionCollection.fetchSemanticsNodes$default(SemanticsNodeInteraction.kt:245)

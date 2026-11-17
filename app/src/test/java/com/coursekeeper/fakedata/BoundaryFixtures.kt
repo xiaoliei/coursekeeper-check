@@ -69,7 +69,7 @@ object BoundaryFixtures {
     /** 无学期（未设置起始日）：首页显示 NoSemester/“待设置学期”，不算 0。 */
     fun noSemester(): DataSnapshot = DataSnapshot(semesters = listOf(semester(null)))
 
-    /** 已配学期但无排课：显示 Unavailable/“学期已设置”，不算 0。 */
+    /** 已配学期但无排课：教学周内有真实 0，和“课程服务不可用”必须区分。 */
     fun configuredSemesterNoSchedule(): DataSnapshot =
         DataSnapshot(semesters = listOf(semester(LocalDate.of(2026, 9, 7))))
 

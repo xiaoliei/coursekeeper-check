@@ -36,7 +36,12 @@ import com.coursekeeper.ui.theme.*
         if(action != null) OutlinedButton(onClick = onAction) { Text(action) }
     }
 }
-@Composable fun StatusBanner(status: SyncStatus, onLogin: () -> Unit, onAdd: () -> Unit) {
+@Composable fun StatusBanner(
+    status: SyncStatus,
+    onLogin: () -> Unit,
+    onAdd: () -> Unit,
+    onDetails: (() -> Unit)? = null,
+) {
     if(status == SyncStatus.Ready) return
     val warning = status != SyncStatus.Offline
     Row(Modifier.fillMaxWidth().background(if(warning) Color(0xFFFFF0DD) else Color(0xFFEAF0FA), RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -53,6 +58,7 @@ import com.coursekeeper.ui.theme.*
             SyncStatus.Partial -> TextButton(onClick=onAdd) { Text("手动添加", fontSize=12.sp) }
             else -> Unit
         }
+        if (onDetails != null) TextButton(onClick=onDetails) { Text("查看详情", fontSize=12.sp) }
     }
 }
 @Composable fun TaskRow(task: TaskUi, onToggle: (TaskUi) -> Unit, onDetail: (TaskUi) -> Unit) {
