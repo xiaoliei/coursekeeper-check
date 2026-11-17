@@ -81,19 +81,31 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
         val result = sync.synchronize(force = true)
         // 后台同步失败不能谎报“导入完成”（与首页的过期/错误横幅矛盾，D 复核①）：
         // 有模块失败时向上抛，让登录状态机进入 Failure 并保留重试入口。
-        // 子代理复核补充：InProgress / SchoolMismatch 也不能静默当成功——前者是
-        // force 同步根本没跑（撞上另一次持锁），后者意味着数据源与缓存不一致。
-        when (result) {
-            is SyncRunResult.Finished -> {
-                val failed = result.summary.modules.filter {
-                    it.status == SyncStatus.OFFLINE || it.status == SyncStatus.EXPIRED || it.status == SyncStatus.ERROR
-                }
-                if (failed.isNotEmpty()) error(syncFailureText(failed))
-            }
-            SyncRunResult.InProgress -> error("上一次同步还在进行中，本次结果未确认。稍后可在首页查看或重试。")
-            SyncRunResult.SchoolMismatch -> error("学校数据与本机缓存不一致，请退出登录后重新连接。")
-        }
+        // 判定逻辑抽成纯函数，便于覆盖 InProgress / SchoolMismatch 等分支（D 复核②）。
+        afterLoginFailureMessage(result)?.let { error(it) }
     })
+}
+
+/**
+ * 登录后强制同步的结果判定：返回要展示的失败文案，成功返回 null。
+ *
+ * 子代理复核补充：InProgress / SchoolMismatch 也不能静默当成功——前者是
+ * force 同步根本没跑（撞上另一次持锁），后者意味着数据源与缓存不一致。
+ */
+internal fun afterLoginFailureMessage(result: SyncRunResult): String? = when (result) {
+    is SyncRunResult.Finished -> {
+        val failed = result.summary.modules.filter {
+            it.status == SyncStatus.OFFLINE ||
+                it.status == SyncStatus.EXPIRED ||
+                it.status == SyncStatus.ERROR
+        }
+        if (failed.isEmpty()) null else syncFailureText(failed)
+    }
+    SyncRunResult.InProgress -> "上一次同步还在进行中，本次结果未确认。稍后可在首页查看或重试。"
+    // 退出登录只清 Cookie，不清 sync_records.schoolId（E 的数据层口径），
+    // 所以「退出后重连」并不能解除不一致；提示改为可执行的清除数据（D 复核③）。
+    SyncRunResult.SchoolMismatch ->
+        "本机同步记录属于其他学校。当前版本仅支持汕头大学，请清除本机应用数据后重新连接。"
 }
 
 /** 同步模块失败时的人话描述：登录完成页据此提示真实结果，而不是谎报“导入完成”。 */

@@ -69,8 +69,9 @@ fun SchoolLoginSheet(
     }
     AlertDialog(
         onDismissRequest = {
-            // 导入完成页从任何途径关闭都复位状态机，避免下次打开仍停在“导入完成”。
-            if (step is LoginStep.Done) controller.reset()
+            // 完成页/失败页从任何途径关闭都复位状态机：完成页避免下次打开仍停在“导入完成”，
+            // 失败页避免下次打开先看到上一次的旧错误（D 复核②）。
+            if (resetsOnDismiss(step)) controller.reset()
             onDismiss()
         },
         title = { Text(if (step is LoginStep.SelectSchool && savedSchool != null) "学校连接" else stepTitle(step)) },
@@ -87,6 +88,16 @@ fun SchoolLoginSheet(
         },
     )
 }
+
+/**
+ * 关闭弹层时是否复位状态机。
+ *
+ * 完成页与失败页都是“终态”：不复位的话，下次打开会直接落在这两页上
+ * （完成页看起来像刚导完、失败页显示上一次的旧错误）。中间步骤保留状态，
+ * 让用户关掉后再打开还能继续。抽成纯函数以便单测覆盖每个分支（D 复核②）。
+ */
+internal fun resetsOnDismiss(step: LoginStep): Boolean =
+    step is LoginStep.Done || step is LoginStep.Failure
 
 private fun stepTitle(step: LoginStep): String = when (step) {
     LoginStep.SelectSchool -> "选择学校"
