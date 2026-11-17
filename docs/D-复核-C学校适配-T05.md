@@ -48,3 +48,29 @@ MergeCounts.deleted 未入同步记录表；MYSTU 合法"0 作业"学期被补�
 ## 六、处置
 
 - 2026-11-16：拉取合并（本地 main=591e752）→ 构建 240/0 绿 → 双路质检（路线一"修复后可提交"、路线二"可提交"）→ 汇总为本文。**未改任何代码，未推送，未装包**——P0 待 C 修复后再走拉取→复检→真机安装。
+
+## 七、修复复核（2026-11-17）：P0/P1 全部闭环
+
+C 在分支 `fix/school-adapter-review` 提交 4 个修复（基于 591e752），已 rebase 到本地 main 复核。
+
+**结论：P0/P1 全部修好，可提交。**
+
+| 项 | 原问题 | 修法核实 | 结论 |
+| --- | --- | --- | --- |
+| P0 | 启动崩溃 | 新增 `school/SchoolAdapterHolder`（`@Volatile` + 双重检查的进程级单例），`MainActivity` 改为 `SchoolAdapterHolder.get(application)`；**全仓仅此一处 `new WebViewSchoolAdapter`**，不变式成立；Robolectric 用例断言重复获取同一实例 | ✅ 闭环 |
+| P1-1 | 登录假完成 | `afterLogin` 检查 `SyncRunResult`：`Finished` 里有 OFFLINE/EXPIRED/ERROR 模块即抛；`InProgress`/`SchoolMismatch` 也抛（C 补的额外加固）；人话文案 `syncFailureText` 有 3 条单测；控制器 catch 后进 `Failure` 并保留重试入口 | ✅ 闭环 |
+| P1-2 | 空导入清库 | `fetchCourses` 对「0 门课」一律报 `Failure(PARSE_ERROR)`，不进镜像合并；C 注明「确属无课学期需放行时，等 E 拍板再改守卫」 | ✅ 闭环（语义待 E） |
+
+**新发现（不阻塞，记档）**
+
+| # | 级别 | 说明 |
+| --- | --- | --- |
+| 1 | P2 | **"确实无课"的学期会被判成同步失败**（交换/休学/毕业学期）：每次打开都提示失败。等 E 给语义——如页面自带"学期/无课"标记，或允许用户确认"本学期无课"后放行空导入 |
+| 2 | P2 | **登录成功但同步失败时 schoolId/onboarding 已落库**：用户看到 Failure，但下次启动会自动重试同步；想放弃登录得走"退出登录"。可辩护（失败可重试），建议下轮考虑"确认同步成功后再落库"或失败回滚 |
+| 3 | P3 | `InProgress` 按失败提示有理论竞态：`afterLogin` 写 settings 会唤醒 `LaunchedEffect` 里的 `onForeground()`（含 400ms 延迟），若它先拿到锁，force 同步得到 `InProgress` → 登录页显示"上一次同步还在进行中"。延迟使实际很难触发，重试即可 |
+| 4 | P3 | `syncFailureText` 放在共享文件 `MainActivity.kt`，更合适的位置是 sync/school 模块 |
+| 5 | P3 | 原复核 P2-3（`debugDumpDir` 未按 `BuildConfig.DEBUG` 门控）仍未处理，C 记为"发布前摘除" |
+
+**构建/测试（合并后本地 main）**：`assembleDebug` 通过，全仓 **269 项 / 0 失败**（244 + 25）。
+
+**处置**：已 rebase 合入本地 main（线性历史，C 的 4 个提交保留作者），未推送——按流程等双路自检与用户授权。
