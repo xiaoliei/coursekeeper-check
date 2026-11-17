@@ -139,6 +139,23 @@ class CourseViewModelTest {
     }
 
     @Test
+    fun `最后一周点下周不会越界`() = runTest {
+        // 第 10 周就是本学期最后一周（weekCount = 10）
+        val snapshots = MutableStateFlow(
+            snapshot(semesters = listOf(SemesterRecord("s1", "秋季", LocalDate.of(2026, 9, 7), 10))),
+        )
+        val model = viewModel(snapshots)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+        assertEquals(10, model.uiState.value.currentWeek)
+
+        model.selectTab(CourseTab.NEXT_WEEK)
+        advanceUntilIdle()
+        assertEquals(10, model.uiState.value.selectedWeek)
+        assertTrue(!model.uiState.value.canGoNext)
+    }
+
+    @Test
     fun `边界周不能继续翻`() = runTest {
         val snapshots = MutableStateFlow(snapshot())
         val model = viewModel(snapshots)

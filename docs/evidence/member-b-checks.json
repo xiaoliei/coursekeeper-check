@@ -1,6 +1,6 @@
 ﻿{
-    "date":  "2026-11-12",
-    "branch":  "feat/course-service",
+    "date":  "2026-11-17",
+    "branch":  "main",
     "jdk":  "21.0.7",
     "gradle":  "9.6.0",
     "tasks":  [
@@ -9,9 +9,8 @@
               ],
     "result":  "BUILD SUCCESSFUL",
     "fullSuite":  {
-                      "suites":  26,
-                      "errors":  0,
-                      "tests":  180,
+                      "suites":  41,
+                      "tests":  292,
                       "failures":  0
                   },
     "bModule":  {
@@ -19,52 +18,45 @@
                                    {
                                        "name":  "com.coursekeeper.course.ConflictDetectorTest",
                                        "tests":  7,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "failures":  0
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.CourseProjectionTest",
                                        "tests":  11,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "failures":  0
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.CourseSelfCheckTest",
                                        "tests":  1,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "failures":  0
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.CourseViewModelTest",
-                                       "tests":  12,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "tests":  14,
+                                       "failures":  0
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.HomeCourseProjectionTest",
                                        "tests":  6,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "failures":  0
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.WeekCalculatorTest",
                                        "tests":  7,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "failures":  0
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.WeekTextTest",
-                                       "tests":  10,
-                                       "failures":  0,
-                                       "errors":  0
+                                       "tests":  11,
+                                       "failures":  0
                                    }
                                ],
-                    "tests":  54,
+                    "tests":  57,
                     "failures":  0
                 },
     "apk":  {
                 "path":  "app/build/outputs/apk/debug/app-debug.apk",
-                "sha256":  "7eccd07dc912fcef204b438e7efb02006f27aef525a4f771ecb8201d346a01cc",
-                "bytes":  13558457
+                "sha256":  "b509963161057f56331d7ac13e3e7b34a52c2ddb40e355c710a492779f69eeb1",
+                "bytes":  13744702
             }
 }

@@ -118,11 +118,14 @@ class CourseViewModel(
      */
     fun selectTab(tab: CourseTab) {
         viewMode.value = if (tab == CourseTab.TODAY) CourseViewMode.TODAY else CourseViewMode.WEEK
-        val base = uiState.value.currentWeek ?: uiState.value.selectedWeek
+        val weekCount = uiState.value.weekCount
+        val lastWeek = maxOf(1, weekCount)
+        val base = (uiState.value.currentWeek ?: uiState.value.selectedWeek).coerceIn(1, lastWeek)
         selectedWeek.value = when (tab) {
             CourseTab.TODAY, CourseTab.THIS_WEEK -> base
             CourseTab.PREV_WEEK -> (base - 1).coerceAtLeast(1)
-            CourseTab.NEXT_WEEK -> base + 1
+            // 最后一周点“下周”保持在最后一周，避免选中一个不存在周次后页签高亮与内容不一致
+            CourseTab.NEXT_WEEK -> (base + 1).coerceAtMost(lastWeek)
         }
     }
 

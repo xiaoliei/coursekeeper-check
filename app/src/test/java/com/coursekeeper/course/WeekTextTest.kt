@@ -56,6 +56,16 @@ class WeekTextTest {
     }
 
     @Test
+    fun `兼容方括号包住的周次写法`() {
+        // 教务导出出现过 ([周])、[周]、全角［］等写法，解析前应统一剥离
+        listOf("9,11-13([周])", "9,11-13[周]", "9,11-13［周］").forEach { raw ->
+            val parsed = WeekText.parse(raw)
+            assertEquals(raw, 7424L, parsed.weeks)
+            assertEquals(raw, "9,11-13", parsed.text)
+        }
+    }
+
+    @Test
     fun `超出本学期周数只丢弃该段并记警告`() {
         val parsed = WeekText.parse("1-16", weekCount = 10)
         assertEquals("1-10", parsed.text)
