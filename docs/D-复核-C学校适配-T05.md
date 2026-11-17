@@ -74,3 +74,42 @@ C 在分支 `fix/school-adapter-review` 提交 4 个修复（基于 591e752）�
 **构建/测试（合并后本地 main）**：`assembleDebug` 通过，全仓 **269 项 / 0 失败**（244 + 25）。
 
 **处置**：已 rebase 合入本地 main（线性历史，C 的 4 个提交保留作者），未推送——按流程等双路自检与用户授权。
+
+## 八、双路自检记录（2026-11-17，用户同意后送检；范围 origin/main..HEAD 六个提交）
+
+**路线一（业务逻辑/并发/口径）：可提交。路线二（Compose/UI 与集成）：修复后可提交。两路均无 P0/P1，代码零改动。**
+
+### 8.1 复核通过的关键点
+
+- **P0 单例不变式成立**：`@Volatile` + 双重检查写法正确；Holder 不持有 Context（不泄漏）；全仓仅一处 `new WebViewSchoolAdapter`；`require` 的触发面已穷举（无 Preview/其他 ViewModel 路径）；进程被杀时 Holder 与数据层同时重置，冷启动安全。
+- **P1-1 失败传播正确**：`SyncStatus` 枚举全量对照（模块记录不含 PARTIAL）；`force=true` 下 `throttled` 恒空不会误报；`SyncFailure` 8 个错误码全部有映射，不漏；控制器 catch 后进 `Failure` 且保留 school 可重试。
+- **P1-2 守卫有效**：只作用于 `fetchCourses`（`fetchTasks` 未受影响）；最终映射为 `PARSE_ERROR`，与文案对得上；因 `completeOnboarding` 在同步前已写，**不会把用户锁死**在弹层。
+- **D 的任务页接线逐项等价**：`AppShell(...)` 调用区零 hunk；18 个参数、`createRequested`、提醒接线、自启引导、`selectedIds` 收提示全部原样；`AppShell.kt` 未被触碰（底栏几何不变）；演示旁路与课表/统计页无牵连。
+- **退出登录不锁死**：Failure 页有「关闭」，点外部/返回也能退出；顶栏「学校」重进有「退出登录」。
+- **提交卫生干净**：6 个提交各自只动 D/C 自己的文件，无测试删除、作者保留、线性历史。
+
+### 8.2 交 C 订正（文档/证据表述，不代改——一 md 一作者）
+
+| # | 位置 | 问题 |
+| --- | --- | --- |
+| 1 | `docs/C-学校适配实现说明.md`「C 32 项」 | 与该句枚举合计（34）不符；且「244 项」是分支口径，合并后实际 269，建议注明「C 分支当时 244；合并 main 后 269」 |
+| 2 | `docs/evidence/c-t05/verification.md` 第 97 行 | 把「启动重试横幅」当作 D 复核第 2 条（登录假完成）的验证——该修复只作用于登录弹层 Done/Failure，首页横幅本来就没有「导入完成」字样，此观察不能证明它 |
+| 3 | `docs/evidence/c-t05/verification.md` 第 99 行 | 「空课表守卫在真实数据上验证」不实：11-16 页面解析出 9 门课，`courses.isEmpty()` 分支从未进入；真机验证的是 E 的镜像清理。建议注明「守卫仅代码复核，无零课页面样本」 |
+| 4 | C 文档/证据里的 `51c8a19` | rebase 前悬空提交，外部克隆无法复现（内容与 `5fc2522` 等价），建议改引 rebase 后提交 |
+| 5 | 笔误「镜象」、文档 EOF 多一个空行 | 顺手清理 |
+
+### 8.3 交 C 补测 / 记档（代码正确，防线不足）
+
+| 级别 | 项 |
+| --- | --- |
+| P2 | **两项修复缺真正的回归测试**：`SchoolAdapterHolderTest` 只断言两次 `get` 相同（不能防止 `MainActivity` 改回 `new`，也没走 `require` 路径）；`afterLogin` 的失败模块过滤是内联 lambda，无纯函数可测——若删掉过滤，3 条文案用例仍全绿。建议抽出 `SyncRunResult → 失败文案?` 纯函数并补分支用例；holder 用例至少构造两次 `HomeDataOwner` 或两次 `syncCoordinator` |
+| P2 | **Failure 态关闭后残留**：`onDismissRequest` 只在 Done 时 reset，Failure 经返回键/点外部关闭后下次打开先看到旧错误；建议 Failure 一并 `backToSelect()` |
+| P2 | **`SchoolMismatch` 提示不可执行**：「退出登录后重新连接」，但退出登录不清 `sync_records.schoolId`，重新登录仍 mismatch。当前单校不可达；未来多校会永久卡死，需提示或重置入口 |
+| P2 | **空结果清库的兜底仍在 E 的 `mergeCourses`**（对 `Success(empty)` 删全部非 manualDirty 同步课程），且与 E 文档「成功空结果不删除」冲突；C 的守卫只保护 `WebViewSchoolAdapter` 一条路径。需 E 在合并层加守卫或更新契约 |
+| P3 | `InProgress` 按失败提示的理论竞态（弱网 + 启动 `onForeground` 重试期间可触发，重试可恢复）；Holder 无替换/重置路径（多校埋雷）；`syncFailureText` 位置与字符串匹配（新增 `SyncFailure` 值会静默落「未知原因」）；空守卫的具体警告被吞；两模块同因文案重复；启动路径忽略 `onForeground` 返回值 |
+
+### 8.4 处置
+
+- **代码零改动**（结论之后一行不动）；P2 中「无课学期语义」「设置先落库」已在 §七 记录，其余本轮新增记档。
+- C 的文档订正与补测在群里点名交办；**不代改 C 的 md**。
+- 自检通过后按流程等用户发话推送。
