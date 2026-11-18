@@ -222,14 +222,17 @@ class SyncCoordinatorTest : DataTestBase() {
         val ids = repository.snapshot().courses.associateBy { it.externalId }
         repository.updateCourse(ids.getValue("course-3").id, 1, CourseDraft("手动改过", schedules = listOf(schedule)))
 
+        val manual = repository.createCourse(CourseDraft("手动课", schedules = listOf(schedule)))
+        val linked = repository.createTask(draft("原关联任务").copy(courseId = ids.getValue("course-2").id))
+        repository.deleteCourse(ids.getValue("course-1").id, 1)
         adapter.courseResult = ModuleResult.Success(listOf(
             ImportedCourse("course-1", CourseDraft("WEB应用技术", schedules = listOf(ScheduleDraft(4, 6, 7, 3, 18)))),
-        ))
+        ), completeSnapshot = true)
         sync.synchronize(true)
 
-        val externalIds = repository.snapshot().courses.map { it.externalId }.toSet()
-        assertEquals(setOf("course-1", "course-3"), externalIds)
+        assertEquals(setOf(manual.id, ids.getValue("course-3").id), repository.snapshot().courses.map { it.id }.toSet())
         assertTrue(repository.snapshot().schedules.none { it.courseId == ids.getValue("course-2").id })
+        assertEquals(ids.getValue("course-2").id, repository.getTask(linked.id)?.courseId)
     }
 
     @Test fun removedStaleCourseLeavesNoTombstoneSoSchoolCanBringItBack() = runTest {
@@ -238,13 +241,53 @@ class SyncCoordinatorTest : DataTestBase() {
         }
         val sync = coordinator(adapter)
         sync.synchronize()
-        adapter.courseResult = ModuleResult.Success(emptyList())
+        adapter.courseResult = ModuleResult.Success(listOf(ImportedCourse("other", CourseDraft("保留课程"))), completeSnapshot = true)
         sync.synchronize(true)
-        assertTrue("远端没有的课程同步后应被清理", repository.snapshot().courses.isEmpty())
+        assertEquals(listOf("other"), repository.snapshot().courses.map { it.externalId })
         // 清理不写墓碑：学校之后重新排课时下一次同步仍会照常导入。
         adapter.courseResult = ModuleResult.Success(listOf(ImportedCourse("c", CourseDraft("课程"))))
         sync.synchronize(true)
-        assertEquals(1, repository.snapshot().courses.size)
+        assertEquals(setOf("c", "other"), repository.snapshot().courses.map { it.externalId }.toSet())
+    }
+
+    @Test fun onlyNonemptyCompleteSnapshotsCanDeleteAbsentCoursesInTheirScope() = runTest {
+        repository.saveSemester(SemesterRecord("old-term", "旧学期", null, 20), emptyList(), null)
+        val oldTerm = ImportedCourse("old", CourseDraft("旧学期课", semesterId = "old-term"))
+        val current = ImportedCourse("current", CourseDraft("当前课程", schedules = listOf(ScheduleDraft(2, 3, 4, 1, 16))))
+        val adapter = FakeAdapter().apply { courseResult = ModuleResult.Success(listOf(oldTerm, current)) }
+        val sync = coordinator(adapter)
+        sync.synchronize()
+        val before = repository.snapshot()
+
+        val newCourse = ImportedCourse("new", CourseDraft("新课程"))
+        for (result in listOf(ModuleResult.Success(emptyList(), completeSnapshot = true),
+            ModuleResult.Success(listOf(newCourse)), ModuleResult.Success(listOf(oldTerm, newCourse), completeSnapshot = true))) {
+            adapter.courseResult = result
+            sync.synchronize(true)
+            assertTrue(repository.snapshot().courses.containsAll(before.courses))
+            assertEquals(before.schedules, repository.snapshot().schedules)
+        }
+
+        adapter.courseResult = ModuleResult.Success(listOf(newCourse), completeSnapshot = true)
+        sync.synchronize(true)
+        assertEquals(setOf("old", "new"), repository.snapshot().courses.map { it.externalId }.toSet())
+        assertTrue(repository.snapshot().schedules.isEmpty())
+    }
+
+    @Test fun lateCourseSnapshotCannotPruneCoursesCommittedAfterItsBaseline() = runTest {
+        val current = ImportedCourse("c", CourseDraft("原课程"))
+        val late = FakeAdapter().apply { courseResult = ModuleResult.Success(listOf(current)) }
+        val sync = coordinator(late)
+        sync.synchronize()
+        val newer = FakeAdapter().apply {
+            courseResult = ModuleResult.Success(listOf(current, ImportedCourse("new", CourseDraft("新同步课程"))), completeSnapshot = true)
+        }
+        late.beforeCourses = { coordinator(newer).synchronize(true) }
+        late.courseResult = ModuleResult.Success(listOf(current.copy(fields = CourseDraft("迟到的改名"))), completeSnapshot = true)
+        val result = withContext(Dispatchers.Default) { sync.synchronize(true) } as SyncRunResult.Finished
+
+        assertEquals(SyncFailure.VERSION_CONFLICT.name, result.summary.modules.single { it.module == SyncModule.COURSES }.errorCode)
+        assertEquals(setOf("原课程", "新同步课程"), repository.snapshot().courses.map { it.title }.toSet())
     }
 
     @Test fun staleSyncBaselineRejectsALateResponseAfterAnotherSyncCommitted() = runTest {

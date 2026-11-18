@@ -15,7 +15,8 @@ enum class SessionState { VALID, EXPIRED, OFFLINE }
 enum class SyncFailure { OFFLINE, EXPIRED, TIMEOUT, PARSE_ERROR, REMOTE_ERROR, VERSION_CONFLICT, INVALID_DATA, INTERRUPTED }
 
 sealed interface ModuleResult<out T> {
-    data class Success<T>(val records: List<T>) : ModuleResult<T>
+    /** Only a verified, complete course response may authorize removal of absent courses. */
+    data class Success<T>(val records: List<T>, val completeSnapshot: Boolean = false) : ModuleResult<T>
     data class Failure(val reason: SyncFailure, val retryable: Boolean = false) : ModuleResult<Nothing>
 }
 

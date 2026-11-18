@@ -9,6 +9,7 @@ import java.util.UUID
 /** Baseline is read BEFORE network I/O; a later user edit must cause a conflict or be protected. */
 internal suspend fun CourseKeeperRepository.mergeCourses(
     imports: List<ImportedCourse>, baseline: DataSnapshot, completedAt: Instant,
+    completeSnapshot: Boolean = false,
 ): MergeCounts = database.withTransaction {
     val distinct = imports.distinct()
     checkData(distinct.all { it.externalId.isNotBlank() } &&
@@ -46,15 +47,18 @@ internal suspend fun CourseKeeperRepository.mergeCourses(
             counts = counts.copy(updated = counts.updated + 1)
         }
     }
-    // 镜像口径：远端课表里已经不存在的同步课程要一并清掉。此前只增改不删，
-    // 换账号/换学期重新同步后，旧课表的残留课程（如“大学生人生哲学八讲”）会一直留在
-    // 本地，并和新课表里的课程产生假的时间冲突。手动编辑过的课程视为本地意图，保留；
-    // 不写墓碑：如果学校之后重新开设该课程，下一次同步仍会照常导入。
-    val importedIds = distinct.mapTo(HashSet()) { it.externalId }
-    for (stale in currentCourses.values) {
-        if (stale.externalId in importedIds || stale.manualDirty) continue
-        dao.deleteCourse(stale.id) // 排课级联删除；关联任务按仓库口径保留（悬挂关联）
-        counts = counts.copy(deleted = counts.deleted + 1)
+    val scopes = distinct.map { it.fields.semesterId }.distinct()
+    if (completeSnapshot && scopes.size == 1) {
+        val semesterId = scopes.single()
+        val importedIds = distinct.mapTo(HashSet()) { it.externalId }
+        for (stale in currentCourses.values) {
+            if (stale.externalId == null || stale.externalId in importedIds || stale.manualDirty ||
+                stale.semesterId != semesterId) continue
+            checkData(baselineCourses[stale.externalId] == stale, DataError.VERSION_CONFLICT)
+            // 学校撤课只清理镜像。保留任务关联，也允许学校重新排课时再导入。
+            dao.deleteCourse(stale.id)
+            counts = counts.copy(deleted = counts.deleted + 1)
+        }
     }
     finishModule(SyncModule.COURSES, counts, completedAt)
     counts

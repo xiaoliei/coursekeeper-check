@@ -52,16 +52,7 @@ class WebViewSchoolAdapter(
     }
 
     override suspend fun fetchCourses(): ModuleResult<ImportedCourse> =
-        fetch(schoolProvider().scheduleUrl) { body ->
-            val parsed = courseParser.parseSchedule(body)
-            // 解析出 0 门课一律按失败上报（D 复核 2026-11-15）：地址失效、被带到别的页面、
-            // 或学校返回了结构正常但空网格的课表页，都走这里。绝不能把空导入交给镜像合并——
-            // 那会把本地同步课程全部清掉。语义待 E 最终拍板：确属“无课学期”时再放宽此守卫。
-            if (parsed.courses.isEmpty()) {
-                error(parsed.warnings.joinToString("；").ifBlank { "课表页未解析出任何课程" })
-            }
-            parsed.courses
-        }
+        fetch(schoolProvider().scheduleUrl) { body -> courseParser.parseSchedule(body).toCourseSyncResult() }
 
     override suspend fun fetchTasks(): ModuleResult<ImportedTask> {
         val school = schoolProvider()
@@ -74,11 +65,11 @@ class WebViewSchoolAdapter(
             if (parsed.tasks.isEmpty() && parsed.warnings.isNotEmpty()) {
                 error(parsed.warnings.joinToString("；"))
             }
-            parsed.tasks
+            ModuleResult.Success(parsed.tasks)
         }
     }
 
-    private suspend fun <T> fetch(url: String, parse: (String) -> List<T>): ModuleResult<T> =
+    private suspend fun <T> fetch(url: String, parse: (String) -> ModuleResult<T>): ModuleResult<T> =
         withContext(Dispatchers.IO) {
             try {
                 val reply = SchoolHttp.get(url, cookieProvider(url))
@@ -88,7 +79,7 @@ class WebViewSchoolAdapter(
                         SchoolRule.looksLikeLoginPage(reply.body) -> ModuleResult.Failure(SyncFailure.EXPIRED)
                     reply.code !in 200..299 -> ModuleResult.Failure(SyncFailure.REMOTE_ERROR)
                     else -> try {
-                        ModuleResult.Success(parse(reply.body))
+                        parse(reply.body)
                     } catch (cancel: CancellationException) {
                         throw cancel
                     } catch (_: Exception) {
@@ -114,3 +105,10 @@ class WebViewSchoolAdapter(
         }
     }
 }
+
+internal fun ScheduleParse.toCourseSyncResult(): ModuleResult<ImportedCourse> =
+    if (courses.isEmpty() || skippedCourses != 0 || warnings.isNotEmpty()) {
+        ModuleResult.Failure(SyncFailure.PARSE_ERROR)
+    } else {
+        ModuleResult.Success(courses, completeSnapshot = true)
+    }

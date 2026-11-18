@@ -65,6 +65,8 @@ class StuJwPageParser(private val termTag: String? = null) : SchoolPageParser {
                             warnings += "「${lines.first()}」周次无法解析（${lines[weeksIndex]}），条目已跳过"
                             continue
                         }
+                        // 即使某些周次能解析，也要让同步层知道本次课表可能缺周。
+                        if (weeks.warnings.isNotEmpty()) warnings += "「${lines.first()}」周次部分无法解析"
                         val periods = PERIODS_IN_BRACKET.find(lines[weeksIndex])?.groupValues?.get(1)
                             ?.let(::periodsOf)
                             ?: rowPeriods

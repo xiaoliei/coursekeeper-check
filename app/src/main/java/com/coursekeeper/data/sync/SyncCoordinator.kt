@@ -16,6 +16,7 @@ import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 
 data class SyncSummary(val status: SyncStatus, val modules: List<SyncRecord>) {
     companion object {
@@ -95,10 +96,10 @@ class SyncCoordinator(
                     lastAttemptAt = now, errorCode = null))
                 when (module) {
                     SyncModule.COURSES -> handle(old, now, { adapter.fetchCourses() }) {
-                        repository.mergeCourses(it, baseline, clock.instant())
+                        repository.mergeCourses(it.records, baseline, clock.instant(), it.completeSnapshot)
                     }
                     SyncModule.TASKS -> handle(old, now, { adapter.fetchTasks() }) {
-                        repository.mergeTasks(it, baseline, clock.instant())
+                        repository.mergeTasks(it.records, baseline, clock.instant())
                     }
                 }
             }
@@ -128,12 +129,12 @@ class SyncCoordinator(
     catch (_: Exception) { SyncFailure.REMOTE_ERROR }
 
     private suspend fun <T> handle(
-        old: SyncRecord, at: java.time.Instant,
-        fetch: suspend () -> ModuleResult<T>, merge: suspend (List<T>) -> MergeCounts,
+        old: SyncRecord, at: Instant,
+        fetch: suspend () -> ModuleResult<T>, merge: suspend (ModuleResult.Success<T>) -> MergeCounts,
     ) {
         when (val result = fetchWithRetry(fetch)) {
             is ModuleResult.Failure -> fail(old, result.reason, at)
-            is ModuleResult.Success -> try { merge(result.records) }
+            is ModuleResult.Success -> try { merge(result) }
             catch (cancel: CancellationException) { throw cancel }
             catch (error: DataException) {
                 fail(old, if (error.code == DataError.VERSION_CONFLICT) SyncFailure.VERSION_CONFLICT else SyncFailure.INVALID_DATA, at)
@@ -157,7 +158,7 @@ class SyncCoordinator(
         error("Unreachable")
     }
 
-    private suspend fun fail(old: SyncRecord, reason: SyncFailure, at: java.time.Instant) {
+    private suspend fun fail(old: SyncRecord, reason: SyncFailure, at: Instant) {
         val status = when (reason) {
             SyncFailure.OFFLINE -> SyncStatus.OFFLINE
             SyncFailure.EXPIRED -> SyncStatus.EXPIRED
