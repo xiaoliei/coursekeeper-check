@@ -77,7 +77,7 @@ class SyncCoordinator(
             }
             val now = clock.instant()
             val throttled = if (force) emptySet() else previous.filterValues { record ->
-                record.lastSuccessAt?.let { at ->
+                record.status == SyncStatus.IDLE && record.lastSuccessAt?.let { at ->
                     val age = Duration.between(at, now)
                     !age.isNegative && age < Duration.ofMinutes(30)
                 } == true
@@ -101,11 +101,6 @@ class SyncCoordinator(
                         repository.mergeTasks(it, baseline, clock.instant())
                     }
                 }
-            }
-            // A successful lightweight check clears a previous network/expiry banner for throttled data.
-            for (module in throttled) {
-                val old = previous.getValue(module)
-                repository.saveSync(old.copy(schoolId = adapter.schoolId, status = SyncStatus.IDLE, errorCode = null))
             }
             return finished(throttled)
         } catch (cancel: CancellationException) {

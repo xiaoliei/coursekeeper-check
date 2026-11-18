@@ -126,6 +126,26 @@ class SyncCoordinatorTest : DataTestBase() {
         assertEquals(SyncStatus.IDLE, (sync.synchronize() as SyncRunResult.Finished).summary.status)
     }
 
+    @Test fun failedManualRefreshIsRetriedEvenWithRecentSuccess() = runTest {
+        val adapter = FakeAdapter()
+        val sync = coordinator(adapter)
+        sync.synchronize()
+        adapter.courseResult = ModuleResult.Failure(SyncFailure.PARSE_ERROR)
+        adapter.taskResult = ModuleResult.Success(listOf(ImportedTask("t", draft("课表失败时仍可导入作业"))))
+        sync.synchronize(force = true)
+        assertEquals("课表失败时仍可导入作业", repository.snapshot().tasks.single().title)
+
+        val failedAgain = sync.synchronize() as SyncRunResult.Finished
+        assertEquals(setOf(SyncModule.TASKS), failedAgain.throttled)
+        assertEquals(SyncFailure.PARSE_ERROR.name,
+            failedAgain.summary.modules.single { it.module == SyncModule.COURSES }.errorCode)
+        assertEquals(3, adapter.courseCalls)
+        assertEquals(2, adapter.taskCalls)
+
+        adapter.courseResult = ModuleResult.Success(emptyList())
+        assertEquals(SyncStatus.IDLE, (sync.synchronize() as SyncRunResult.Finished).summary.status)
+    }
+
     @Test fun networkFailurePreservesDataAndLastSuccessfulTime() = runTest {
         val adapter = FakeAdapter().apply { taskResult = ModuleResult.Success(listOf(ImportedTask("t", draft()))) }
         val sync = coordinator(adapter)
