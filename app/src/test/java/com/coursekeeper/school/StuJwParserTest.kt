@@ -86,6 +86,41 @@ class StuJwParserTest {
     }
 
     @Test
+    fun coTaughtEntriesInSameSlotKeepBothTeacherNames() {
+        // B v0.3 §8：解析层去重键不含教师，合讲（同格同周次、两位教师）应合并成一条，
+        // 教师合并为“张三/李四”；只留第一条会丢掉第二位教师。
+        val html = """
+            <table id="dataTables2" border="1">
+              <tr><th>序号</th><th>上课班级</th><th>课程编号</th><th>课程名称</th><th>授课教师</th></tr>
+              <tr><td>1</td><td>202611700</td><td>XX2001A</td><td>合讲示例</td><td>张三</td></tr>
+            </table>
+            <table id="timetable" border="1">
+              <tr><th>&nbsp;</th><th>星期一</th></tr>
+              <tr><th>第一大节<br>(01,02小节)</th>
+                <td>
+                  <div class="kbcontent">
+                    <font>合讲示例</font><br><font>张三</font><br>
+                    <font>3-18(周)[01-02节]</font><br><font>东海岸-E教101</font><br>
+                    <font>班级：202611700</font><br>
+                  </div>
+                  <div class="kbcontent">
+                    <font>合讲示例</font><br><font>李四</font><br>
+                    <font>3-18(周)[01-02节]</font><br><font>东海岸-E教101</font><br>
+                    <font>班级：202611700</font><br>
+                  </div>
+                </td>
+              </tr>
+            </table>
+        """.trimIndent()
+
+        val result = parser.parseSchedule(html)
+
+        assertEquals(emptyList<String>(), result.warnings)
+        val schedule = result.courses.single().fields.schedules.single()
+        assertEquals("张三/李四", schedule.teacher)
+    }
+
+    @Test
     fun nestedBracketWeekFormatIsParsed() {
         // 实测导出（xls/部分页面）会出现 “9,11-13([周])[06-07节]” 的双层括号写法。
         val html = """

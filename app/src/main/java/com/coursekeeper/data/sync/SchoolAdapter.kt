@@ -25,8 +25,21 @@ data class ImportedCourse(val externalId: String, val fields: CourseDraft)
 /** externalId must be explicitly supplied by C from a verified stable school identifier.
  * Missing IDs are counted and deferred; E does not invent title/time hashes or enable unsafe dedup.
  * courseExternalId is resolved against locally stored SYNC courses; unresolved links remain null.
+ *
+ * 以下三个字段是 C 从学校页面原样提取的**来源信息**，E 目前不落库（CD-01 / CBE-01 交接用）：
+ * - [sourceCourseId] / [sourceCourseName]：学校侧课程的稳定标识与名称。MYSTU 的课程 ID 与教务
+ *   课程编号是两套体系，不能塞进 [courseExternalId] 冒充已解析的关联；映射由 B/E 约定后再消费。
+ * - [schoolSubmission]：学校侧提交状态（`SUBMITTED` / `NOT_SUBMITTED` / `DRAFT` /
+ *   `REOPENED` / `UNKNOWN`），供 D/E 确定“学校已提交”与本地完成、逾期的处理口径。
  */
-data class ImportedTask(val externalId: String?, val fields: TaskDraft, val courseExternalId: String? = null)
+data class ImportedTask(
+    val externalId: String?,
+    val fields: TaskDraft,
+    val courseExternalId: String? = null,
+    val sourceCourseId: String? = null,
+    val sourceCourseName: String? = null,
+    val schoolSubmission: String? = null,
+)
 
 data class MergeCounts(
     val inserted: Int = 0,

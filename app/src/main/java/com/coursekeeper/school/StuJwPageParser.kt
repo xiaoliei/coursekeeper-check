@@ -102,7 +102,16 @@ class StuJwPageParser(private val termTag: String? = null) : SchoolPageParser {
                         )
                         val schedules = grouped.getOrPut(code) { mutableListOf() }
                         // 跨大节的课程会在多个行里重复出现同一条；同一天/节次/周次/地点只保留一次。
-                        if (schedules.none { it.sameSlotAs(draft) }) schedules += draft
+                        // 同一槽位出现不同教师时按合讲处理（B v0.3 §8）：合并教师名，不丢第二位教师。
+                        val existing = schedules.indexOfFirst { it.sameSlotAs(draft) }
+                        if (existing < 0) {
+                            schedules += draft
+                        } else {
+                            val merged = mergeTeachers(schedules[existing].teacher, draft.teacher)
+                            if (merged != schedules[existing].teacher) {
+                                schedules[existing] = schedules[existing].copy(teacher = merged)
+                            }
+                        }
                     }
                 }
             }
@@ -178,6 +187,22 @@ class StuJwPageParser(private val termTag: String? = null) : SchoolPageParser {
     private fun ScheduleDraft.sameSlotAs(other: ScheduleDraft): Boolean =
         dayOfWeek == other.dayOfWeek && startPeriod == other.startPeriod &&
             endPeriod == other.endPeriod && weeks == other.weeks && location == other.location
+
+    /**
+     * 合讲教师合并（B v0.3 §8 由 C 决定）：同一槽位的多条排课若教师不同，
+     * 去重后按出现顺序用“/”连接，如 `张三/李四`；都为空时保持 null。
+     * 保留两位教师而不是只留第一条，避免展示与核对时丢信息。
+     */
+    private fun mergeTeachers(first: String?, second: String?): String? {
+        val names = LinkedHashSet<String>()
+        for (value in listOf(first, second)) {
+            value?.split('/', '、', '，', ',')
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                ?.forEach(names::add)
+        }
+        return names.takeIf { it.isNotEmpty() }?.joinToString("/")
+    }
 
     private fun periodsOf(text: String): Pair<Int, Int>? {
         val numbers = DIGITS.findAll(text).mapNotNull { it.value.toIntOrNull() }.toList()

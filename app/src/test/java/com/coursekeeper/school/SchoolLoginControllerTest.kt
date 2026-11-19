@@ -70,4 +70,49 @@ class SchoolLoginControllerTest {
         controller.backToSelect()
         assertEquals(LoginStep.SelectSchool, controller.step.value)
     }
+
+    // ---- C-01（2026-11-17）：导入协程被取消后不能永远停在“正在读取” ----
+
+    @Test
+    fun cancellationDuringFeedbackResetsToRecoverableStep() = runTest {
+        val controller = SchoolLoginController(feedbackMillis = 10_000, afterLogin = {})
+        val job = launch { controller.onLoginSuccess(school) }
+        advanceTimeBy(1_000)
+        runCurrent()
+        assertTrue(controller.step.value is LoginStep.Feedback)
+
+        job.cancel()
+        runCurrent()
+
+        assertEquals("旋转/退出取消后应回到可重试状态", LoginStep.SelectSchool, controller.step.value)
+    }
+
+    @Test
+    fun cancellationDuringImportResetsToRecoverableStep() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val controller = SchoolLoginController(feedbackMillis = 0, afterLogin = { gate.await() })
+        val job = launch { controller.onLoginSuccess(school) }
+        runCurrent()
+        assertEquals(LoginStep.Importing(school), controller.step.value)
+
+        job.cancel()
+        runCurrent()
+
+        assertEquals(LoginStep.SelectSchool, controller.step.value)
+        assertTrue("不得残留“正在读取”", controller.step.value !is LoginStep.Importing)
+    }
+
+    @Test
+    fun userClosingDuringImportIsNotOverwrittenByCancellation() = runTest {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val controller = SchoolLoginController(feedbackMillis = 0, afterLogin = { gate.await() })
+        val job = launch { controller.onLoginSuccess(school) }
+        runCurrent()
+
+        controller.backToSelect() // 用户点“关闭”
+        job.cancel()
+        runCurrent()
+
+        assertEquals(LoginStep.SelectSchool, controller.step.value)
+    }
 }

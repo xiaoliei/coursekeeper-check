@@ -40,15 +40,21 @@ class SchoolLoginController(
     /** WebView 检测到登录成功后调用：反馈过渡结束后拉取数据并写入本地。 */
     suspend fun onLoginSuccess(school: SchoolInfo) {
         _step.value = LoginStep.Feedback(school)
-        delay(feedbackMillis)
-        _step.value = LoginStep.Importing(school)
-        _step.value = try {
+        try {
+            delay(feedbackMillis)
+            _step.value = LoginStep.Importing(school)
             afterLogin()
-            LoginStep.Done(school)
+            _step.value = LoginStep.Done(school)
         } catch (cancel: CancellationException) {
+            // 导入由弹层的界面作用域启动：旋转、退出页面都可能取消协程（C-01 2026-11-17）。
+            // 只重新抛出会让状态永远停在“正在读取学校数据”，下次打开仍显示已停止的任务。
+            // 复位到选校页可重新登录；若用户已主动 backToSelect（关闭按钮），保持其选择不动。
+            if (_step.value is LoginStep.Feedback || _step.value is LoginStep.Importing) {
+                _step.value = LoginStep.SelectSchool
+            }
             throw cancel
         } catch (error: Exception) {
-            LoginStep.Failure(school, error.message ?: "同步失败，可稍后在首页重试")
+            _step.value = LoginStep.Failure(school, error.message ?: "同步失败，可稍后在首页重试")
         }
     }
 

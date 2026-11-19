@@ -111,3 +111,18 @@
 | 关闭复位 | `resetsOnDismiss(step)`：Done 与 Failure 复位，中间步骤保留；覆盖 6 种状态 |
 | SchoolMismatch 文案 | 改为“清除本机应用数据后重新连接”——退出登录只清 Cookie、不清 `sync_records.schoolId`，原提示无法解除不一致 |
 | 真机状态 | 本轮改动（关闭复位、mismatch 文案）只有代码与单测，**未经真机**；下一轮合并后顺带冒烟即可 |
+
+## 9. 其他成员待处理问题清单 C 部分（2026-11-17，仅单元测试）
+
+依据 `2026-11-17-其他成员待处理问题.md`（基线 main `6605351`），C 侧改动的验证如下。**本轮未跑真机**。
+
+| 编号 | 改动 | 验证 | 真机 |
+|---|---|---|---|
+| CE-01 | 最终由 E 在 main `75ce17a` 实现：`ModuleResult.Success(completeSnapshot)` + 合并层按学期清理；适配器空表/跳过/警告一律 `PARSE_ERROR`。C 于 2026-11-18 撤掉自己重复的 `requireCompleteSchedule` | E 的 `CourseSyncResultTest` 3 例（空表/跳过/警告/越界周次）+ `SyncCoordinatorTest` 合并用例 | 未跑；无课学期语义待 E |
+| C-01 | 取消导入后复位到选校页，用户主动关闭不被覆盖 | `SchoolLoginControllerTest` 新增 3 例（反馈阶段取消、导入阶段取消、关闭后取消） | **待做**：旋转/返回/关闭再打开 |
+| C-02 | 抓页目录按 `FLAG_DEBUGGABLE` 开关，release 恒 null | `SchoolAdapterHolderTest` 新增 2 例（纯函数 + Robolectric flag 切换） | **待做**：Release 包落盘复验 |
+| CD-01 | 透传 `schoolSubmission`（SUBMITTED/NOT_SUBMITTED/DRAFT/REOPENED/UNKNOWN） | `MyStuTaskParserTest` 新增 3 例，含样例外 4 种状态 | 未跑；展示口径待 D/E |
+| CBE-01 | 透传 `sourceCourseId` / `sourceCourseName`，不猜测关联 | 同文件断言课程 1001/1002 的源标识与名称 | 未跑；映射待 B/E |
+| v0.3 §8 | 合讲教师合并为 `张三/李四`（B 交由 C 决定） | `StuJwParserTest.coTaughtEntriesInSameSlotKeepBothTeacherNames` | 未跑；属解析规则 |
+
+全仓单元测试（基线 main `5cb46e0`）：**307 项 / 0 失败 / 0 跳过**；`:app:assembleDebug` 通过。

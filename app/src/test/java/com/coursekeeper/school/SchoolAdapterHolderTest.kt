@@ -1,9 +1,13 @@
 package com.coursekeeper.school
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import androidx.test.core.app.ApplicationProvider
 import com.coursekeeper.data.CourseKeeperData
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -61,5 +65,32 @@ class SchoolAdapterHolderTest {
         val rejected = runCatching { data.syncCoordinator(foreign) }.exceptionOrNull()
         assertTrue("自建实例必须被数据层拒绝", rejected is IllegalArgumentException)
         assertFalse("拒绝信息不应为空", rejected?.message.isNullOrBlank())
+    }
+
+    // ---- C-02（2026-11-17）：原始学校页面只允许在可调试构建落盘 ----
+
+    @Test
+    fun debugDumpDirIsOnlyCreatedForDebuggableBuilds() {
+        val base = java.io.File("build/tmp/debug-base")
+
+        assertEquals("sync-debug", debugDumpDir(base, debuggable = true)?.name)
+        assertNull("release 包不得保存含学号的原始页面", debugDumpDir(base, debuggable = false))
+        assertNull("拿不到基础目录时不落盘", debugDumpDir(null, debuggable = true))
+    }
+
+    @Test
+    fun debugDumpDirForFollowsApplicationDebugFlag() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val info = application.applicationInfo
+        val original = info.flags
+        try {
+            info.flags = original or ApplicationInfo.FLAG_DEBUGGABLE
+            assertNotNull(debugDumpDirFor(application))
+
+            info.flags = original and ApplicationInfo.FLAG_DEBUGGABLE.inv()
+            assertNull(debugDumpDirFor(application))
+        } finally {
+            info.flags = original
+        }
     }
 }
