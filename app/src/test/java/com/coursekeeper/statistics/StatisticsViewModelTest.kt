@@ -4,6 +4,7 @@ import com.coursekeeper.data.DataTestBase
 import com.coursekeeper.data.model.DataSnapshot
 import com.coursekeeper.data.model.TaskType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -91,5 +92,78 @@ class StatisticsViewModelTest : DataTestBase() {
         advanceUntilIdle()
         assertEquals(null, vm.uiState.value.error)
         assertEquals(4, vm.uiState.value.weekTaskCount)
+    }
+
+    // F-01：无数据库写入时，仅靠时间推进（分钟 tick）看板也要重算。
+    // 与 A 的 RepositoryHomeGatewayTest 同款：注入 MutableSharedFlow 手动 emit 驱动。
+
+    @Test
+    fun vmRecalculatesOverdueWhenDeadlinePassesWithoutWrites() = runTest {
+        // 任务 b 截止 11-10 23:59；从 23:00 起，tick 后时钟推 60 分钟跨过截止。
+        var stamp = LocalDateTime.of(2026, 11, 10, 23, 0)
+        val ticks = MutableSharedFlow<Unit>(replay = 1)
+        ticks.emit(Unit)
+        val vm = StatisticsViewModel(repository, courseStatsSource = object : CourseStatsSource {
+            override fun summary(snapshot: DataSnapshot, now: LocalDateTime) = CourseStats()
+        }, scope = backgroundScope, now = { stamp }, ticks = ticks)
+        seedBoundaryWeek()
+        // 任务 a 截止 11-09 已过：初始 overdue=1，b 尚未过期。
+        val before = vm.uiState.first { it.weekTaskCount == 4 }
+        assertEquals(1, before.dueDist.overdue)
+
+        // “无数据库写入”由 tick 仅触发 compute、不改 Room 保证；直接断言数字随时间变化。
+        stamp = stamp.plusMinutes(60)                   // 11-11 00:00，跨过 23:59
+        ticks.emit(Unit)
+        val after = vm.uiState.first { it.dueDist.overdue == 2 }   // a、b 均过期
+        assertEquals(4, after.weekTaskCount)                        // 11-11 仍在同一周窗口内
+    }
+
+    @Test
+    fun vmRollsWeekWindowAcrossWeekBoundaryWithoutWrites() = runTest {
+        var stamp = LocalDateTime.of(2026, 11, 15, 23, 59)
+        val ticks = MutableSharedFlow<Unit>(replay = 1)
+        ticks.emit(Unit)
+        val vm = StatisticsViewModel(repository, courseStatsSource = object : CourseStatsSource {
+            override fun summary(snapshot: DataSnapshot, now: LocalDateTime) = CourseStats()
+        }, scope = backgroundScope, now = { stamp }, ticks = ticks)
+        seedBoundaryWeek()
+        // weekTaskCount==4 只要求 a/b/c/d 到齐；next7Days==1 才保证最后一个任务
+        // next-midnight(11-16 00:00) 也进了快照。Room 快照是异步发射，不等到它就在
+        // 下方 tick 重算，会拿着缺 next-midnight 的旧快照算出错误数字（见 review）。
+        vm.uiState.first { it.weekTaskCount == 4 && it.dueDist.next7Days == 1 }
+
+        // 跨到下周一 11-16 00:01：本周窗口滚动为 [11-16, 11-23)。
+        stamp = stamp.plusMinutes(2)
+        ticks.emit(Unit)
+        // next-midnight(11-16 00:00) 落在新周窗口内、且此刻已过期：
+        // 完整数据下 rolled 为 thisWeek=0、overdue=5、next7=0、weekTaskCount=1。
+        val rolled = vm.uiState.first { it.weekTaskCount == 1 }
+        assertEquals(0, rolled.dueDist.thisWeek)   // 新周内无未过期任务
+        // a/b/c/d + next-midnight 截止均 < 11-16 00:01，共 5 件全部逾期。
+        assertEquals(5, rolled.dueDist.overdue)
+        assertEquals(0, rolled.dueDist.next7Days)   // [11-23, 11-30) 内无任务
+    }
+
+    @Test
+    fun vmKeepsLastSuccessAndErrorWhenTickHitsSourceFailure() = runTest {
+        val source = object : CourseStatsSource {
+            var failing = false
+            override fun summary(snapshot: DataSnapshot, now: LocalDateTime): CourseStats {
+                if (failing) throw IllegalStateException("course source down")
+                return CourseStats()
+            }
+        }
+        var stamp = LocalDateTime.of(2026, 11, 10, 10, 0)
+        val ticks = MutableSharedFlow<Unit>(replay = 1)
+        ticks.emit(Unit)
+        val vm = StatisticsViewModel(repository, courseStatsSource = source, scope = backgroundScope, now = { stamp }, ticks = ticks)
+        seedBoundaryWeek()
+        val before = vm.uiState.first { it.weekTaskCount == 4 }
+
+        source.failing = true
+        stamp = stamp.plusMinutes(1)
+        ticks.emit(Unit)                             // tick 触发重算，来源失败
+        // 与 retry() 失败一致：保留上一次成功值 + 错误文案，不以空结果覆盖。
+        assertEquals(before.copy(error = "看板加载失败，请重试"), vm.uiState.first { it.error != null })
     }
 }
