@@ -1,6 +1,6 @@
 # E 成员：本地数据与同步交接
 
-更新日期为 2026-11-18。依据六人分工、已生效的《任务字段与通知规则 v1.0》、B《课程与周次规则 v0.3》和《D-复核-C学校适配-T05》。本轮处理真实课表上线后的镜像清理与同步重试问题。
+更新日期为 2026-11-20。依据六人分工、已生效的《任务字段与通知规则 v1.1》（文件仍名为 v1.0）、B《课程与周次规则 v0.3》和 C 的问题处理回报。本轮落实 CD-01 的学校已提交自动完成，并为 CBE-01 保存来源课程信息。
 
 ## 开发范围
 
@@ -34,7 +34,7 @@ sync.synchronize(force = true)    // A 的下拉刷新回调
 |---|---|
 | semesters / periods | 学期和节次配置；起始日可空，E 不猜日期；节次随学期级版本一起提交 |
 | courses / schedules | 课程与排课分开；排课存 weeks 位图、规范 weeksText、可空条目 teacher；删课级联删排课，课程版本覆盖整个排课集合 |
-| tasks | UUID 主键；五类枚举、可空 dueAt/completedAt、courseId、source、externalId、version、manualDirty |
+| tasks | UUID 主键；五类枚举、可空 dueAt/completedAt、courseId、source、externalId、version、manualDirty；v4 新增可空 schoolSubmission、sourceCourseId、sourceCourseName |
 | sync_records | 课表、作业各一条；学校、状态、尝试/成功时间、错误码和合并计数 |
 | tombstones | `(module, source, externalId)`；物理删除同步任务后阻止重建；课程同样保护 |
 | write_requests | requestId 唯一；操作参数摘要与已提交回执，随业务写入一起提交 |
@@ -81,15 +81,17 @@ DataStore 只保存选中学校、引导完成标记；`completeOnboarding()` �
 
 `SchoolAdapter` 提供 `schoolId`、`checkSession()`、`fetchCourses()`、`fetchTasks()`。会话返回 VALID/EXPIRED/OFFLINE。模块返回 `ModuleResult.Success(records, completeSnapshot)` 或 `Failure(reason, retryable)`。`completeSnapshot` 默认 `false`，用于明确授权课表镜像清理。同步记录的异常信息使用枚举错误码。
 
-`ImportedCourse(externalId, CourseDraft)` 要求稳定外部 ID。`ImportedTask(externalId?, TaskDraft, courseExternalId?)` 由 C 填已验证的作业稳定 ID；课程关联使用外部课程 ID，由 E 解析到本地 ID，未知关联可空。不接受 C 猜测的本地 UUID。
+`ImportedCourse(externalId, CourseDraft)` 要求稳定外部 ID。`ImportedTask(externalId?, TaskDraft, courseExternalId?, sourceCourseId?, sourceCourseName?, schoolSubmission?)` 由 C 填已验证的作业稳定 ID；课程关联使用外部课程 ID，由 E 解析到本地 ID，未知关联可空。不接受 C 猜测的本地 UUID。
 
-C 的首校适配器取 MYSTU 作业链接 `view.php?id=` 的编号作为 externalId。缺少稳定 ID 的任务暂缓入库并计入 `missingIdentity`。MYSTU 与教务使用不同的课程编号，首校的作业课程关联保持为空。截止时间待定的任务可正常保存。
+C 的首校适配器取 MYSTU 作业链接 `view.php?id=` 的编号作为 externalId。缺少稳定 ID 的任务暂缓入库并计入 `missingIdentity`。MYSTU 与教务使用不同的课程编号，首校的作业课程关联保持为空。`sourceCourseId` / `sourceCourseName` 作为来源信息落库，供后续确认映射；即使来源编号或名称恰好与本地课程相同，也不自动关联。截止时间待定的任务可正常保存。
+
+`schoolSubmission` 原样保存 C 返回的 `SUBMITTED / NOT_SUBMITTED / DRAFT / REOPENED / UNKNOWN` 或空值。只有严格等于 `SUBMITTED` 时，才给未手动修改、未完成的同步任务填入本次同步时刻的 `completedAt`，不置位 `manualDirty`。完成时间使用 Repository 的本地时区，与手动完成一致。新记录初始版本为 1；已有记录的学校字段变化与自动完成同次合并只递增一次版本。
 
 合并规则：
 
 1. 每个模块独立事务；课程先提交，任务再解析关联。一模块失败不回滚另一模块成功结果。
 2. 同来源同稳定 ID 更新已有记录；相同内容不改版本、不重建排课；完全相同的重复行折叠，同 ID 不同内容拒绝整个模块并回滚。v3 差异比对和条目 ID 覆盖 weeks、weeksText、teacher 以及原有星期/节次/地点；仅周次或教师不同的条目不会撞 ID。
-3. manualDirty 或 completedAt 非空的任务受到保护；手动编辑/完成/撤销后置位任务级 manualDirty，不做字段级追踪。手动修改过的课程也保护。
+3. manualDirty 或 completedAt 非空的任务整条受到保护，包括学校来源字段；手动编辑/完成/撤销后置位任务级 manualDirty，不做字段级追踪。来源字段表示最后接受的快照，不是学校实时状态。学校改为 `REOPENED` 不回退已完成任务；用户恢复待办后不再自动完成。手动修改过的课程也保护。
 4. 删除同步记录的同一事务写墓碑。后续拉取命中墓碑跳过，不复活；任务原课程已删时保留原 courseId。
 5. 课表清理只接受非空、已明确标为完整、且属于同一 `semesterId` 的结果。清理限于该范围内缺席的未手动修改同步课程，`null` 仅匹配未绑定学期的课程。手动课程和关联任务保留。学校撤课不写墓碑，重新排课时可再次导入。清理也检查请求前的基线，避免迟到结果删除后来同步的课程。
 6. 单模块中任意非法行/版本冲突会回滚该模块全部写入，不发布半份业务结果，保留原最后成功时间。
@@ -112,7 +114,7 @@ C 的首校适配器取 MYSTU 作业链接 `view.php?id=` 的编号作为 extern
 
 ## 迁移、备份与后续阶段
 
-当前 Room 版本为 3，schema 1/2/3 随源码提交。`MIGRATION_1_2` 增加墓碑与 requestId 回执表；`MIGRATION_2_3` 将旧区间及单双周准确转换为位图，生成规范文本，条目 teacher 置空以沿用课程默认教师。保留课程/任务/排课 ID、版本、完成时间、关联、墓碑、请求回执和同步时间，不使用破坏性 fallback。v1 是 E 定义的初始 schema 基线，原 A 内存演示没有已发布的 Room v1 数据库。
+当前 Room 版本为 4，schema 1/2/3/4 随源码提交。`MIGRATION_1_2` 增加墓碑与 requestId 回执表；`MIGRATION_2_3` 将旧区间及单双周准确转换为位图，生成规范文本，条目 teacher 置空以沿用课程默认教师；`MIGRATION_3_4` 仅向 tasks 增加三个可空 TEXT 列，旧记录置空，不猜测学校状态或补写完成时间。保留课程/任务/排课 ID、版本、完成时间、关联、墓碑、请求回执和同步时间，不使用破坏性 fallback。v1 是 E 定义的初始 schema 基线，原 A 内存演示没有已发布的 Room v1 数据库。
 
 旧的单双周与区间交集为空时，迁移保留原排课及空位图，不虚构上课周；新建排课拒绝空周次。旧区间超出 1—64 周或枚举损坏时中止迁移、回滚并保留原库，不截断数据。旧库须核对修复后重新升级。
 
@@ -122,8 +124,21 @@ C 的首校适配器取 MYSTU 作业链接 `view.php?id=` 的编号作为 extern
 
 跨学期同编号课程仍依赖 C 提供可靠的学期标识。首校当前返回的课表没有可确认的学年学期，`termTag` 仍为空。日后启用学期前缀时，需同时迁移旧课程的身份并验证本地 `courseId`、任务关联和删除墓碑可延续。
 
+## 2026-11-20 问题清单处理状态
+
+- **CD-01**：E 已按 D v1.1 实现学校已提交自动完成与落库。D 的任务筛选、提醒对账、F 的完成率继续消费同一个 `completedAt`；本轮增加解析器到 Repository 再到这些消费接口的回归。真实页面对应作业的核验仍由 C 联调。
+- **CBE-01**：E 已保存来源课程 ID / 名称，并保护用户手动关联。MYSTU → 教务课程的映射规则仍待 B/C/E 确认，当前不会因此自动消除“未关联课程”。
+- **CE-01**：沿用已交付的完整非空快照清理规则。空课表仍保留缓存；要支持清空真实无课学期，C 需明确提供“确实无课”的证据及目标学期范围，再扩展输入契约，不能仅凭空列表删除。
+- **跨学期身份**：当前未获得可靠 `termTag`，暂不改现有 externalId。启用前须给旧身份到新身份的确定映射，在同一事务更新课程 externalId 与课程墓碑，保留课程本地 ID、排课和任务关联；映射冲突应整笔回滚。
+
 ## 本地验证与审核
 
-2026-11-18 基于主线 `6605351` 验证。`:app:testDebugUnitTest` 的 298 项测试全部通过，`:app:assembleDebug` 和 `:app:assembleDebugAndroidTest` 构建成功。测试覆盖空列表、非完整课表、跨学期范围、迟到快照、旧课清理后的任务关联，以及有旧成功时间时的失败重试。解析回归使用仓库脱敏课表。当前没有连接设备，设备测试与真实教务登录留待联调。
+2026-11-20 基于拉取后的主线 `a87f992` 验证。`:app:testDebugUnitTest` 的 **326 项测试全部通过**（失败、错误、跳过均为 0）；`:app:assembleDebug` 和 `:app:assembleDebugAndroidTest` 构建成功。因工程路径含中文，在 `C:\tmp\coursekeeper-e-v4-a_hhrk1n` 的源码副本构建，已逐文件核对 app 源码与 schema 与工作区一致。
+
+本轮新增 16 项回归：`MigrationV4Test` 2 项验证 v3 空库和有数据库升级，逐表比对原有字段并验证墓碑和请求回执；`TaskSubmissionSyncTest` 14 项验证首次导入、已有待办自动完成、本地时区、非提交状态、来源变更、明确关联、并发手动编辑、手动完成与恢复、删除、模块回滚、身份冲突、迟到结果、关闭重开、解析器到任务筛选/完成率，以及实际闹钟对账撤销。原有 v1/v2 迁移与课表安全清理测试继续通过。
+
+本轮 CD-01 的 E 数据与合并部分已完成；CBE-01 完成来源信息存储，课程映射仍待约定。`adb devices -l` 未发现设备，真机登录与对应作业核验留待联调。本轮已获用户审核后的上传指示，按数据库迁移、同步规则和交接文档分段提交；推送前同步远端主线并重新验证，直接提交 main。
+
+上一轮（2026-11-18，主线 `6605351`）298 项测试与双 APK 构建通过，覆盖空列表、非完整课表、跨学期范围、迟到快照、旧课清理后的任务关联，以及有旧成功时间时的失败重试。
 
 历史验收记录见 [v3 迁移与联调验收](E-v3迁移与联调验收.md)及 [E 成员验收记录](E成员验收记录.md)。
