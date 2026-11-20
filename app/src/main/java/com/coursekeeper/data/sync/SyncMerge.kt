@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.coursekeeper.data.*
 import com.coursekeeper.data.model.*
 import java.time.Instant
+import java.time.LocalDateTime
 import java.util.UUID
 
 /** Baseline is read BEFORE network I/O; a later user edit must cause a conflict or be protected. */
@@ -90,14 +91,24 @@ internal suspend fun CourseKeeperRepository.mergeTasks(
                 ?: old?.courseId?.takeIf { dao.deleted(SyncModule.COURSES, RecordSource.SYNC, externalCourse) }
         }
         val fields = validateTask(item.fields.copy(courseId = courseId))
+        // D v1.1: only an explicit SUBMITTED fills an unprotected SYNC task's completion.
+        // Convert the sync instant using the repository's local zone, as manual completion does.
+        val schoolCompletedAt = if (item.schoolSubmission == "SUBMITTED")
+            LocalDateTime.ofInstant(completedAt, clock.zone) else null
         if (old == null) {
             dao.insertTask(TaskRecord(UUID.randomUUID().toString(), fields.title, fields.type, fields.dueAt,
-                courseId, source = RecordSource.SYNC, externalId = externalId))
+                courseId, completedAt = schoolCompletedAt, source = RecordSource.SYNC, externalId = externalId,
+                schoolSubmission = item.schoolSubmission, sourceCourseId = item.sourceCourseId,
+                sourceCourseName = item.sourceCourseName))
             counts = counts.copy(inserted = counts.inserted + 1)
-        } else if (old.title != fields.title || old.type != fields.type || old.dueAt != fields.dueAt || old.courseId != courseId) {
-            dao.updateTask(old.copy(title = fields.title, type = fields.type, dueAt = fields.dueAt,
-                courseId = courseId, version = nextVersion(old.version)))
-            counts = counts.copy(updated = counts.updated + 1)
+        } else {
+            val merged = old.copy(title = fields.title, type = fields.type, dueAt = fields.dueAt,
+                courseId = courseId, completedAt = schoolCompletedAt, schoolSubmission = item.schoolSubmission,
+                sourceCourseId = item.sourceCourseId, sourceCourseName = item.sourceCourseName)
+            if (merged != old) {
+                dao.updateTask(merged.copy(version = nextVersion(old.version)))
+                counts = counts.copy(updated = counts.updated + 1)
+            }
         }
     }
     finishModule(SyncModule.TASKS, counts, completedAt)

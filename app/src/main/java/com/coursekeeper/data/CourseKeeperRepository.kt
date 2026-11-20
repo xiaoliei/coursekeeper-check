@@ -13,7 +13,7 @@ import java.util.UUID
 /** All public mutations are atomic. Business services B/D own calendar rules and reminders. */
 class CourseKeeperRepository(
     internal val database: CourseKeeperDatabase,
-    private val clock: Clock = Clock.systemDefaultZone(),
+    internal val clock: Clock = Clock.systemDefaultZone(),
 ) {
     internal val dao = database.records()
 

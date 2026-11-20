@@ -26,11 +26,12 @@ data class ImportedCourse(val externalId: String, val fields: CourseDraft)
  * Missing IDs are counted and deferred; E does not invent title/time hashes or enable unsafe dedup.
  * courseExternalId is resolved against locally stored SYNC courses; unresolved links remain null.
  *
- * 以下三个字段是 C 从学校页面原样提取的**来源信息**，E 目前不落库（CD-01 / CBE-01 交接用）：
+ * 以下三个字段是 C 从学校页面提取的来源信息，由 E 落库（Room v4）：
  * - [sourceCourseId] / [sourceCourseName]：学校侧课程的稳定标识与名称。MYSTU 的课程 ID 与教务
  *   课程编号是两套体系，不能塞进 [courseExternalId] 冒充已解析的关联；映射由 B/E 约定后再消费。
  * - [schoolSubmission]：学校侧提交状态（`SUBMITTED` / `NOT_SUBMITTED` / `DRAFT` /
- *   `REOPENED` / `UNKNOWN`），供 D/E 确定“学校已提交”与本地完成、逾期的处理口径。
+ *   `REOPENED` / `UNKNOWN`）。按 D v1.1，仅 SUBMITTED 自动填入未保护任务的完成时间。
+ * 整条任务受 manualDirty / completedAt 保护，来源信息保存的是最后接受的快照，不代表实时学校状态。
  */
 data class ImportedTask(
     val externalId: String?,
