@@ -46,7 +46,7 @@ class MigrationV3Test : DataTestBase() {
                 }
                 assertTrue(columns.containsAll(listOf("weeks", "weeksText", "teacher")))
                 assertFalse(columns.any { it in listOf("startWeek", "endWeek", "weekPattern") })
-                assertEquals(3, sqlite.version)
+                assertEquals(4, sqlite.version)
                 sqlite.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
                 repo.deleteCourse("course-old", 7)
                 assertTrue(repo.snapshot().schedules.isEmpty())
@@ -89,7 +89,7 @@ class MigrationV3Test : DataTestBase() {
         }
     }
 
-    @Test fun emptyV2DatabaseOpensAtV3WithoutInventingRecords() = runTest {
+    @Test fun emptyV2DatabaseOpensAtCurrentVersionWithoutInventingRecords() = runTest {
         withLegacyDatabase(seed = false) { name ->
             val upgraded = CourseKeeperDatabase.open(context, name)
             try {
@@ -97,7 +97,7 @@ class MigrationV3Test : DataTestBase() {
                 assertEquals(DataSnapshot(), repo.snapshot())
                 repo.createTask(draft())
                 assertEquals(1, repo.snapshot().tasks.size)
-                assertEquals(3, upgraded.openHelper.writableDatabase.version)
+                assertEquals(4, upgraded.openHelper.writableDatabase.version)
             } finally { upgraded.close() }
         }
     }

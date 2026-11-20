@@ -81,6 +81,10 @@ data class TaskRecord(
     val externalId: String? = null,
     val version: Long = 1,
     val manualDirty: Boolean = false,
+    /** Last accepted school fields; task-level protection also freezes this provenance. */
+    val schoolSubmission: String? = null,
+    val sourceCourseId: String? = null,
+    val sourceCourseName: String? = null,
 )
 
 @Entity(tableName = "sync_records")

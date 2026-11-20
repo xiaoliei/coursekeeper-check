@@ -11,7 +11,7 @@ import com.coursekeeper.data.model.*
 
 @Database(entities = [SemesterRecord::class, PeriodRecord::class, CourseRecord::class,
     ScheduleRecord::class, TaskRecord::class, SyncRecord::class, TombstoneRecord::class,
-    WriteRequestRecord::class, DataRevision::class], version = 3, exportSchema = true)
+    WriteRequestRecord::class, DataRevision::class], version = 4, exportSchema = true)
 @TypeConverters(RecordConverters::class)
 abstract class CourseKeeperDatabase : RoomDatabase() {
     internal abstract fun records(): CourseKeeperDao
@@ -44,8 +44,17 @@ abstract class CourseKeeperDatabase : RoomDatabase() {
             }
         }
 
+        /** Keep existing completion, identity and user edits; missing school information stays null. */
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN schoolSubmission TEXT")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN sourceCourseId TEXT")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN sourceCourseName TEXT")
+            }
+        }
+
         fun open(context: Context, name: String = "coursekeeper.db"): CourseKeeperDatabase =
             Room.databaseBuilder(context.applicationContext, CourseKeeperDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
     }
 }
