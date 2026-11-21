@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <!-- T05 脱敏样例（成员 C）：MYSTU（Moodle）「课程概览」页结构。
      课程名、教师、作业名、ID 均为虚构，保留真实页面的层级：
-     div.coursebox → div.assignment.overview → div.name / div.info / div.details。 -->
+     div.coursebox → 作业块 → div.name / div.info / div.details。
+     作业块有两套 Moodle 模块并存（D 2026-11-21）：
+     - 老 assignment：div.assignment.overview + mod/assignment/view.php?id= + 「截止时间:」
+     - 新 assign：    div.assign.overview     + mod/assign/view.php?id=     + 「到期日期:」
+       状态带「我的作业：」前缀与「未评分」尾缀（course-3001 高级算法 4 条）。 -->
 <html>
 <head><title>我的主页</title></head>
 <body>
@@ -34,6 +38,36 @@
   <div class="course_title">
     <h2 class="title"><a title="[2026秋] 操作系统原理 吴俊豪" href="https://my.stu.edu.cn/courses/campus/course/view.php?id=1002">[2026秋] 操作系统原理 吴俊豪</a></h2>
   </div>
+</div>
+
+<div id="course-3001" class="box coursebox">
+  <div class="course_title">
+    <h2 class="title"><a title="[2026秋] 高级算法 沈建国" href="https://my.stu.edu.cn/courses/campus/course/view.php?id=3001">[2026秋] 高级算法 沈建国</a></h2>
+  </div>
+  <div class="activity_info"><div class="activity_overview">
+    <div id="region_3001_assign_inner" class="collapsibleregioninner">
+      <div class="assign overview">
+        <div class="name">中期检查: <a title="中期检查" href="https://my.stu.edu.cn/courses/campus/mod/assign/view.php?id=410001">中期检查-第1组</a></div>
+        <div class="info">到期日期: 2026年09月26日 星期六 00:00</div>
+        <div class="details">我的作业：还未提交, 未评分</div>
+      </div>
+      <div class="assign overview">
+        <div class="name">中期检查: <a title="中期检查" href="https://my.stu.edu.cn/courses/campus/mod/assign/view.php?id=410002">中期检查-第2组</a></div>
+        <div class="info">到期日期: 2026年09月26日 星期六 00:00</div>
+        <div class="details">我的作业：还未提交, 未评分</div>
+      </div>
+      <div class="assign overview">
+        <div class="name">项目汇报: <a title="项目汇报" href="https://my.stu.edu.cn/courses/campus/mod/assign/view.php?id=410003">项目最终汇报-第1组</a></div>
+        <div class="info">到期日期: 2026年09月26日 星期六 00:00</div>
+        <div class="details">我的作业：还未提交, 未评分</div>
+      </div>
+      <div class="assign overview">
+        <div class="name">项目汇报: <a title="项目汇报" href="https://my.stu.edu.cn/courses/campus/mod/assign/view.php?id=410004">项目最终汇报-第2组</a></div>
+        <div class="info">到期日期: 2026年09月26日 星期六 00:00</div>
+        <div class="details">我的作业：还未提交, 未评分</div>
+      </div>
+    </div>
+  </div></div>
 </div>
 </body>
 </html>

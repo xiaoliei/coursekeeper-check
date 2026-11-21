@@ -9,7 +9,8 @@ import java.time.LocalDateTime
 
 /**
  * MYSTU（Moodle）作业页解析测试。
- * 样例 [mystu-dashboard.html] 按实测结构脱敏后编写：课程块 → assignment overview → name/info/details。
+ * 样例 [mystu-dashboard.html] 按实测结构脱敏后编写：课程块 → 作业块（老 assignment / 新 assign）→
+ * name / info / details。D 2026-11-21：新 `assign` 模块 4 条此前全部漏抓（P1），本文件锁定双模块解析。
  */
 class MyStuTaskParserTest {
 
@@ -22,8 +23,8 @@ class MyStuTaskParserTest {
     fun assignmentsMapTitleDueTypeAndStableId() {
         val result = parser.parseTasks(fixture("mystu-dashboard.html"))
 
-        assertEquals(3, result.tasks.size)
-        assertEquals(1, result.missingIdentity)
+        assertEquals("老 assignment 3 条 + 新 assign 4 条", 7, result.tasks.size)
+        assertEquals("仅 course-1001 的 index.php 链接缺作业 ID", 1, result.missingIdentity)
 
         val first = result.tasks.first { it.externalId == "307183" }
         // 标题去掉“-截止时间 …”后缀，截止时间以 div.info 为准。
@@ -95,5 +96,75 @@ class MyStuTaskParserTest {
         assertEquals("DRAFT", parse("草稿（未提交）"))
         assertEquals("REOPENED", parse("需要重新提交"))
         assertEquals("UNKNOWN", parse("待批阅"))
+    }
+
+    // ---- D 2026-11-21 P1：新 assign 模块此前 4 条全部漏抓，双模块解析 ----
+
+    @Test
+    fun newAssignModuleEntriesAreParsedWithIdDueAndSubmission() {
+        val result = parser.parseTasks(fixture("mystu-dashboard.html"))
+
+        val assignTasks = result.tasks.filter { it.sourceCourseId == "3001" }
+        assertEquals("高级算法的 4 条 assign 作业必须全部解析", 4, assignTasks.size)
+        assertEquals(
+            listOf("410001", "410002", "410003", "410004"),
+            assignTasks.map { it.externalId },
+        )
+
+        val first = assignTasks.first()
+        assertEquals("中期检查-第1组", first.fields.title)
+        assertEquals(TaskType.HOMEWORK, first.fields.type)
+        // 新模块标签是「到期日期:」，时刻 00:00 不能退化成默认 23:59。
+        assertEquals(LocalDateTime.of(2026, 9, 26, 0, 0), first.fields.dueAt)
+        assertEquals("「我的作业：还未提交, 未评分」清洗后归一", "NOT_SUBMITTED", first.schoolSubmission)
+        assertTrue(first.sourceCourseName!!.contains("高级算法"))
+    }
+
+    @Test
+    fun parserExposesCourseBoxIdsForSnapshotConvergence() {
+        val result = parser.parseTasks(fixture("mystu-dashboard.html"))
+
+        assertEquals(setOf("1001", "1002", "3001"), result.sourceCourseIds)
+    }
+
+    @Test
+    fun myAssignmentPrefixAndGradeSuffixAreStrippedBeforeNormalization() {
+        fun parse(details: String) = parser.parseTasks(
+            """
+            <div id="course-3002" class="box coursebox">
+              <div class="assign overview">
+                <div class="name"><a href="mod/assign/view.php?id=99">作业</a></div>
+                <div class="info">到期日期: 2026年09月26日 星期六 00:00</div>
+                <div class="details">$details</div>
+              </div>
+            </div>
+            """.trimIndent(),
+        ).tasks.single().schoolSubmission
+
+        assertEquals("SUBMITTED", parse("我的作业：已提交, 未评分"))
+        assertEquals("NOT_SUBMITTED", parse("我的作业：还未提交"))
+        assertEquals("REOPENED", parse("我的作业：需要重新提交, 未评分"))
+        assertEquals("未评分只描述评分状态，不能吞掉整条状态", "UNKNOWN", parse("我的作业：待批阅"))
+    }
+
+    @Test
+    fun assignModuleWithoutViewIdIsDeferredLikeAssignmentModule() {
+        val result = parser.parseTasks(
+            """
+            <div id="course-3003" class="box coursebox">
+              <div class="assign overview">
+                <div class="name"><a href="mod/assign/index.php?id=3003">无 view 链接的新模块作业</a></div>
+                <div class="info">到期日期: 2026年09月26日 星期六 00:00</div>
+                <div class="details">我的作业：还未提交, 未评分</div>
+              </div>
+            </div>
+            """.trimIndent(),
+        )
+
+        val task = result.tasks.single()
+        assertNull("index.php 链接没有作业 ID，与老模块同规则暂缓", task.externalId)
+        assertEquals(1, result.missingIdentity)
+        assertEquals("NOT_SUBMITTED", task.schoolSubmission)
+        assertTrue(result.warnings.single().contains("无 view 链接的新模块作业"))
     }
 }

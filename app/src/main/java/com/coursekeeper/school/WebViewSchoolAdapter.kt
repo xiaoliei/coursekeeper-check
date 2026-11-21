@@ -9,6 +9,7 @@ import com.coursekeeper.data.sync.SyncFailure
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 
 /**
@@ -59,7 +60,7 @@ class WebViewSchoolAdapter(
         val url = school.taskListUrl
             ?: return ModuleResult.Failure(SyncFailure.PARSE_ERROR)
         return fetch(url) { body ->
-            val parsed = taskParser.parseTasks(body)
+            val parsed = convergeTaskPages(url, taskParser.parseTasks(body))
             // 未登录时 MYSTU 会返回登录页或空壳：同样是“0 条 + 警告”，必须报失败，
             // 否则会显示“作业同步成功、0 条作业”。
             if (parsed.tasks.isEmpty() && parsed.warnings.isNotEmpty()) {
@@ -69,7 +70,65 @@ class WebViewSchoolAdapter(
         }
     }
 
-    private suspend fun <T> fetch(url: String, parse: (String) -> ModuleResult<T>): ModuleResult<T> =
+    /**
+     * D 2026-11-21 兜底：MYSTU 首页快照随平台缓存波动，可能整门课消失/重现。
+     * 同一次同步内再抓一页与已有课程块 ID 集合取并集，仍有新增才继续（≤[TASK_SNAPSHOT_MAX_PAGES]
+     * 次封顶），集合不再新增即停。附加抓取失败/超时降级为已有结果，不影响主流程；
+     * 打开时全量拉取的口径不变，不引入轮询。
+     */
+    private suspend fun convergeTaskPages(url: String, first: TaskParse): TaskParse {
+        var pages = listOf(first)
+        var ids = first.sourceCourseIds
+        for (attempt in 2..TASK_SNAPSHOT_MAX_PAGES) {
+            val next = withTimeoutOrNull(TASK_SNAPSHOT_TIMEOUT_MS) { refetchPage(url) } ?: break
+            pages += next
+            val union = ids + next.sourceCourseIds
+            if (union.size == ids.size) break // 课程集合不再新增：页面稳定
+            ids = union
+        }
+        return mergeTaskPages(pages)
+    }
+
+    private suspend fun refetchPage(url: String): TaskParse? = try {
+        val reply = SchoolHttp.get(url, cookieProvider(url))
+        dumpForDebug(url, reply.body)
+        if (reply.code in 200..299 && !SchoolRule.looksLikeLoginPage(reply.body)) {
+            taskParser.parseTasks(reply.body)
+        } else null
+    } catch (cancel: CancellationException) {
+        throw cancel
+    } catch (_: IOException) {
+        null
+    }
+
+    /** 多页快照合并：按 externalId 去重（同 ID 保留首页内容），缺 ID 条目按标题+截止+课程折叠。 */
+    internal fun mergeTaskPages(pages: List<TaskParse>): TaskParse {
+        if (pages.size == 1) return pages.single()
+        val byId = LinkedHashMap<String, ImportedTask>()
+        val unidentified = LinkedHashMap<String, ImportedTask>()
+        val warnings = LinkedHashSet<String>()
+        val ids = LinkedHashSet<String>()
+        for (page in pages) {
+            warnings += page.warnings
+            ids += page.sourceCourseIds
+            for (task in page.tasks) {
+                val id = task.externalId
+                if (id != null) byId.putIfAbsent(id, task)
+                else {
+                    val key = "${task.fields.title}|${task.fields.dueAt}|${task.sourceCourseId}"
+                    unidentified.putIfAbsent(key, task)
+                }
+            }
+        }
+        return TaskParse(
+            tasks = byId.values + unidentified.values,
+            missingIdentity = unidentified.size,
+            warnings = warnings.toList(),
+            sourceCourseIds = ids,
+        )
+    }
+
+    private suspend fun <T> fetch(url: String, parse: suspend (String) -> ModuleResult<T>): ModuleResult<T> =
         withContext(Dispatchers.IO) {
             try {
                 val reply = SchoolHttp.get(url, cookieProvider(url))
@@ -112,3 +171,6 @@ internal fun ScheduleParse.toCourseSyncResult(): ModuleResult<ImportedCourse> =
     } else {
         ModuleResult.Success(courses, completeSnapshot = true)
     }
+
+private const val TASK_SNAPSHOT_MAX_PAGES = 3
+private const val TASK_SNAPSHOT_TIMEOUT_MS = 10_000L

@@ -10,15 +10,19 @@ import com.coursekeeper.data.sync.ImportedTask
  * 实测页面（`my.stu.edu.cn/courses/campus/my/`，脱敏样例见
  * `app/src/test/resources/school/mystu-dashboard.html`）是 Moodle 的“课程概览”：
  * - 每门课一个 `div.coursebox#course-<id>`，课程标题形如 `[2026秋] 应用密码学 方若宇`；
- * - 作业块 `div.assignment.overview` 内：`div.name > a`（标题，链接含 `mod/assignment/view.php?id=<作业ID>`）、
- *   `div.info`（`截止时间: 2026年11月15日 星期日 23:59`）、`div.details`（提交状态）。
+ * - 作业块有两套模块（D 2026-11-21：`assignment` 老「作业 2.2」与 `assign` 新模块并存）：
+ *   - 老：`div.assignment.overview` + `mod/assignment/view.php?id=` + 「截止时间: …」；
+ *   - 新：`div.assign.overview` + `mod/assign/view.php?id=` + 「到期日期: …」，
+ *     状态带「我的作业：」前缀与「未评分」尾缀；
+ * - 块内结构一致：`div.name > a`（标题）、`div.info`（截止/到期时间）、`div.details`（提交状态）。
  *
- * 稳定标识取作业 ID（`view.php?id=`），跨同步稳定；页面上每条作业都有链接，缺 ID 的按
- * `externalId = null` 上交由 E 计数。
+ * 稳定标识取作业 ID（`view.php?id=`），两模块同规则；缺 ID 的按 `externalId = null` 上交由 E 计数。
+ * 解析结果带 [TaskParse.sourceCourseIds]（本页出现的课程块 ID），供适配器做同次同步内的
+ * 课程集合并集收敛（D 的兜底：首页快照随缓存波动，可能整课消失）。
  *
- * 首版**不做课程关联**：MYSTU 的课程是另一套 ID 体系（`course/view.php?id=`），与教务课程编号
+ * **不做课程关联**：MYSTU 的课程是另一套 ID 体系（`course/view.php?id=`），与教务课程编号
  * 不能直接对上；按课程名模糊匹配会引入错误关联。但会把源课程标识/名称与提交状态原样透传
- * （CBE-01 / CD-01），由 B/E/D 约定映射与展示口径后再落库，C 侧不猜测关联。
+ * （CBE-01 / CD-01），由 B/E 约定映射与展示口径后再落库，C 侧不猜测关联。
  */
 class MyStuTaskParser : SchoolPageParser {
 
@@ -30,7 +34,8 @@ class MyStuTaskParser : SchoolPageParser {
         val tasks = mutableListOf<ImportedTask>()
         var missingIdentity = 0
 
-        for (chunk in courseChunks(html)) {
+        val chunks = courseChunks(html)
+        for (chunk in chunks) {
             for (match in ASSIGNMENT.findAll(chunk.html)) {
                 val body = match.groupValues[1]
                 val details = match.groupValues[2]
@@ -63,7 +68,12 @@ class MyStuTaskParser : SchoolPageParser {
         if (tasks.isEmpty() && warnings.isEmpty()) {
             warnings += "页面未找到作业列表（可能未登录或页面结构变化）"
         }
-        return TaskParse(tasks, missingIdentity, warnings)
+        return TaskParse(
+            tasks = tasks,
+            missingIdentity = missingIdentity,
+            warnings = warnings,
+            sourceCourseIds = chunks.mapNotNull { it.id }.toSet(),
+        )
     }
 
     private data class CourseChunk(val id: String?, val name: String?, val html: String)
@@ -87,9 +97,13 @@ class MyStuTaskParser : SchoolPageParser {
     /**
      * `div.details` 的提交状态原文 → 归一化值（CD-01）。只做文本映射，不推断平台规则：
      * 判断“是否算完成、要不要从待办移出”仍由 D/E 按约定决定。
+     * 新模块状态带「我的作业：」前缀与「未评分」尾缀（D 2026-11-21），归一前先清洗。
      */
     private fun submissionOf(detailsHtml: String): String? {
-        val text = plainText(detailsHtml)
+        var text = plainText(detailsHtml)
+        if (text.isBlank()) return null
+        text = text.removePrefix("我的作业：").removePrefix("我的作业:").trim()
+        text = text.replace(GRADE_SUFFIX, "").trim()
         return when {
             text.isBlank() -> null
             "草稿" in text -> "DRAFT"
@@ -121,14 +135,22 @@ class MyStuTaskParser : SchoolPageParser {
         val COURSE_BOX = Regex("""<div id="course-(\d+)"[^>]*>""")
         /** 课程标题锚文本，形如 `[2026秋] 应用密码学 方若宇`，作为源课程名称透传。 */
         val COURSE_NAME = Regex("""<h2[^>]*>.*?<a[^>]*>(.*?)</a>""", RegexOption.DOT_MATCHES_ALL)
+        /**
+         * 作业块兼容两套 Moodle 模块（D 2026-11-21，P1）：老 `assignment` 与新 `assign`。
+         * 注意「assign overview」是「assignment overview」的前缀，用可选组区分。
+         * 第 2 组捕获 `div.details` 的状态原文。
+         */
         val ASSIGNMENT = Regex(
-            """<div class="assignment overview">(.*?)<div class="details">(.*?)</div>""",
+            """<div class="assign(?:ment)? overview">(.*?)<div class="details">(.*?)</div>""",
             RegexOption.DOT_MATCHES_ALL,
         )
-        val ASSIGNMENT_ID = Regex("""mod/assignment/view\.php\?id=(\d+)""")
+        /** 作业稳定 ID：两模块同为 `view.php?id=`；`index.php` 链接没有作业 ID，按 null 上交。 */
+        val ASSIGNMENT_ID = Regex("""mod/assign(?:ment)?/view\.php\?id=(\d+)""")
         val NAME_ANCHOR = Regex("""<div class="name">.*?<a[^>]*>(.*?)</a>""", RegexOption.DOT_MATCHES_ALL)
         val INFO = Regex("""<div class="info">(.*?)</div>""", RegexOption.DOT_MATCHES_ALL)
         val TITLE_SUFFIX = Regex("""\s*[-－—]?\s*截止时间.*$""")
+        /** 新模块状态尾缀「未评分」只描述评分状态，与提交状态无关，归一前剥掉。 */
+        val GRADE_SUFFIX = Regex("""[,，、]?\s*未评分\s*$""")
         val TAG = Regex("<[^>]*>")
     }
 }

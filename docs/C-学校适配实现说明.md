@@ -507,3 +507,50 @@ D 复核了 1 必修 + 2 建议的修复后，确认三项均真修好（单例�
 | v0.3 §9 C ③ 课程编号 | `externalId` 取课程编号；`termTag` 仍为 null | 已满足；`termTag` 属 C/E 待定项——v0.3 §10.1 建议首个学期导入前定值，当前已有真实数据，**本轮不擅自启用**（启用后 externalId 会变，需 E 配迁移） |
 | v0.3 §9 C ④ 学期起始日 | 页面读不到返回 null，不猜 | 已满足 |
 | 手动刷新重试（`5fc59b4`） | 协调器层修复，不涉及适配器 | 无 C 改动 |
+
+## 19. D《作业多状态问题分析与分工》（2026-11-21）：P1 双模块解析与并集收敛
+
+依据 `docs/D-作业多状态问题分析与分工.md`（P1 必修 + 兜底"随 P1 顺带"；P2 三项为评估后回结论）。执行前已 `git pull` 到 main `6559f01`。
+
+### 19.1 P1 解析器双模块支持（必修）
+
+**根因**（D 量化：漏抓 4/6）——MYSTU 首页同时存在老 `assignment`（作业 2.2）与新 `assign` 两套 Moodle 模块，解析器只认老模块：
+
+| 缺口 | 修复（`school/MyStuTaskParser.kt`） |
+|---|---|
+| `ASSIGNMENT` 只匹配 `assignment overview` | 正则改 `assign(?:ment)? overview`，两套模块并存（「assign overview」是「assignment overview」的前缀，可选组区分） |
+| `ASSIGNMENT_ID` 只匹配 `mod/assignment/view\.php` | 改 `mod/assign(?:ment)?/view\.php\?id=`；`index.php` 链接无作业 ID，与老模块同规则按 `externalId = null` 上交 |
+| 截止时间只认「截止时间:」 | **实为已兼容**：`DueDates` 正则只匹配日期模式、不管标签前缀，「到期日期: 2026年09月26日 星期六 00:00」可直接解析；新增用例锁定 00:00 不退化成默认 23:59 |
+| 状态带「我的作业：」前缀与「未评分」尾缀 | `submissionOf` 归一前剥掉前缀与尾缀（尾缀只描述评分状态，与提交无关） |
+
+**fixture**：`mystu-dashboard.html` 补入 course-3001「高级算法」4 条新模块作业（中期检查×2、项目最终汇报×2，ID 410001–410004，全部「我的作业：还未提交, 未评分」「到期日期: 2026年09月26日 星期六 00:00」），原始抓页仍只存本机 `.shots/`。现有断言同步更新（3→7 条）。
+
+**测试**（`MyStuTaskParserTest` +4、`MyStuPageMergeTest` 新建 +5）：新模块 4 条 externalId/状态/到期时间三要素正确；`sourceCourseIds` 透出；前缀/尾缀清洗各态；`index.php` 缺 ID 暂缓；多页合并去重与计数（见 19.2）。
+
+### 19.2 兜底：课程集合并集收敛（随 P1 顺带）
+
+**实现**（`school/WebViewSchoolAdapter.kt`）：
+
+- `TaskParse` 新增 `sourceCourseIds`（本页课程块 ID 集合，C 解析层输出，不进合并层）；
+- `fetchTasks` 同一次同步内再抓一页与首页课程集合取并集，**仍有新增才继续抓**（≤3 次封顶），集合不再新增即停；附加抓取失败/超时（单页 10s 上限）降级为已有结果，不影响主流程；
+- 多页合并纯函数 `mergeTaskPages`：按 `externalId` 去重（同 ID 保留首页快照），缺 ID 条目按"标题+截止+课程"折叠并去重计数，警告与课程集合并集。
+
+**约束核对**：一次同步 = 打开时全量拉取、≤3 次请求，不引入轮询；`manualDirty`/`completedAt` 保护与 `schoolSubmission` 契约均未触碰。
+
+### 19.3 P2 三项评估结论（回结论，未实现）
+
+| 项 | 结论 | 理由 |
+|---|---|---|
+| 扩抓每课索引页 `mod/assign/index.php?id=` | **暂缓**，待 D 提供脱敏 index 页后评估 | 真实结构未抓取（老模块索引页路径可能不同，D 亦标注）；首页波动已由并集收敛兜底；每课 1 请求与 E 的 30s 模块超时的交互需先量化（课程多时 N 次请求） |
+| 课程发现源（「显示所有课程」列表页） | **暂不接入** | D 实测：隐藏 36 门=历史学期，首页课程块齐全时即当前学期全量；并集收敛已兜底整课消失。若确认课程块本身丢失频发（非缓存波动），再抓列表页评估按学期过滤 |
+| 课程 ID 缓存（C＋E 商定） | **方案已提，待 E 定表** | 任务侧 `sourceCourseId` E v4 已落库；建议 E 增存"上次作业快照的 `sourceCourseIds`"，适配器发现首页课程块少于缓存时按缓存 ID 扩抓（依赖索引页项）。C 侧 `TaskParse.sourceCourseIds` 已就绪 |
+
+### 19.4 验收对照（D 第七节）
+
+| 口径 | 结果 |
+|---|---|
+| 1. 单测：新模块 4 条三要素 | ✅ `newAssignModuleEntriesAreParsedWithIdDueAndSubmission` |
+| 2. 真机（D 手机对照组） | 待 D：一次同步后高级算法 4 条出现、既有条目 manualDirty 不被覆盖（合并层保护未动）、无重复 |
+| 3. P2 历史作业 | 本轮 P2 未实现，不做声明 |
+
+全仓单元测试 **319 项 / 0 失败 / 0 跳过**；`:app:assembleDebug` 通过。**本轮未跑真机**。

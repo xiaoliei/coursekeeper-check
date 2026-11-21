@@ -126,3 +126,14 @@
 | v0.3 §8 | 合讲教师合并为 `张三/李四`（B 交由 C 决定） | `StuJwParserTest.coTaughtEntriesInSameSlotKeepBothTeacherNames` | 未跑；属解析规则 |
 
 全仓单元测试（基线 main `5cb46e0`）：**307 项 / 0 失败 / 0 跳过**；`:app:assembleDebug` 通过。
+
+## 10. D《作业多状态问题分析与分工》P1（2026-11-21，仅单元测试）
+
+| 检查 | 结果 |
+|---|---|
+| P1 双模块解析 | `MyStuTaskParserTest`：脱敏 fixture 解析出**新 assign 模块 4 条**，externalId（410001–410004）/状态（`NOT_SUBMITTED`，前缀尾缀清洗）/到期时间（2026-09-26 00:00，不退化为 23:59）三要素正确；老模块 3 条断言不变（合计 7 条 / missingIdentity 1） |
+| 缺口澄清 | D 清单缺口 3「截止时间解析只认『截止时间:』」实为已兼容——`DueDates` 正则只匹配日期模式、不管标签前缀；新增 00:00 用例锁定 |
+| 兜底并集收敛 | `MyStuPageMergeTest` 5 例：单页原样返回、两快照并集补回整课、缺 ID 条目按内容折叠且 `missingIdentity` 不重复计数、同 ID 保留首页快照、警告/课程集合并集 |
+| 全仓单元测试 | **335 项 / 0 失败 / 0 跳过**（rebase 到含 E v4 的 main `3ac05a3` 后实跑）；`:app:assembleDebug` 通过 |
+| 真机 | **未跑**：验收口径第 2 条（D 手机对照组）待 D；第 3 条 P2 未实现，不做声明 |
+| P2 评估结论 | 索引页扩抓**暂缓**（待脱敏 index 页）；课程发现源**暂不接入**（D 实测隐藏 36 门=历史学期）；课程 ID 缓存**方案已提**（E 增存上次快照 `sourceCourseIds`，C 侧解析输出已就绪）——详见《C-学校适配实现说明》§19.3 |

@@ -47,6 +47,11 @@ data class TaskParse(
     /** 缺稳定 ID 的任务数；这些任务仍随 [tasks] 以 `externalId = null` 上交，由 E 计数并暂缓入库。 */
     val missingIdentity: Int,
     val warnings: List<String>,
+    /**
+     * 本页出现的课程块 ID 集合（MYSTU `coursebox` 的 `course-<id>`），供适配器在同一次同步内
+     * 做课程集合并集收敛（D 2026-11-21：首页快照随缓存波动可能整课消失）。不进入合并层。
+     */
+    val sourceCourseIds: Set<String> = emptySet(),
 )
 
 /**

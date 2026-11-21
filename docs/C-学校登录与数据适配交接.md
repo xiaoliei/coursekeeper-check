@@ -38,7 +38,7 @@
 | 课程编号 | 网格里**没有**课程编号；在「有课表课程」表 `table#dataTables2` 中，列序为 `序号? | 上课班级 | 课程编号 | 课程名称 | 授课教师`，用单元格里的“班级：202611595”反查（实测 9 门课，全部命中） |
 | 学期起始日 | 页面不提供；返回 null，由用户在课表页手填，不猜日期 |
 | 作业来源 | MYSTU 学习平台 `https://my.stu.edu.cn/courses/campus/my/`（Moodle），与教务系统**不同源、不同会话** |
-| 作业结构 | 每门课一个 `div.coursebox#course-<id>` → `div.assignment.overview`：`div.name`（标题 + `mod/assignment/view.php?id=`）、`div.info`（`截止时间: 2026年11月15日 星期日 23:59`）、`div.details`（提交状态，解析后作为 `schoolSubmission` 透传，暂不落库） |
+| 作业结构 | 每门课一个 `div.coursebox#course-<id>` → 作业块（**两套 Moodle 模块并存**，D 2026-11-21）：老 `div.assignment.overview`（`mod/assignment/view.php?id=`、「截止时间: …」）与新 `div.assign.overview`（`mod/assign/view.php?id=`、「到期日期: …」、状态带「我的作业：」前缀与「未评分」尾缀）；块内同为 `div.name` / `div.info` / `div.details`（状态归一为 `schoolSubmission` 透传，暂不落库） |
 | 作业稳定 ID | 作业链接里的 `view.php?id=`（如 307183） |
 | 第二处登录 | 教务登录成功后，在同一 WebView 里再加载一次 MYSTU，复用 SSO 会话；落在 `my.stu.edu.cn` 的非登录页才算完成 |
 | 验证码 / SSO 细节 | 登录页内完成，类型与是否二次验证尚未记录（见待办） |
@@ -51,7 +51,7 @@
 - 稳定标识（E 交接 §C 的同步输入）：
   - 课程 `externalId` 取页面课程编号（如 `CST3254A`）。`(source, externalId)` 是全局唯一键，跨学期重修会撞（B 的开放问题 6），因此 `SchoolInfo.termTag`（如 `2026AUT`）会作为前缀；课程与作业的课程关联两侧同时加前缀。未配置时保持原样。
   - 缺课程编号的课表条目**不导入**，计入 `skippedCourses`；节次或周次无法确定的条目同样跳过，不默认到第 1 节。**空表、有跳过条目或带解析警告的课表一律按 `PARSE_ERROR` 上报**，只有干净的非空快照才以 `Success(records, completeSnapshot = true)` 交给合并层清理缺席课程（CE-01，E 于 `75ce17a` 定稿；C 的解析器负责把“周次部分无法解析”等缺口记成警告）。
-  - 作业 `externalId` 取 MYSTU 作业链接的 `view.php?id=`；缺 ID 的条目以 `externalId = null` 上交，由 E 计数。课程关联仍留空（`courseExternalId = null`）：MYSTU 课程是另一套 ID 体系，按名称模糊匹配会引入错误关联。C 已额外透传来源信息（`sourceCourseId` / `sourceCourseName`）与学校提交状态（`schoolSubmission`：`SUBMITTED`/`NOT_SUBMITTED`/`DRAFT`/`REOPENED`/`UNKNOWN`），**E 暂不落库**，待 B/E/D 约定映射与展示口径后再消费（CD-01 / CBE-01）。
+  - 作业 `externalId` 取 MYSTU 作业链接的 `view.php?id=`；缺 ID 的条目以 `externalId = null` 上交，由 E 计数。课程关联仍留空（`courseExternalId = null`）：MYSTU 课程是另一套 ID 体系，按名称模糊匹配会引入错误关联。C 透传来源信息（`sourceCourseId` / `sourceCourseName`）与学校提交状态（`schoolSubmission`：`SUBMITTED`/`NOT_SUBMITTED`/`DRAFT`/`REOPENED`/`UNKNOWN`）；**E 已在 Room v4 落库**，并按 D v1.1 对 `SUBMITTED` 自动填入未保护任务的完成时间（2026-11-21）；课程 ID ↔ 教务编号映射仍待 B/E。
 - 周次经 B 的 `WeekText.parse` 转位图后交给 `ScheduleDraft`，不自建口径。
 - 节流、重试、部分成功、墓碑合并全部由 E 的 `SyncCoordinator` 负责，适配器只做拉取与解析；`PARSE_ERROR/OFFLINE/EXPIRED/REMOTE_ERROR` 按 `ModuleResult.Failure` 上报。
 - 作业模块：`taskListUrl` 为 null 或页面解析不出结构时返回 `Failure(PARSE_ERROR)`，整体呈现 PARTIAL，不把“没解析”伪装成“没有作业”；课表模块不受影响。
@@ -78,7 +78,9 @@
 | 会话过期只靠“响应体像登录页”判断，SSO 重定向时可能误判有效 | `HttpReply` 带最终 URL；主机名不再是门户即判 EXPIRED | `SchoolSession`、`WebViewSchoolAdapter` |
 | 作业源（MYSTU）未接入 | 新增 `MyStuTaskParser`（课程概览 → 标题/截止/类型/作业 ID）；登录流程追加一次 MYSTU 登录 | `MyStuTaskParser`、`SchoolLoginSheet` |
 | 页面解析不出结构时会把空列表当“同步成功、0 条” | 解析结果为空且有警告 → 模块 `Failure(PARSE_ERROR)`；课表同样处理 | `WebViewSchoolAdapter` |
-| 课表部分解析失败会被镜像合并当成“学校删课”整门删除（CE-01） | 有任意条目被跳过 → 整份快照 `Failure(PARSE_ERROR)`，保留本地缓存；仅字段级警告不拦截 | `WebViewSchoolAdapter.requireCompleteSchedule` |
+| 课表部分解析失败会被镜像合并当成“学校删课”整门删除（CE-01） | 适配器空表/跳过/带警告一律 `Failure(PARSE_ERROR)`，只有干净非空快照才带 `completeSnapshot = true` 授权清理（E `75ce17a` 定稿，C 解析器补“周次部分无法解析”警告） | `WebViewSchoolAdapter.toCourseSyncResult` |
+| 新 `assign` 模块作业 4 条全部漏抓（D 2026-11-21 P1） | `ASSIGNMENT`/`ASSIGNMENT_ID` 正则兼容两套模块，「到期日期:」标签、「我的作业：」前缀与「未评分」尾缀清洗；`index.php` 链接缺 ID 照常暂缓 | `MyStuTaskParser` |
+| 首页快照随平台缓存波动，整课消失/重现（D 兜底） | 同一次同步内课程集合并集收敛：再抓一页取并集，仍有新增才继续（≤3 次封顶，单页 10s 上限），失败降级已有结果 | `WebViewSchoolAdapter.convergeTaskPages` |
 | MYSTU 截止时间带“星期X”，旧解析器会把时刻当默认 23:59 | `DueDates` 允许日期与时刻之间夹星期 | `SchoolPageParser` |
 | 课表网格无课程编号，旧解析器全部跳过 | 从「有课表课程」表按班级号反查课程编号；节次优先取条目内 `[xx-yy节]`；跨大节重复条目去重；修正教师名含“周”导致的周次行误判 | `StuJwPageParser` |
 | 缺稳定 ID 的作业被适配器静默丢弃，E 的 `missingIdentity` 恒为 0 | 以 `externalId = null` 上交，由 E 计数并暂缓入库 | `SchoolPageParser` |
@@ -135,7 +137,7 @@ WebView 在 `doUpdateVisitedHistory` 中调用 `SchoolRule.isLoginComplete`：�
 - **课表地址已在真机验证**：`https://jw.stu.edu.cn/jsxsd/xskb/xskb_list.do` 能取到「学期理论课表」；若以后学校加查询参数导致空表，按 F12 复制真实地址替换 `scheduleUrl`。
 - **MYSTU 已在真机验证**：登录后第二处 SSO 生效，8 条作业入库；仍需补充“显示/折叠”边界（作业很多时页面是否只渲染部分）。
 - **作业与课程关联待定**：MYSTU 课程 ID（`course/view.php?id=`）与教务课程编号是两套体系，当前 `courseExternalId = null`；C 已透传 `sourceCourseId` / `sourceCourseName`，需与 E、B 约定按规范化课程名匹配还是维护映射表。
-- **学校提交状态待约定**：C 已解析 `div.details` 并透传 `schoolSubmission`，不写本地完成；“已提交是否算完成、是否移出待办”需 D/E 定口径（CD-01）。
+- **学校提交状态已闭环**：C 解析 `div.details` 透传 `schoolSubmission`；D v1.1 定口径（SUBMITTED → 自动完成未保护任务），E Room v4 落库，D 已真机验收（`docs/evidence/d-cd01-verify/`）。小组作业/补交通道照实记录未提交→逾期，用户手动标完成（已知限制）。
 - **验证码与 SSO 细节未记录**：登录页验证码类型、是否需要二次验证、单点登录是否互踢，都要在真机走一遍后写回本文。
 - 确定学期后需填 `SchoolInfo.termTag`（如 `2026AUT`），否则课程稳定标识仍只有课程编号，跨学期重修会撞 `(source, externalId)` 唯一键。
 - 学期起始日页面不提供，必须由用户在课表页补录；周次显示依赖它（真机验证用 2026-09-07 / 20 周，实际值以校历为准）。
