@@ -51,6 +51,21 @@ class StatisticsViewModelTest : DataTestBase() {
     }
 
     @Test
+    fun vmEmitsRuleNoticesFromSameSnapshotAndClock() = runTest {
+        // T07 端到端：规则提示与压力指数共用同一快照同一时刻。种子数据里任务 a 已完成
+        // （不计规则 5），b 截止 11-10 23:59 == 今天且未完成 → 规则 1；now 固定在周二
+        // （未过半）故规则 6 不出现；有完成记录（a 今天完成）故规则 8 不出现。
+        val vm = StatisticsViewModel(repository, courseStatsSource = object : CourseStatsSource {
+            override fun summary(snapshot: DataSnapshot, now: LocalDateTime) = CourseStats()
+        }, scope = backgroundScope, now = { now })
+        seedBoundaryWeek()
+        val ui = vm.uiState.first { it.weekTaskCount == 4 && it.dueDist.next7Days == 1 }
+        assertEquals(listOf(1), ui.notices.map { it.ruleId })
+        // repository 生成的任务 id 是 UUID，标题才是业务名；断言命中任务数即可。
+        assertEquals(1, ui.notices.single().relatedTaskIds.size)
+    }
+
+    @Test
     fun vmKeepsLastSuccessWhenCourseSourceFails() = runTest {
         val source = object : CourseStatsSource {
             var failing = false

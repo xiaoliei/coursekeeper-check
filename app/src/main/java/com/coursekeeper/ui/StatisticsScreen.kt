@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +25,7 @@ import com.coursekeeper.ui.theme.KeeperMuted
  * 数据看板（成员 F，W2 文字骨架）。
  *
  * 消费 StatisticsService 的计算结果，渲染文字版：周完成率、类型分布、截止分布、压力指数。
- * Compose Canvas 图表与 8 条规则提示归 W3。
+ * 8 条规则提示（T07）渲染在压力指数之后；Compose Canvas 图表归后续工作包。
  */
 @Composable
 fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier, onRetry: () -> Unit = {}) {
@@ -59,6 +60,25 @@ fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier, onRetr
             } else {
                 Text("${ui.pressureScore} · ${ui.pressureLevel}", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 Text(ui.explanation, fontSize = 12.sp, color = KeeperMuted)
+            }
+        }
+        if (ui.notices.isNotEmpty()) {
+            KeeperCard {
+                Text("提醒", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                ui.notices.forEachIndexed { index, notice ->
+                    if (index > 0) HorizontalDivider()
+                    // 合并条目的多条规则文案用“；”拼接成一条长串，按分隔符拆行展示，避免整段刷屏。
+                    notice.message.split("；").forEachIndexed { line, text ->
+                        Text(
+                            text,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(
+                                top = if (line == 0) 6.dp else 2.dp,
+                                bottom = 6.dp,
+                            ),
+                        )
+                    }
+                }
             }
         }
         ui.error?.let { message ->

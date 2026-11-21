@@ -48,4 +48,19 @@ data class StatisticsUi(
     val pressureLevel: String = "",
     val explanation: String = "",
     val error: String? = null,
+    val notices: List<RuleNotice> = emptyList(),
+)
+
+/**
+ * 看板规则提示（草案 §3，8 条规则的看板条目）。
+ *
+ * - `ruleId` 为草案 §3 表格的规则编号 1–8；`priority` 越小越靠前（5 逾期最高）；
+ * - `message` 为按模板渲染好的最终文案（已含任务名截断与“等 N 项”合并）；
+ * - `relatedTaskIds` 为命中的任务，供合并与测试断言（同任务多条命中已合并为一条）。
+ */
+data class RuleNotice(
+    val ruleId: Int,
+    val priority: Int,
+    val message: String,
+    val relatedTaskIds: List<String> = emptyList(),
 )
