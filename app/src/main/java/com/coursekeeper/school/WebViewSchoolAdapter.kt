@@ -66,7 +66,7 @@ class WebViewSchoolAdapter(
             if (parsed.tasks.isEmpty() && parsed.warnings.isNotEmpty()) {
                 error(parsed.warnings.joinToString("；"))
             }
-            ModuleResult.Success(parsed.tasks)
+            ModuleResult.Success(parsed.tasks, sourceCourseIds = parsed.sourceCourseIds)
         }
     }
 

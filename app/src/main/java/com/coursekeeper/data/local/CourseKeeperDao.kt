@@ -29,6 +29,10 @@ internal interface CourseKeeperDao {
     @Query("SELECT EXISTS(SELECT 1 FROM tombstones WHERE module = :module AND source = :source AND externalId = :externalId)")
     suspend fun deleted(module: SyncModule, source: RecordSource, externalId: String): Boolean
     @Query("SELECT * FROM write_requests WHERE requestId = :id") suspend fun request(id: String): WriteRequestRecord?
+    @Query("SELECT sourceCourseId FROM school_course_cache WHERE schoolId = :schoolId ORDER BY sourceCourseId")
+    suspend fun knownSourceCourseIds(schoolId: String): List<String>
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun rememberSourceCourses(records: List<SchoolCourseCacheRecord>)
     @Insert suspend fun insertTask(record: TaskRecord)
     @Update suspend fun updateTask(record: TaskRecord)
     @Query("DELETE FROM tasks WHERE id = :id") suspend fun deleteTask(id: String)

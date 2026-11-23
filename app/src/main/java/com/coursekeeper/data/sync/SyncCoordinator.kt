@@ -99,7 +99,7 @@ class SyncCoordinator(
                         repository.mergeCourses(it.records, baseline, clock.instant(), it.completeSnapshot)
                     }
                     SyncModule.TASKS -> handle(old, now, { adapter.fetchTasks() }) {
-                        repository.mergeTasks(it.records, baseline, clock.instant())
+                        repository.mergeTasks(it.records, baseline, clock.instant(), adapter.schoolId, it.sourceCourseIds)
                     }
                 }
             }

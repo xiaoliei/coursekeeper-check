@@ -24,6 +24,12 @@ class CourseKeeperRepository(
         DataSnapshot(dao.semesters(), dao.periods(), dao.courses(), dao.schedules(), dao.tasks(), dao.syncRecords())
     }
 
+    /** Previously observed IDs, including courses absent from the latest page; not semester membership. */
+    suspend fun knownSourceCourseIds(schoolId: String): Set<String> {
+        checkData(schoolId.isNotBlank(), DataError.INVALID_RECORD)
+        return dao.knownSourceCourseIds(schoolId).toSet()
+    }
+
     suspend fun getTask(id: String): TaskRecord? = dao.task(id)
     suspend fun getCourse(id: String): CourseRecord? = dao.course(id)
 

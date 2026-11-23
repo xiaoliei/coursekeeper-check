@@ -67,6 +67,7 @@ internal suspend fun CourseKeeperRepository.mergeCourses(
 
 internal suspend fun CourseKeeperRepository.mergeTasks(
     imports: List<ImportedTask>, baseline: DataSnapshot, completedAt: Instant,
+    schoolId: String? = null, sourceCourseIds: Set<String> = emptySet(),
 ): MergeCounts = database.withTransaction {
     val distinct = imports.distinct()
     val identified = distinct.filter { !it.externalId.isNullOrBlank() }
@@ -111,6 +112,14 @@ internal suspend fun CourseKeeperRepository.mergeTasks(
             }
         }
     }
+    // Persist only after the entire task batch validates, within the same transaction.
+    // Union preserves temporarily absent courses; protected/deleted tasks do not erase discovery history.
+    val discovered = sourceCourseIds + imports.mapNotNull { it.sourceCourseId }
+    checkData(discovered.all { it.isNotBlank() }, DataError.INVALID_RECORD)
+    if (schoolId != null) {
+        checkData(schoolId.isNotBlank(), DataError.INVALID_RECORD)
+        dao.rememberSourceCourses(discovered.map { SchoolCourseCacheRecord(schoolId, it) })
+    } else checkData(sourceCourseIds.isEmpty(), DataError.INVALID_RECORD)
     finishModule(SyncModule.TASKS, counts, completedAt)
     counts
 }

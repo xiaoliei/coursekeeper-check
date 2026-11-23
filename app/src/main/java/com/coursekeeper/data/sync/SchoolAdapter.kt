@@ -16,7 +16,11 @@ enum class SyncFailure { OFFLINE, EXPIRED, TIMEOUT, PARSE_ERROR, REMOTE_ERROR, V
 
 sealed interface ModuleResult<out T> {
     /** Only a verified, complete course response may authorize removal of absent courses. */
-    data class Success<T>(val records: List<T>, val completeSnapshot: Boolean = false) : ModuleResult<T>
+    data class Success<T>(
+        val records: List<T>, val completeSnapshot: Boolean = false,
+        /** Task-system course blocks, including those with no assignments. Never teaching-system IDs. */
+        val sourceCourseIds: Set<String> = emptySet(),
+    ) : ModuleResult<T>
     data class Failure(val reason: SyncFailure, val retryable: Boolean = false) : ModuleResult<Nothing>
 }
 
