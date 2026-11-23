@@ -87,6 +87,10 @@ data class TaskRecord(
     val sourceCourseName: String? = null,
 )
 
+/** Discovery history, not a current-semester list or a mapping to teaching-system courses. */
+@Entity(tableName = "school_course_cache", primaryKeys = ["schoolId", "sourceCourseId"])
+data class SchoolCourseCacheRecord(val schoolId: String, val sourceCourseId: String)
+
 @Entity(tableName = "sync_records")
 data class SyncRecord(
     @PrimaryKey val module: SyncModule,

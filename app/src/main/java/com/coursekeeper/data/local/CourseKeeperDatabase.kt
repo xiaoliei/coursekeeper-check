@@ -11,7 +11,7 @@ import com.coursekeeper.data.model.*
 
 @Database(entities = [SemesterRecord::class, PeriodRecord::class, CourseRecord::class,
     ScheduleRecord::class, TaskRecord::class, SyncRecord::class, TombstoneRecord::class,
-    WriteRequestRecord::class, DataRevision::class], version = 4, exportSchema = true)
+    WriteRequestRecord::class, DataRevision::class, SchoolCourseCacheRecord::class], version = 5, exportSchema = true)
 @TypeConverters(RecordConverters::class)
 abstract class CourseKeeperDatabase : RoomDatabase() {
     internal abstract fun records(): CourseKeeperDao
@@ -53,8 +53,14 @@ abstract class CourseKeeperDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `school_course_cache` (`schoolId` TEXT NOT NULL, `sourceCourseId` TEXT NOT NULL, PRIMARY KEY(`schoolId`, `sourceCourseId`))")
+            }
+        }
+
         fun open(context: Context, name: String = "coursekeeper.db"): CourseKeeperDatabase =
             Room.databaseBuilder(context.applicationContext, CourseKeeperDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
     }
 }

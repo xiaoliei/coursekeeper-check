@@ -46,7 +46,7 @@ class MigrationV3Test : DataTestBase() {
                 }
                 assertTrue(columns.containsAll(listOf("weeks", "weeksText", "teacher")))
                 assertFalse(columns.any { it in listOf("startWeek", "endWeek", "weekPattern") })
-                assertEquals(4, sqlite.version)
+                assertEquals(5, sqlite.version)
                 sqlite.query("PRAGMA foreign_key_check").use { assertFalse(it.moveToFirst()) }
                 repo.deleteCourse("course-old", 7)
                 assertTrue(repo.snapshot().schedules.isEmpty())
@@ -97,7 +97,7 @@ class MigrationV3Test : DataTestBase() {
                 assertEquals(DataSnapshot(), repo.snapshot())
                 repo.createTask(draft())
                 assertEquals(1, repo.snapshot().tasks.size)
-                assertEquals(4, upgraded.openHelper.writableDatabase.version)
+                assertEquals(5, upgraded.openHelper.writableDatabase.version)
             } finally { upgraded.close() }
         }
     }

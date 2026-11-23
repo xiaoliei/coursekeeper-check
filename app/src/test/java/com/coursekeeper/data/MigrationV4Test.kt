@@ -20,7 +20,7 @@ class MigrationV4Test : DataTestBase() {
                 val repo = CourseKeeperRepository(upgraded, clock)
                 val state = repo.snapshot() // Room validates the migrated schema, indices and constraints.
                 val sqlite = upgraded.openHelper.writableDatabase
-                assertEquals(4, sqlite.version)
+                assertEquals(5, sqlite.version)
                 for ((table, contents) in before) {
                     val (columns, rows) = contents
                     sqlite.query("SELECT ${columns.joinToString { "`$it`" }} FROM `$table` ORDER BY rowid").use {
