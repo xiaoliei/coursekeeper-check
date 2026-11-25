@@ -76,27 +76,66 @@ class TaskSubmissionSyncTest : DataTestBase() {
         assertEquals(before, repository.snapshot().tasks)
     }
 
-    @Test fun provenanceOnlyChangeIncrementsVersionOnceAndNeverGuessesCourseAssociation() = runTest {
+    @Test fun exactCourseNameLinksSyncedCourseAndUnmatchedNameKeepsExistingLink() = runTest {
         val adapter = FakeAdapter().apply {
             courseResult = ModuleResult.Success(listOf(ImportedCourse("course-1001", CourseDraft("数据库"))))
             taskResult = ModuleResult.Success(listOf(imported()))
         }
         val sync = coordinator(adapter)
         sync.synchronize()
-        val old = repository.snapshot().tasks.single()
-        assertNull(old.courseId) // Even identical-looking IDs from different systems are not a mapping.
+        val linked = repository.snapshot().tasks.single()
+        val courseId = repository.snapshot().courses.single().id
+        assertEquals("CBE-01：学校课程名（去学期标签与教师名）唯一命中本地同步课程", courseId, linked.courseId)
+        assertEquals("来源课程编号只作来源信息，不冒充教务编号", "course-1001", linked.sourceCourseId)
         adapter.taskResult = ModuleResult.Success(listOf(imported("DRAFT").copy(sourceCourseName = "学校改名")))
         sync.synchronize(true)
-        val updated = repository.getTask(old.id)!!
+        val updated = repository.getTask(linked.id)!!
         assertEquals(2L, updated.version)
         assertEquals("DRAFT", updated.schoolSubmission)
-        assertEquals("学校改名", updated.sourceCourseName)
-        assertNull(updated.courseId)
+        assertEquals("改名后不再唯一命中：保留已建立的关联，不抖动也不猜测", courseId, updated.courseId)
         sync.synchronize(true)
-        assertEquals(updated, repository.getTask(old.id))
+        assertEquals(updated, repository.getTask(linked.id))
         adapter.taskResult = ModuleResult.Success(listOf(imported("DRAFT").copy(courseExternalId = "course-1001")))
         sync.synchronize(true)
-        assertEquals(repository.snapshot().courses.single().id, repository.getTask(old.id)!!.courseId)
+        assertEquals(repository.snapshot().courses.single().id, repository.getTask(linked.id)!!.courseId)
+    }
+
+    @Test fun sameCourseNameInTwoSyncedCoursesIsAmbiguousAndStaysUnlinked() = runTest {
+        val adapter = FakeAdapter().apply {
+            courseResult = ModuleResult.Success(listOf(
+                ImportedCourse("course-1001", CourseDraft("数据库")),
+                ImportedCourse("course-2001", CourseDraft("数据库")),
+            ))
+            taskResult = ModuleResult.Success(listOf(imported()))
+        }
+        coordinator(adapter).synchronize()
+        assertNull("同名不同课不猜，留待用户手动关联", repository.snapshot().tasks.single().courseId)
+    }
+
+    @Test fun numericSourceCourseIdIsNeverTreatedAsTeachingSystemCourseNumber() = runTest {
+        val adapter = FakeAdapter().apply {
+            // 本地课程编号恰好与 MYSTU 课程 ID 相同，也不能据此关联。
+            courseResult = ModuleResult.Success(listOf(ImportedCourse("course-1001", CourseDraft("别的课"))))
+            taskResult = ModuleResult.Success(listOf(imported().copy(sourceCourseName = null)))
+        }
+        coordinator(adapter).synchronize()
+        assertNull(repository.snapshot().tasks.single().courseId)
+    }
+
+    @Test fun autoLinkedCourseIsKeptWhenLocalCourseIsMissingFromThisSnapshot() = runTest {
+        val adapter = FakeAdapter().apply {
+            courseResult = ModuleResult.Success(listOf(ImportedCourse("course-1001", CourseDraft("数据库"))))
+            taskResult = ModuleResult.Success(listOf(imported()))
+        }
+        val sync = coordinator(adapter)
+        sync.synchronize()
+        val linked = repository.snapshot().tasks.single()
+        val courseId = requireNotNull(linked.courseId)
+        // 后续作业同步不重复导入课程：本地课程仍在，关联按名称重新解析后保持不变。
+        adapter.courseResult = ModuleResult.Success(emptyList())
+        adapter.taskResult = ModuleResult.Success(listOf(imported("NOT_SUBMITTED")))
+        sync.synchronize(true)
+        assertEquals(courseId, repository.getTask(linked.id)!!.courseId)
     }
 
     @Test fun manualEditDuringFetchProtectsWholeTaskIncludingItsAssociationAndProvenance() = runTest {

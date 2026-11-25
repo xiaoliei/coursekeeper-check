@@ -72,6 +72,10 @@ internal suspend fun CourseKeeperRepository.mergeTasks(
     val distinct = imports.distinct()
     val identified = distinct.filter { !it.externalId.isNullOrBlank() }
     checkData(identified.map { it.externalId }.distinct().size == identified.size, DataError.SYNC_IDENTITY_CONFLICT)
+    // CBE-01：本地教务课程的映射候选（只含同步来源、有稳定编号的课程；手动课程没有外部编号）。
+    val linkableCourses = dao.courses()
+        .filter { it.source == RecordSource.SYNC && it.externalId != null }
+        .map { CourseLinker.Candidate(it.externalId!!, it.title) }
     var counts = MergeCounts(missingIdentity = distinct.size - identified.size)
     for (item in identified) {
         val externalId = requireNotNull(item.externalId)
@@ -87,9 +91,19 @@ internal suspend fun CourseKeeperRepository.mergeTasks(
         }
         checkData(old?.version == before?.version, DataError.VERSION_CONFLICT)
         // C supplies external associations, never a guessed local courseId.
-        val courseId = item.courseExternalId?.let { externalCourse ->
-            dao.importedCourse(RecordSource.SYNC, externalCourse)?.id
-                ?: old?.courseId?.takeIf { dao.deleted(SyncModule.COURSES, RecordSource.SYNC, externalCourse) }
+        // CBE-01（2026-11-25）：显式编号优先；没有显式编号时按 C 的课程名规则尝试唯一映射。
+        // 映射落在本层（E 的合并）而不是适配器：适配器不读库，且合并层已有的
+        // manualDirty / completedAt 保护天然覆盖"用户手动改关联"。
+        val explicitExternalId = item.courseExternalId
+        val linkedExternalId = explicitExternalId
+            ?: CourseLinker.resolve(item.sourceCourseName, linkableCourses)
+        val courseId = when {
+            explicitExternalId != null -> dao.importedCourse(RecordSource.SYNC, explicitExternalId)?.id
+                ?: old?.courseId?.takeIf { dao.deleted(SyncModule.COURSES, RecordSource.SYNC, explicitExternalId) }
+            // 自动映射命中：课程已在候选内，正常都能找到；找不到时保留旧关联而不是清空。
+            linkedExternalId != null -> dao.importedCourse(RecordSource.SYNC, linkedExternalId)?.id ?: old?.courseId
+            // 未命中或歧义：保留旧关联（手动关联另有 manualDirty 保护），不猜。
+            else -> old?.courseId
         }
         val fields = validateTask(item.fields.copy(courseId = courseId))
         // D v1.1: only an explicit SUBMITTED fills an unprotected SYNC task's completion.
