@@ -170,8 +170,10 @@ curl.exe -L -o "$dir\android-all-instrumented-$v.jar" `
 | `docs/evidence/member-b-checks.json` | 分支、提交、JDK、任务、用例数、APK 大小与 SHA256 |
 | `docs/课程与周次规则-v0.3.md` | 口径与实现状态 |
 | `docs/B-课程与周次交接.md` | 接口、状态、各成员接入方式、已知限制 |
+| `docs/B-问题修复记录-2026-11-25.md` | B-01 与跨零点修复的现象、根因、测试与真机复验清单 |
 | `docs/evidence/member-b-screenshots/` | 模拟器实测截图：空周视图、冲突提示、课程详情、节次时刻 |
 | 本文件 | 全量回归与手工验证记录 |
+
 
 
 
