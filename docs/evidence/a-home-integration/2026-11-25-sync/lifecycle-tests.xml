@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.home.HomeSyncLifecycleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-25T09:11:36.506Z" hostname="LAPTOP-CJQ77CDT" time="0.019">
+  <properties/>
+  <testcase name="dismissedWebViewStepDoesNotDisableHomeRefresh" classname="com.coursekeeper.home.HomeSyncLifecycleTest" time="0.002"/>
+  <testcase name="eachResumeSyncsOnceAndPauseDoesNotStartNetworkWork" classname="com.coursekeeper.home.HomeSyncLifecycleTest" time="0.014"/>
+  <testcase name="connectionChangesWhileResumedStartSyncAndLogoutDisablesIt" classname="com.coursekeeper.home.HomeSyncLifecycleTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

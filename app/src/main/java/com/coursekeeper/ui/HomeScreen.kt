@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,12 +22,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import com.coursekeeper.demo.DemoHomeGateway
 import com.coursekeeper.home.*
 import com.coursekeeper.ui.components.*
 import com.coursekeeper.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     state: HomeUiState,
@@ -39,94 +42,117 @@ fun HomeScreen(
     onLogin: () -> Unit,
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
+    onRefresh: (() -> Unit)? = null,
+    refreshing: Boolean = false,
 ) {
     var syncDetails by rememberSaveable { mutableStateOf(false) }
-    LazyColumn(modifier.fillMaxSize().testTag("home_list"), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        if (state.status != SyncStatus.Ready) item {
-            StatusBanner(
-                state.status, onLogin, onAdd,
-                onDetails=if (state.syncModules.isEmpty()) null else { { syncDetails=true } },
-            )
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(7.dp)) {
-                    Text(state.greeting, fontSize=25.sp, fontWeight=FontWeight.Bold)
-                    Text(state.dateLabel, color=KeeperMuted, fontSize=12.sp)
-                }
-                Text(state.weekLabel, fontSize=11.sp, color=KeeperBlue,
-                    modifier=Modifier.testTag("home_week_label").background(Color(0xFFEAF0FF),RoundedCornerShape(8.dp)).padding(8.dp))
-            }
-        }
-        item {
-            Row(Modifier.fillMaxWidth().background(KeeperBlue, RoundedCornerShape(17.dp)).padding(vertical=18.dp)) {
-                Metric(when(state.courseAvailability) {
-                    CourseAvailability.Ready -> state.todayCourseCount.toString()
-                    CourseAvailability.NoSemester -> "待设置学期"
-                    CourseAvailability.NotInTerm -> "非教学周"
-                    CourseAvailability.Unavailable -> "暂无数据"
-                },"今日课程",Modifier.weight(1f),"home_course_count",onCourses)
-                Metric(state.todayDueCount.toString(),"今日截止",Modifier.weight(1f),"home_due_count") { onTasks(TaskFilter.Today) }
-                Metric(state.todayCompletedCount.toString(),"今日已完成",Modifier.weight(1f),"home_completed_count") { onTasks(TaskFilter.CompletedToday) }
-            }
-        }
-        item {
-            SectionTitle("下一节课", "查看课表 →", onCourses)
-            val course = state.nextCourse
-            if(course == null) KeeperCard {
-                when(state.courseAvailability) {
-                    CourseAvailability.NoSemester -> EmptyState("待设置学期", "请先完善学期设置，再查看课程安排。", "查看课表", onCourses)
-                    CourseAvailability.NotInTerm -> EmptyState("当前不在教学周内", "可以进入课表查看其他教学周。", "查看课表", onCourses)
-                    CourseAvailability.Unavailable -> EmptyState("暂无课程信息", "课程信息暂不可用，可以先管理任务。", "查看课表", onCourses)
-                    CourseAvailability.Ready -> when {
-                        state.todayCourseCount > 0 -> EmptyState(
-                            state.nextCourseHint.ifBlank { "今日课程已结束" },
-                            "今天的课程已结束，可以查看其他日期的安排。", "查看课表", onCourses,
-                        )
-                        state.weekCourseCount > 0 -> EmptyState(
-                            "今天没有课程", "本周其他日期还有课程安排。", "查看课表", onCourses,
-                        )
-                        else -> EmptyState(
-                            "本周暂无课程", "可以进入课表添加课程，或连接学校导入。", "查看课表", onCourses,
-                        )
-                    }
-                }
-            } else KeeperCard(Modifier.clickable { onCourseDetail(course) }) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
-                    Text(course.time,fontSize=12.sp,color=KeeperBlue)
-                    Text(state.nextCourseHint,fontSize=12.sp,color=Color(0xFF21856C))
-                }
-                Text(course.title,fontSize=17.sp,fontWeight=FontWeight.Bold)
-                Text("${course.location} · ${course.periods}",fontSize=12.sp,color=KeeperMuted)
-            }
-        }
-        item {
-            SectionTitle("近期截止", "全部任务 →") { onTasks(TaskFilter.Pending) }
-            KeeperCard {
-                val pending = state.tasks.filterNot { it.completed }.take(3)
-                if(pending.isEmpty()) EmptyState(if(state.tasks.isEmpty()) "从第一条任务开始" else "待办都完成了", "下方按钮可手动添加任务。")
-                pending.forEachIndexed { i,task ->
-                    if(i>0) HorizontalDivider()
-                    TaskRow(task,onTaskToggle,onTaskDetail)
-                }
-            }
-        }
-        item {
-            SectionTitle("本周概览", "查看数据 →", onStatistics)
-            KeeperCard {
-                Text(if(state.weekTaskCount==0) "暂无本周任务" else "${state.weekCompletedCount} / ${state.weekTaskCount} 项本周任务已完成", fontWeight=FontWeight.SemiBold,fontSize=14.sp)
-                if(state.weekTaskCount>0) LinearProgressIndicator(progress={state.weekProgress},modifier=Modifier.fillMaxWidth().height(7.dp))
-                Text(if(state.courseAvailability==CourseAvailability.Ready) "本周课程 ${state.weekCourseCount} 门" else "本周课程 暂无数据",fontSize=12.sp,color=KeeperMuted)
-                Text(state.pressureLabel,fontSize=12.sp,color=KeeperMuted,
-                    modifier=Modifier.testTag("home_pressure_summary"))
-                if (state.pressureExplanation.isNotBlank()) Text(
-                    state.pressureExplanation,fontSize=12.sp,color=KeeperMuted,
-                    modifier=Modifier.testTag("home_pressure_explanation"),
+    val syncBusy = refreshing || state.status == SyncStatus.Syncing
+    val content: @Composable () -> Unit = {
+        LazyColumn(Modifier.fillMaxSize().testTag("home_list"), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            if (state.status != SyncStatus.Ready) item {
+                StatusBanner(
+                    state.status, onLogin, onAdd,
+                    onDetails=if (state.syncModules.isEmpty()) null else { { syncDetails=true } },
+                    onRetry=onRefresh,
+                    retryEnabled=!syncBusy,
+                    hasExpiredSession=state.hasExpiredSession,
                 )
             }
+            item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement=Arrangement.spacedBy(7.dp)) {
+                        Text(state.greeting, fontSize=25.sp, fontWeight=FontWeight.Bold)
+                        Text(state.dateLabel, color=KeeperMuted, fontSize=12.sp)
+                    }
+                    Column(horizontalAlignment=Alignment.End) {
+                        Text(state.weekLabel, fontSize=11.sp, color=KeeperBlue,
+                            modifier=Modifier.testTag("home_week_label").background(Color(0xFFEAF0FF),RoundedCornerShape(8.dp)).padding(8.dp))
+                        if (onRefresh != null) TextButton(
+                            onClick=onRefresh,enabled=!syncBusy,
+                            modifier=Modifier.testTag("home_refresh_button"),
+                        ) { Text(if (syncBusy) "刷新中" else "刷新",fontSize=12.sp) }
+                    }
+                }
+            }
+            item {
+                Row(Modifier.fillMaxWidth().background(KeeperBlue, RoundedCornerShape(17.dp)).padding(vertical=18.dp)) {
+                    Metric(when(state.courseAvailability) {
+                        CourseAvailability.Ready -> state.todayCourseCount.toString()
+                        CourseAvailability.NoSemester -> "待设置学期"
+                        CourseAvailability.NotInTerm -> "非教学周"
+                        CourseAvailability.Unavailable -> "暂无数据"
+                    },"今日课程",Modifier.weight(1f),"home_course_count",onCourses)
+                    Metric(state.todayDueCount.toString(),"今日截止",Modifier.weight(1f),"home_due_count") { onTasks(TaskFilter.Today) }
+                    Metric(state.todayCompletedCount.toString(),"今日已完成",Modifier.weight(1f),"home_completed_count") { onTasks(TaskFilter.CompletedToday) }
+                }
+            }
+            item {
+                SectionTitle("下一节课", "查看课表 →", onCourses)
+                val course = state.nextCourse
+                if(course == null) KeeperCard {
+                    when(state.courseAvailability) {
+                        CourseAvailability.NoSemester -> EmptyState("待设置学期", "请先完善学期设置，再查看课程安排。", "查看课表", onCourses)
+                        CourseAvailability.NotInTerm -> EmptyState("当前不在教学周内", "可以进入课表查看其他教学周。", "查看课表", onCourses)
+                        CourseAvailability.Unavailable -> EmptyState("暂无课程信息", "课程信息暂不可用，可以先管理任务。", "查看课表", onCourses)
+                        CourseAvailability.Ready -> when {
+                            state.todayCourseCount > 0 -> EmptyState(
+                                state.nextCourseHint.ifBlank { "今日课程已结束" },
+                                "今天的课程已结束，可以查看其他日期的安排。", "查看课表", onCourses,
+                            )
+                            state.weekCourseCount > 0 -> EmptyState(
+                                "今天没有课程", "本周其他日期还有课程安排。", "查看课表", onCourses,
+                            )
+                            else -> EmptyState(
+                                "本周暂无课程", "可以进入课表添加课程，或连接学校导入。", "查看课表", onCourses,
+                            )
+                        }
+                    }
+                } else KeeperCard(Modifier.clickable { onCourseDetail(course) }) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
+                        Text(course.time,fontSize=12.sp,color=KeeperBlue)
+                        Text(state.nextCourseHint,fontSize=12.sp,color=Color(0xFF21856C))
+                    }
+                    Text(course.title,fontSize=17.sp,fontWeight=FontWeight.Bold)
+                    Text("${course.location} · ${course.periods}",fontSize=12.sp,color=KeeperMuted)
+                }
+            }
+            item {
+                SectionTitle("近期截止", "全部任务 →") { onTasks(TaskFilter.Pending) }
+                KeeperCard {
+                    val pending = state.tasks.filterNot { it.completed }.take(3)
+                    if(pending.isEmpty()) EmptyState(if(state.tasks.isEmpty()) "从第一条任务开始" else "待办都完成了", "下方按钮可手动添加任务。")
+                    pending.forEachIndexed { i,task ->
+                        if(i>0) HorizontalDivider()
+                        TaskRow(task,onTaskToggle,onTaskDetail)
+                    }
+                }
+            }
+            item {
+                SectionTitle("本周概览", "查看数据 →", onStatistics)
+                KeeperCard {
+                    Text(if(state.weekTaskCount==0) "暂无本周任务" else "${state.weekCompletedCount} / ${state.weekTaskCount} 项本周任务已完成", fontWeight=FontWeight.SemiBold,fontSize=14.sp)
+                    if(state.weekTaskCount>0) LinearProgressIndicator(progress={state.weekProgress},modifier=Modifier.fillMaxWidth().height(7.dp))
+                    Text(if(state.courseAvailability==CourseAvailability.Ready) "本周课程 ${state.weekCourseCount} 门" else "本周课程 暂无数据",fontSize=12.sp,color=KeeperMuted)
+                    Text(state.pressureLabel,fontSize=12.sp,color=KeeperMuted,
+                        modifier=Modifier.testTag("home_pressure_summary"))
+                    if (state.pressureExplanation.isNotBlank()) Text(
+                        state.pressureExplanation,fontSize=12.sp,color=KeeperMuted,
+                        modifier=Modifier.testTag("home_pressure_explanation"),
+                    )
+                }
+            }
+            item { Text("${state.lastSyncLabel} · ${if(state.isDemo) "演示数据仅在内存中" else "任务已保存在本机"}",fontSize=11.sp,color=KeeperMuted) }
         }
-        item { Text("${state.lastSyncLabel} · ${if(state.isDemo) "演示数据仅在内存中" else "任务已保存在本机"}",fontSize=11.sp,color=KeeperMuted) }
     }
+    val pageModifier = modifier.fillMaxSize().then(
+        if (syncDetails) Modifier.clearAndSetSemantics {} else Modifier,
+    )
+    if (onRefresh == null) Box(pageModifier) { content() }
+    else PullToRefreshBox(
+        isRefreshing=syncBusy,
+        onRefresh={ if (!syncBusy) onRefresh() },
+        modifier=pageModifier,
+    ) { content() }
     if (syncDetails) AlertDialog(
         onDismissRequest={syncDetails=false},
         title={Text("同步详情")},
@@ -148,6 +174,8 @@ fun HomeScreen(
         dismissButton={
             if (state.hasExpiredSession) TextButton(onClick={syncDetails=false;onLogin()}) {
                 Text("重新登录")
+            } else if (onRefresh != null && state.status != SyncStatus.Syncing) {
+                TextButton(onClick={syncDetails=false;onRefresh()},enabled=!syncBusy) { Text("重试同步") }
             }
         },
     )

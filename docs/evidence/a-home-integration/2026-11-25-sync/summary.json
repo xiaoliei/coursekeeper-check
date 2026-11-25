@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-25",
+  "baseline": "b1309fac46020bf7e04540900824e3cada3ee38f",
+  "changesCommittedAtCapture": false,
+  "recheckedBeforePublish": true,
+  "jdk": "21.0.13+9",
+  "gradle": "9.6.0",
+  "buildTools": "36.0.0",
+  "unitTests": { "tests": 383, "failures": 0, "errors": 0, "skipped": 0 },
+  "newUnitTests": { "controller": 11, "lifecycle": 3, "repositoryIntegration": 4 },
+  "deviceTests": { "tests": 28, "failures": 0, "errors": 0, "skipped": 0 },
+  "device": { "name": "CourseKeeperATest", "serial": "emulator-5556", "api": 37, "physical": false },
+  "newDeviceTests": 7,
+  "debugBuild": "passed",
+  "androidTestBuild": "passed",
+  "apkSignatureV2": "verified",
+  "apk": "outputs/课程管家_A同步交互_2026-11-25.apk",
+  "apkBytes": 13938159,
+  "apkSha256": "A417D87EEC7EFBD8179F9F1E0B53FF648396437CF7ABA712E60100D0466614AC",
+  "realSchoolAccountVerified": false,
+  "week4Status": "代码接入与本地验证完成，真实学校手机验收待完成",
+  "week5CrossReview": "B 交叉检查待安排"
+}

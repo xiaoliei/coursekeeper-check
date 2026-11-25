@@ -43,6 +43,10 @@ fun AppShell(
     onRetryHome: () -> Unit = {},
     onImportExcel: (() -> Unit)? = null,
     onPasteCourseNotice: (() -> Unit)? = null,
+    onRefreshHome: (() -> Unit)? = null,
+    refreshingHome: Boolean = false,
+    schoolConnected: Boolean = false,
+    schoolActionsEnabled: Boolean = true,
 ) {
     var selected by rememberSaveable { mutableStateOf(Destination.Home) }
     var filter by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
@@ -54,6 +58,12 @@ fun AppShell(
     var courseDetailId by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(enabled=selected != Destination.Home && !add && !login && taskDetailId==null && courseDetailId==null) { selected=Destination.Home }
     fun goTasks(value: TaskFilter) { filter=value;onTaskFilter(value);selected=Destination.Tasks }
+    fun openLogin() { if (schoolActionsEnabled) login=true }
+    fun refreshHome() {
+        if (!schoolActionsEnabled) return
+        if (!schoolConnected || state.hasExpiredSession) openLogin()
+        else onRefreshHome?.invoke()
+    }
     fun requestAddTask() {
         if (taskScreen == null) add=true
         else {
@@ -107,7 +117,7 @@ fun AppShell(
             }
             // C 的学校入口：登录成功后过期横幅不会再出现，必须留一个常驻入口，
             // 用户才能做"重新登录 / 退出登录"。独立演示工程不传 loginSheet 时不显示。
-            else if(loginSheet != null) TextButton(onClick={login=true}) { Text("学校",fontSize=12.sp) }
+            else if(loginSheet != null) TextButton(onClick=::openLogin,enabled=schoolActionsEnabled) { Text("学校",fontSize=12.sp) }
         } }) },
         snackbarHost={ SnackbarHost(snackbarHostState) },
         bottomBar={ if(contentReady) Column {
@@ -140,7 +150,7 @@ fun AppShell(
         }
         else if(state.onboarding) Onboarding(
             area,
-            { login=true },
+            ::openLogin,
             onSkipLogin,
             state.isDemo,
             onImportExcel,
@@ -148,7 +158,10 @@ fun AppShell(
         )
         else when(selected) {
             Destination.Home -> HomeScreen(state,{selected=Destination.Courses},::goTasks,
-                {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},{login=true},::requestAddTask,area)
+                {selected=Destination.Statistics},onTaskToggle,{taskDetailId=it.id},{courseDetailId=it.id},::openLogin,::requestAddTask,area,
+                onRefresh=if (onRefreshHome == null) null else ::refreshHome,
+                refreshing=refreshingHome,
+            )
             Destination.Courses -> if(coursesScreen != null) coursesScreen(area) else DemoCourses(state,area,{courseDetailId=it.id})
             Destination.Tasks -> if (taskScreen != null) taskScreen(area) else DemoTasks(state,filter,{filter=it},onTaskToggle,{taskDetailId=it.id},area)
             Destination.Statistics -> if(statisticsScreen != null) statisticsScreen(area) else DemoStatistics(state,area)

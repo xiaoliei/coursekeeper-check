@@ -18,6 +18,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -52,11 +53,20 @@ import com.coursekeeper.school.SchoolCatalog
 import com.coursekeeper.school.SchoolLoginController
 import com.coursekeeper.school.SchoolLoginSheet
 import com.coursekeeper.school.SchoolLogout
+import com.coursekeeper.school.LoginStep
 import com.coursekeeper.ui.AppShell
 import com.coursekeeper.ui.StatisticsScreen
 import com.coursekeeper.ui.theme.CourseKeeperTheme
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** One application data source for Home and D's task page. */
 class HomeDataOwner(application: Application) : AndroidViewModel(application) {
@@ -72,15 +82,48 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     // 每次新建实例会撞上数据层的 require（D 复核：启动崩溃）。
     val schoolAdapter = SchoolAdapterHolder.get(application)
     val sync = data.syncCoordinator(schoolAdapter)
+    val homeSync = HomeSyncController(viewModelScope, sync::onForeground) { sync.synchronize(force=true) }
+    val disconnecting = MutableStateFlow(false)
+    private val sessionMutex = Mutex()
+    private val sessionEvents = Channel<String>(Channel.BUFFERED)
+    val sessionMessages = sessionEvents.receiveAsFlow()
     val loginController = SchoolLoginController(afterLogin = {
-        data.settings.selectSchool(SchoolCatalog.default.id)
-        data.settings.completeOnboarding()
-        val result = sync.synchronize(force = true)
-        // 后台同步失败不能谎报“导入完成”（与首页的过期/错误横幅矛盾，D 复核①）：
-        // 有模块失败时向上抛，让登录状态机进入 Failure 并保留重试入口。
-        // 判定逻辑抽成纯函数，便于覆盖 InProgress / SchoolMismatch 等分支（D 复核②）。
-        afterLoginFailureMessage(result)?.let { error(it) }
+        sessionMutex.withLock {
+            check(!disconnecting.value) { "正在退出登录，请稍后重新连接" }
+            data.settings.selectSchool(SchoolCatalog.default.id)
+            data.settings.completeOnboarding()
+            check(!disconnecting.value) { "正在退出登录，请稍后重新连接" }
+            val result = homeSync.afterLogin()
+            // 后台有模块失败时进入 C 的 Failure，不提前显示“导入完成”。
+            afterLoginFailureMessage(result)?.let { error(it) }
+        }
     })
+    val syncAllowed = combine(data.settings.settings, loginController.step, gateway.state, disconnecting) {
+        settings, step, home, loggingOut ->
+        settings.onboardingComplete && settings.schoolId != null && !home.loading &&
+            home.readError == null && !schoolImportInProgress(step) && !loggingOut
+    }.distinctUntilChanged()
+
+    fun logout() {
+        if (disconnecting.value) return
+        disconnecting.value = true
+        viewModelScope.launch {
+            try {
+                homeSync.stop()
+                sessionMutex.withLock {
+                    data.settings.selectSchool(null)
+                    SchoolLogout.clear()
+                    loginController.reset()
+                }
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (_: Exception) {
+                sessionEvents.send("退出登录未完成，请稍后重试")
+            } finally {
+                disconnecting.value = false
+            }
+        }
+    }
 }
 
 /**
@@ -166,13 +209,21 @@ class MainActivity : ComponentActivity() {
                 })
                 val courseState by courseModel.uiState.collectAsStateWithLifecycle()
 
-                // C：缓存展示后启动后台会话检测与同步（E：onForeground 延迟 400ms 检测会话）。
-                // 已完成引导并选择学校后才执行，首次启动不发网络请求；挂起等待首次登录完成。
-                LaunchedEffect(data) {
-                    data.settings.settings.first { it.onboardingComplete && it.schoolId != null }
-                    owner.sync.onForeground()
+                // 每次回前台重新订阅连接条件。网络任务由 ViewModel 持有，旋转不取消同步。
+                // 登录弹层导入期间暂停自动触发，由 afterLogin 单独完成强制同步。
+                val lifecycleOwner = LocalLifecycleOwner.current
+                LaunchedEffect(owner, lifecycleOwner) {
+                    observeHomeSync(lifecycleOwner.lifecycle, owner.syncAllowed, owner.homeSync::onForeground)
                 }
                 val appSettings by data.settings.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
+                val refreshing by owner.homeSync.refreshing.collectAsStateWithLifecycle()
+                val disconnecting by owner.disconnecting.collectAsStateWithLifecycle()
+                LaunchedEffect(owner, snackbar) {
+                    merge(owner.homeSync.messages, owner.sessionMessages).collect { message ->
+                        snackbar.currentSnackbarData?.dismiss()
+                        snackbar.showSnackbar(message, duration=SnackbarDuration.Short)
+                    }
+                }
 
                 // D 第 3 周：提醒对账随数据快照刷新；数据层首次出现带截止时间的任务（任何入口，
                 // 含首页快速添加）后申请一次通知权限（v1.0 §四）。
@@ -272,6 +323,14 @@ class MainActivity : ComponentActivity() {
                     }) },
                     onCreateTask={createRequested=true},
                     onRetryHome=model::retry,
+                    onRefreshHome={
+                        if (!owner.disconnecting.value && !schoolImportInProgress(owner.loginController.step.value)) {
+                            owner.homeSync.refresh()
+                        }
+                    },
+                    refreshingHome=refreshing || disconnecting,
+                    schoolConnected=appSettings.schoolId != null && !disconnecting,
+                    schoolActionsEnabled=!disconnecting,
                     onImportExcel={showReservedEntry("手动导入 Excel")},
                     onPasteCourseNotice={showReservedEntry("粘贴课程通知")},
                     taskScreen={ modifier -> TaskScreen(
@@ -318,12 +377,7 @@ class MainActivity : ComponentActivity() {
                         savedSchool=if (appSettings.schoolId != null) SchoolCatalog.default else null,
                         // 整体部分成功但某模块已过期时，同样直达已记住学校的登录页。
                         autoLogin = state.hasExpiredSession,
-                        onLogout = {
-                            // 清会话 Cookie + 取消记住的学校；本地课程任务由 E 保留，不删库。
-                            SchoolLogout.clear()
-                            owner.loginController.reset()
-                            scope.launch { data.settings.selectSchool(null) }
-                        },
+                        onLogout=owner::logout,
                         onDismiss=onDismiss,
                     ) })
             }

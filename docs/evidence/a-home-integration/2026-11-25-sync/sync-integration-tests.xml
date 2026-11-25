@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.home.HomeSyncIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-25T09:11:36.391Z" hostname="LAPTOP-CJQ77CDT" time="0.114">
+  <properties/>
+  <testcase name="offlineRefreshPreservesCachedTaskAndRecoveryBypassesRecentSuccessThrottle" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.038"/>
+  <testcase name="expiredSessionPreservesCachedTasksDuringManualRefresh" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.026"/>
+  <testcase name="logoutStopWaitsForCancellationAndPreventsLateTaskImport" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.024"/>
+  <testcase name="partialRefreshRetainsCachedTasksAndImportsSchoolCompletion" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.024"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -41,10 +41,13 @@ import com.coursekeeper.ui.theme.*
     onLogin: () -> Unit,
     onAdd: () -> Unit,
     onDetails: (() -> Unit)? = null,
+    onRetry: (() -> Unit)? = null,
+    retryEnabled: Boolean = true,
+    hasExpiredSession: Boolean = false,
 ) {
     if(status == SyncStatus.Ready) return
     val warning = status != SyncStatus.Offline
-    Row(Modifier.fillMaxWidth().background(if(warning) Color(0xFFFFF0DD) else Color(0xFFEAF0FA), RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.fillMaxWidth().background(if(warning) Color(0xFFFFF0DD) else Color(0xFFEAF0FA), RoundedCornerShape(12.dp)).padding(12.dp)) {
         Text(when(status) {
             SyncStatus.Offline -> "当前离线 · 已有数据可继续使用"
             SyncStatus.Expired -> "登录已过期 · 现有数据已保留"
@@ -52,13 +55,18 @@ import com.coursekeeper.ui.theme.*
             SyncStatus.Syncing -> "正在同步 · 本地数据可继续使用"
             SyncStatus.Error -> "同步暂未完成 · 已有数据可继续使用"
             SyncStatus.Ready -> ""
-        }, fontSize = 12.sp, color = if(warning) Color(0xFF8A5515) else KeeperMuted, modifier = Modifier.weight(1f))
-        when(status) {
-            SyncStatus.Expired -> TextButton(onClick=onLogin) { Text("重新登录", fontSize=12.sp) }
-            SyncStatus.Partial -> TextButton(onClick=onAdd) { Text("手动添加", fontSize=12.sp) }
-            else -> Unit
+        }, fontSize = 12.sp, color = if(warning) Color(0xFF8A5515) else KeeperMuted)
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+            if (status == SyncStatus.Expired || hasExpiredSession) {
+                TextButton(onClick=onLogin) { Text("重新登录", fontSize=12.sp) }
+            } else if (onRetry != null && status != SyncStatus.Syncing) {
+                TextButton(onClick=onRetry,enabled=retryEnabled) { Text("重试同步", fontSize=12.sp) }
+            }
+            if (status == SyncStatus.Partial) {
+                TextButton(onClick=onAdd) { Text("手动添加", fontSize=12.sp) }
+            }
+            if (onDetails != null) TextButton(onClick=onDetails) { Text("查看详情", fontSize=12.sp) }
         }
-        if (onDetails != null) TextButton(onClick=onDetails) { Text("查看详情", fontSize=12.sp) }
     }
 }
 @Composable fun TaskRow(task: TaskUi, onToggle: (TaskUi) -> Unit, onDetail: (TaskUi) -> Unit) {

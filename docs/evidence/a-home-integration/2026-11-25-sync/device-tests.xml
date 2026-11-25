@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="28" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-25T09:12:33" hostname="localhost">
+  <testsuite name="com.coursekeeper.HomeCourseUiTest" tests="3" failures="0" errors="0" skipped="0" time="6.658" timestamp="2026-11-25T09:12:33" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="finishedCoursesKeepTodayCountAndOfferTimetableInsteadOfLogin" classname="com.coursekeeper.HomeCourseUiTest" time="3.466" />
+    <testcase name="freeDayKeepsOtherDaysCoursesAndDoesNotAskForLogin" classname="com.coursekeeper.HomeCourseUiTest" time="1.806" />
+    <testcase name="emptyWeekOffersCourseMaintenance" classname="com.coursekeeper.HomeCourseUiTest" time="1.386" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.HomeIntegrationTest" tests="2" failures="0" errors="0" skipped="0" time="7.958" timestamp="2026-11-25T09:12:33" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="homeCountersOpenExactDateFiltersInsteadOfOnlyOpenOrDone" classname="com.coursekeeper.HomeIntegrationTest" time="3.043" />
+    <testcase name="homeCreateCompletionUndoAndActivityRecreationUseTheSameDatabase" classname="com.coursekeeper.HomeIntegrationTest" time="4.915" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.HomeSummaryUiTest" tests="6" failures="0" errors="0" skipped="0" time="6.929" timestamp="2026-11-25T09:12:33" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="teachingWeekAndPressureSummaryIncludeExplanation" classname="com.coursekeeper.HomeSummaryUiTest" time="1.117" />
+    <testcase name="offlineDetailsCanCloseWithoutChangingCachedCounts" classname="com.coursekeeper.HomeSummaryUiTest" time="1.277" />
+    <testcase name="noSemesterAndNoPressureDoNotShowExampleValues" classname="com.coursekeeper.HomeSummaryUiTest" time="0.976" />
+    <testcase name="partialExpiredModuleCanRequestLoginFromDetails" classname="com.coursekeeper.HomeSummaryUiTest" time="1.109" />
+    <testcase name="partialFailureDetailsPreserveSuccessTimeAndManualTaskEntry" classname="com.coursekeeper.HomeSummaryUiTest" time="1.441" />
+    <testcase name="syncingDetailsRetainPreviousSuccessAndDoNotOfferLogin" classname="com.coursekeeper.HomeSummaryUiTest" time="1.009" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.HomeSyncUiTest" tests="7" failures="0" errors="0" skipped="0" time="8.632" timestamp="2026-11-25T09:12:33" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="expiredModuleOpensSchoolLoginWithoutRefreshing" classname="com.coursekeeper.HomeSyncUiTest" time="1.201" />
+    <testcase name="offlineRetryKeepsTaskVisibleWhenSyncStarts" classname="com.coursekeeper.HomeSyncUiTest" time="1.172" />
+    <testcase name="refreshWithoutSchoolConnectionOpensLoginWithoutRefreshing" classname="com.coursekeeper.HomeSyncUiTest" time="1.177" />
+    <testcase name="swipeDownAtTopInvokesRefresh" classname="com.coursekeeper.HomeSyncUiTest" time="1.365" />
+    <testcase name="schoolButtonCannotReopenLoginWhileLogoutRuns" classname="com.coursekeeper.HomeSyncUiTest" time="1.099" />
+    <testcase name="refreshButtonSuppressesAnotherTapUntilRefreshEnds" classname="com.coursekeeper.HomeSyncUiTest" time="1.288" />
+    <testcase name="partialSyncCanRetryFromDetailsWithoutClearingCachedTasks" classname="com.coursekeeper.HomeSyncUiTest" time="1.330" />
+  </testsuite>
+  <testsuite name="com.coursekeeper.NavigationTest" tests="10" failures="0" errors="0" skipped="0" time="14.373" timestamp="2026-11-25T09:12:33" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5556" />
+    </properties>
+    <testcase name="tappingNavigationItemDismissesUndoSnackbarEvenOnSameTab" classname="com.coursekeeper.NavigationTest" time="1.326" />
+    <testcase name="partialExpiredDetailsOpenRealSchoolSlotInsteadOfDemoDialog" classname="com.coursekeeper.NavigationTest" time="1.200" />
+    <testcase name="shellTaskButtonPreservesQueryOnTaskPageAndRoutesOtherPagesToPending" classname="com.coursekeeper.NavigationTest" time="1.454" />
+    <testcase name="fourDestinationsAreReachable" classname="com.coursekeeper.NavigationTest" time="1.455" />
+    <testcase name="offlineStillAllowsTaskCreation" classname="com.coursekeeper.NavigationTest" time="2.273" />
+    <testcase name="firstLaunchExposesReservedExcelAndNoticeEntries" classname="com.coursekeeper.NavigationTest" time="1.173" />
+    <testcase name="topBarImportMenuExposesReservedExcelAndNoticeEntries" classname="com.coursekeeper.NavigationTest" time="1.677" />
+    <testcase name="suppliedCourseSlotReplacesOnlyCoursesAndKeepsNavigation" classname="com.coursekeeper.NavigationTest" time="1.362" />
+    <testcase name="firstLaunchCanEnterManualMode" classname="com.coursekeeper.NavigationTest" time="0.940" />
+    <testcase name="realSchoolEntryAndImportMenuRemainAvailableTogether" classname="com.coursekeeper.NavigationTest" time="1.513" />
+  </testsuite>
+</testsuites>
