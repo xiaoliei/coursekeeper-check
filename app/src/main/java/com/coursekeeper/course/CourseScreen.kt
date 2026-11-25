@@ -136,9 +136,11 @@ fun CourseScreen(
 
     if (semesterDialog) {
         SemesterDialog(
-            initialStartsOn = LocalDate.now(),
+            // B-01：已有学期回填保存的起始日；只改周数/节次时不得把它改成今天
+            initialStartsOn = state.semesterStartsOn ?: defaultSemesterStartsOn(LocalDate.now()),
             initialWeekCount = state.weekCount.takeIf { it > 0 } ?: 20,
             initialPeriods = state.periods,
+            isExisting = state.semesterStartsOn != null,
             onDismiss = { semesterDialog = false },
             onConfirm = { date, weeks, periods, onResult ->
                 onSaveSemester(date, weeks, periods) { error ->
@@ -676,6 +678,7 @@ private fun SemesterDialog(
     initialStartsOn: LocalDate,
     initialWeekCount: Int,
     initialPeriods: List<PeriodRecord>,
+    isExisting: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (LocalDate, Int, List<PeriodRecord>, (String?) -> Unit) -> Unit,
 ) {
@@ -692,13 +695,21 @@ private fun SemesterDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("学期设置") },
+        title = { Text(if (isExisting) "修改学期" else "设置学期") },
         text = {
             Column(
                 Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("第 1 周从哪天开始（会自动对齐到该周周一）。", fontSize = 12.sp, color = KeeperMuted)
+                Text(
+                    if (isExisting) {
+                        "起始日已回填保存值；只改周数或节次不会动它。"
+                    } else {
+                        "首次设置：默认今天所在周的周一，可改；会自动对齐到该周周一。"
+                    },
+                    fontSize = 12.sp,
+                    color = KeeperMuted,
+                )
                 OutlinedTextField(
                     value = dateText,
                     onValueChange = { dateText = it },

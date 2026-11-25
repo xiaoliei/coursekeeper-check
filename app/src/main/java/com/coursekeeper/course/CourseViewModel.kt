@@ -9,19 +9,32 @@ import com.coursekeeper.data.ScheduleDraft
 import com.coursekeeper.data.model.DataSnapshot
 import com.coursekeeper.data.model.PeriodRecord
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.TemporalAdjusters
 
 /** 未配置节次表时的默认节次数（与《课程与周次规则》一致）。 */
 const val DEFAULT_PERIOD_COUNT = 13
+
+/**
+ * 新建学期时表单的默认起始日：今天所在周的周一。
+ *
+ * 只在“还没有学期”时使用；已有学期必须回填保存值，否则只改周数/节次也会把起始日
+ * 改成今天，导致教学周整体平移（B-01）。
+ */
+fun defaultSemesterStartsOn(today: LocalDate): LocalDate =
+    today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
 /** 编辑课程时用的完整视图：课程字段 + 它的全部排课（不只当前周）。 */
 data class CourseSummary(
@@ -44,6 +57,8 @@ data class CourseUiState(
     val semesterId: String? = null,
     val semesterName: String = "",
     val semesterVersion: Long? = null,
+    /** 学期第 1 周的周一（已保存值）；为空表示还没设置过学期。 */
+    val semesterStartsOn: LocalDate? = null,
     val weekCount: Int = 0,
     val currentWeek: Int? = null,
     val selectedWeek: Int = 1,
@@ -84,6 +99,16 @@ class CourseViewModel(
     private val writer: CourseWriter,
     private val snapshots: Flow<DataSnapshot>,
     private val now: () -> LocalDateTime = { LocalDateTime.now() },
+    /**
+     * 时间驱动：App 持续停留时也要跨过零点/课间更新“今天”和周次。
+     * 默认每分钟重算一次；测试可传入受控 Flow。
+     */
+    private val ticks: Flow<Unit> = flow {
+        while (true) {
+            emit(Unit)
+            delay(60_000)
+        }
+    },
 ) : ViewModel() {
 
     /** null = 跟随当前教学周；非空 = 用户正在看某一周。 */
@@ -92,11 +117,12 @@ class CourseViewModel(
     /** 今日列表 / 整周网格；顶部“今日 / 本周 / 上周 / 下周”切换。 */
     private val viewMode = MutableStateFlow(CourseViewMode.WEEK)
 
-    val uiState: StateFlow<CourseUiState> = combine(snapshots, selectedWeek, viewMode) { snapshot, week, mode ->
-        build(snapshot, week, mode, now())
-    }
-        .catch { emit(CourseUiState(loading = false, error = "课程数据读取失败，请重试")) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CourseUiState())
+    val uiState: StateFlow<CourseUiState> =
+        combine(snapshots, selectedWeek, viewMode, ticks) { snapshot, week, mode, _ ->
+            build(snapshot, week, mode, now())
+        }
+            .catch { emit(CourseUiState(loading = false, error = "课程数据读取失败，请重试")) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CourseUiState())
 
     fun previousWeek() {
         val current = uiState.value
@@ -224,6 +250,7 @@ class CourseViewModel(
             semesterId = semester?.id,
             semesterName = semester?.name.orEmpty(),
             semesterVersion = snapshot.semesters.firstOrNull { it.id == semester?.id }?.version,
+            semesterStartsOn = semester?.startsOn,
             weekCount = weekCount,
             currentWeek = state.weekNo,
             selectedWeek = week,

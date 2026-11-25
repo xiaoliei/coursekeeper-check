@@ -1,4 +1,4 @@
-package com.coursekeeper.course
+﻿package com.coursekeeper.course
 
 import com.coursekeeper.data.CourseDraft
 import com.coursekeeper.data.DataError
@@ -13,8 +13,10 @@ import com.coursekeeper.data.model.SemesterRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -73,7 +75,9 @@ class CourseViewModelTest {
     private fun viewModel(
         snapshots: MutableStateFlow<DataSnapshot>,
         writer: CourseWriter = FakeWriter(snapshots),
-    ) = CourseViewModel(FakeService(now), writer, snapshots) { now }
+        nowProvider: () -> LocalDateTime = { now },
+        ticks: Flow<Unit> = flowOf(Unit),
+    ) = CourseViewModel(FakeService(now), writer, snapshots, nowProvider, ticks)
 
     @Test
     fun `初始显示当前教学周与本周课程`() = runTest {
@@ -153,6 +157,64 @@ class CourseViewModelTest {
         advanceUntilIdle()
         assertEquals(10, model.uiState.value.selectedWeek)
         assertTrue(!model.uiState.value.canGoNext)
+    }
+
+    @Test
+    fun `已有学期回填保存的起始日`() = runTest {
+        val snapshots = MutableStateFlow(snapshot())
+        val model = viewModel(snapshots)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 9, 7), model.uiState.value.semesterStartsOn)
+    }
+
+    @Test
+    fun `只改周数时起始日保持不变`() = runTest {
+        val snapshots = MutableStateFlow(snapshot())
+        val writer = FakeWriter(snapshots)
+        val model = viewModel(snapshots, writer)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        var result: String? = "未回调"
+        // 界面打开时回填的就是 2026-09-07；这里模拟“只把周数改成 18”
+        model.configureSemester(LocalDate.of(2026, 9, 7), 18, emptyList()) { result = it }
+        advanceUntilIdle()
+
+        assertNull(result)
+        assertEquals(LocalDate.of(2026, 9, 7), model.uiState.value.semesterStartsOn)
+        assertEquals(18, model.uiState.value.weekCount)
+    }
+
+    @Test
+    fun `新建学期默认起始日为今天所在周的周一`() {
+        assertEquals(LocalDate.of(2026, 11, 9), defaultSemesterStartsOn(LocalDate.of(2026, 11, 12)))
+        assertEquals(LocalDate.of(2026, 11, 9), defaultSemesterStartsOn(LocalDate.of(2026, 11, 9)))
+        assertEquals(LocalDate.of(2026, 11, 9), defaultSemesterStartsOn(LocalDate.of(2026, 11, 15)))
+    }
+
+    @Test
+    fun `跨零点后今日列表按新日期刷新`() = runTest {
+        // now = 11-10 周二 23:59；tick 触发时 11-11 周三 00:01
+        var current = LocalDateTime.of(2026, 11, 10, 23, 59)
+        val ticks = MutableSharedFlow<Unit>(replay = 1, extraBufferCapacity = 1)
+        ticks.tryEmit(Unit)
+        val snapshots = MutableStateFlow(snapshot())
+        val model = viewModel(snapshots, nowProvider = { current }, ticks = ticks)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.uiState.collect { } }
+        advanceUntilIdle()
+
+        assertEquals(2, model.uiState.value.todayDay)
+        assertEquals(1, model.uiState.value.todayEntries.size)
+
+        current = LocalDateTime.of(2026, 11, 11, 0, 1)
+        ticks.emit(Unit)
+        advanceUntilIdle()
+
+        assertEquals(3, model.uiState.value.todayDay)
+        assertEquals(0, model.uiState.value.todayEntries.size)
+        assertEquals(10, model.uiState.value.currentWeek)
     }
 
     @Test
@@ -413,3 +475,4 @@ class CourseViewModelTest {
         }
     }
 }
+

@@ -1,5 +1,5 @@
 ﻿{
-    "date":  "2026-11-17",
+    "date":  "2026-11-25",
     "branch":  "main",
     "jdk":  "21.0.7",
     "gradle":  "9.6.0",
@@ -9,8 +9,8 @@
               ],
     "result":  "BUILD SUCCESSFUL",
     "fullSuite":  {
-                      "suites":  41,
-                      "tests":  292,
+                      "suites":  51,
+                      "tests":  409,
                       "failures":  0
                   },
     "bModule":  {
@@ -32,7 +32,7 @@
                                    },
                                    {
                                        "name":  "com.coursekeeper.course.CourseViewModelTest",
-                                       "tests":  14,
+                                       "tests":  18,
                                        "failures":  0
                                    },
                                    {
@@ -51,12 +51,12 @@
                                        "failures":  0
                                    }
                                ],
-                    "tests":  57,
+                    "tests":  61,
                     "failures":  0
                 },
     "apk":  {
                 "path":  "app/build/outputs/apk/debug/app-debug.apk",
-                "sha256":  "b509963161057f56331d7ac13e3e7b34a52c2ddb40e355c710a492779f69eeb1",
-                "bytes":  13744702
+                "sha256":  "8c34731e97cb986800e8e6157573283245ea5e11803df75ca0f3b90b216e51aa",
+                "bytes":  13744761
             }
 }
