@@ -29,6 +29,52 @@ class MyStuTaskParser : SchoolPageParser {
     override fun parseSchedule(html: String): ScheduleParse =
         ScheduleParse(emptyList(), 0, null, listOf("MYSTU 作业页不含课表"))
 
+    /**
+     * 每课作业索引页（`mod/assign/index.php?id=<课程ID>`，C 2026-11-25 P2）。
+     *
+     * 首页只列“需要留意”的作业，已提交或截止较早的整条移出，首次导入前也没缓存过。
+     * 索引页按课程列本学期的全部作业，因此补抓它可覆盖“首页不再展示”的历史作业。
+     *
+     * 实测样例尚未取得，解析按 **行内作业链接** 定位（与首页同一稳定 ID 规则
+     * `mod/assign(ment)?/view.php?id=`）：只要一行里有该链接，就取链接文本为标题、
+     * 行内其余文本解析到期日期与提交状态。表格类名、列顺序与主题差异都不影响识别；
+     * 结构完全不同则得到 0 条并记警告，由适配器跳过，不会误导入。
+     */
+    override fun parseTaskIndex(html: String, courseId: String, courseName: String?): TaskParse {
+        val tasks = mutableListOf<ImportedTask>()
+        for (row in INDEX_ROW.findAll(html)) {
+            val rowHtml = row.value
+            val anchor = INDEX_LINK.find(rowHtml) ?: continue
+            val externalId = anchor.groupValues[1].takeIf { it.isNotBlank() } ?: continue
+            val title = cleanTitle(plainText(anchor.groupValues[2])).take(MAX_TITLE_LENGTH)
+            if (title.isBlank()) continue
+            // 行内除标题链接外的文本：到期日期 + 提交状态（索引页一科一张表，一行一条作业）。
+            val rest = plainText(rowHtml.replace(anchor.value, " "))
+            tasks += ImportedTask(
+                externalId = externalId,
+                fields = TaskDraft(
+                    title = title,
+                    type = typeOf(title),
+                    dueAt = DueDates.parse(rest),
+                ),
+                // 与首页一致：不猜跨系统课程关联，只透传来源课程（CBE-01 的映射在 E 的合并层）。
+                courseExternalId = null,
+                sourceCourseId = courseId,
+                sourceCourseName = courseName,
+                schoolSubmission = submissionOf(rest),
+            )
+        }
+        val warnings = if (tasks.isEmpty()) {
+            listOf("作业索引页未找到作业行（结构可能与首页不同）")
+        } else emptyList()
+        return TaskParse(
+            tasks = tasks,
+            missingIdentity = 0,
+            warnings = warnings,
+            sourceCourseIds = setOfNotNull(courseId.takeIf { it.isNotBlank() }),
+        )
+    }
+
     override fun parseTasks(html: String): TaskParse {
         val warnings = mutableListOf<String>()
         val tasks = mutableListOf<ImportedTask>()
@@ -152,5 +198,18 @@ class MyStuTaskParser : SchoolPageParser {
         /** 新模块状态尾缀「未评分」只描述评分状态，与提交状态无关，归一前剥掉。 */
         val GRADE_SUFFIX = Regex("""[,，、]?\s*未评分\s*$""")
         val TAG = Regex("<[^>]*>")
+
+        // ---- 作业索引页（P2 历史作业补抓，C 2026-11-25）----
+
+        /** 索引页的一行；一行一条作业，跨行内容用 DOT_MATCHES_ALL 一并读取。 */
+        val INDEX_ROW = Regex("""<tr[^>]*>.*?</tr>""", RegexOption.DOT_MATCHES_ALL)
+        /**
+         * 行内作业链接：第 1 组是稳定作业 ID，第 2 组是链接文本（标题）。
+         * 与首页同一规则，兼容老 `assignment` 与新 `assign` 两套模块；`index.php` 链接不算。
+         */
+        val INDEX_LINK = Regex(
+            """<a[^>]*href=["'][^"']*mod/assign(?:ment)?/view\.php\?id=(\d+)["'][^>]*>(.*?)</a>""",
+            RegexOption.DOT_MATCHES_ALL,
+        )
     }
 }

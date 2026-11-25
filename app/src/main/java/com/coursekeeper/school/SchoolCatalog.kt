@@ -19,6 +19,12 @@ data class SchoolInfo(
     /** 作业数据页；为 null 表示该学校作业源尚未接入，作业模块按失败上报而不是当成空结果。 */
     val taskListUrl: String? = null,
     /**
+     * 每课作业索引页模板（C 2026-11-25 P2 历史作业补抓）。`{id}` 由课程块编号替换；
+     * 为 null 表示不补抓，作业结果只来自 [taskListUrl] 首页。索引页按课程列本学期全部作业，
+     * 首页只列“需要留意”的作业，两者合并才能覆盖已提交/较早的历史作业。
+     */
+    val taskIndexUrlTemplate: String? = null,
+    /**
      * 学期标签（如 `2026AUT`）。用于给课程稳定标识加前缀：`courses` 的
      * `(source, externalId)` 是全局唯一键，不带学期会让重修撞键（B 的开放问题 6）。
      * 未确定学期时保持 null，表示沿用课程代码原样。
@@ -57,6 +63,9 @@ object SchoolCatalog {
             scheduleUrl = "https://jw.stu.edu.cn/jsxsd/xskb/xskb_list.do",
             // MYSTU 学习平台（Moodle）的“课程概览”页，作业在 my.stu.edu.cn 域下。
             taskListUrl = "https://my.stu.edu.cn/courses/campus/my/",
+            // 每课作业索引页（Moodle 作业索引）：按课程列本学期全部作业，用于补抓首页已移出的历史作业。
+            taskIndexUrlTemplate =
+                "https://my.stu.edu.cn/courses/campus/mod/assign/index.php?id={id}",
             // 实测页面不含学年学期，先沿用课程代码；确定学期后填 "2026AUT" 这类标签。
             termTag = null,
             allowHttpHosts = setOf("jw.stu.edu.cn"),

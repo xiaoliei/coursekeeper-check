@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- 脱敏样例（成员 C，2026-11-25）：MYSTU（Moodle）「每课作业索引页」。
+     真实索引页尚未抓取，本样例按 Moodle 4.x `mod/assign/index.php` 的标准表格渲染结构编写：
+     generaltable 表头（作业名 / 到期日期 / 提交状态 / 成绩）+ 每行一条作业，
+     行内带 `mod/assign(ment)/view.php?id=` 稳定链接。
+     解析器按“行内作业链接”识别，不依赖类名与列顺序；待真实页面到手后按实际结构校准。
+     课程名、作业名、ID、时间均为虚构。 -->
+<html>
+<head><title>应用密码学：作业</title></head>
+<body>
+<h2>[2026秋] 应用密码学 方若宇</h2>
+
+<table class="generaltable">
+  <thead>
+    <tr>
+      <th class="header c0" scope="col">作业名</th>
+      <th class="header c1" scope="col">到期日期</th>
+      <th class="header c2" scope="col">提交状态</th>
+      <th class="header c3" scope="col">成绩</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="assign" data-region="assign-row">
+      <td class="cell c0"><a href="https://my.stu.edu.cn/courses/campus/mod/assign/view.php?id=500001">实验报告一</a></td>
+      <td class="cell c1">2026年10月12日 星期一 23:59</td>
+      <td class="cell c2">已提交</td>
+      <td class="cell c3">85</td>
+    </tr>
+    <tr class="assign" data-region="assign-row">
+      <td class="cell c0"><a href="https://my.stu.edu.cn/courses/campus/mod/assign/view.php?id=500002">实验报告二</a></td>
+      <td class="cell c1">2026年11月02日 星期一 00:00</td>
+      <td class="cell c2">还未提交</td>
+      <td class="cell c3">未评分</td>
+    </tr>
+    <tr class="assignment" data-region="assignment-row">
+      <td class="cell c0"><a href="https://my.stu.edu.cn/courses/campus/mod/assignment/view.php?id=500003">老模块作业：课程设计</a></td>
+      <td class="cell c1">2026年09月20日 星期日 23:59</td>
+      <td class="cell c2">已提交</td>
+      <td class="cell c3">92</td>
+    </tr>
+    <tr class="assign" data-region="assign-row">
+      <td class="cell c0"><a href="https://my.stu.edu.cn/courses/campus/mod/assign/index.php?id=500004">缺稳定标识的作业</a></td>
+      <td class="cell c1">2026年09月01日 星期二 23:59</td>
+      <td class="cell c2">已提交</td>
+      <td class="cell c3">-</td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

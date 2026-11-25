@@ -15,13 +15,21 @@ import java.io.File
 object SchoolAdapterHolder {
     @Volatile private var instance: WebViewSchoolAdapter? = null
 
-    fun get(application: Application): WebViewSchoolAdapter =
+    /**
+     * @param knownSourceCourses E 的跨同步课程编号（`repository.knownSourceCourseIds`），
+     *   供每课作业索引页补抓使用；默认空集合表示不补抓（与旧行为一致）。
+     */
+    fun get(
+        application: Application,
+        knownSourceCourses: suspend (String) -> Set<String> = { emptySet() },
+    ): WebViewSchoolAdapter =
         instance ?: synchronized(this) {
             instance ?: WebViewSchoolAdapter(
                 schoolProvider = { SchoolCatalog.default },
                 courseParser = SchoolCatalog.courseParser,
                 taskParser = SchoolCatalog.taskParser,
                 debugDumpDir = debugDumpDirFor(application),
+                knownSourceCourses = knownSourceCourses,
             ).also { instance = it }
         }
 }

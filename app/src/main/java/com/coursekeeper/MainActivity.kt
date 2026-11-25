@@ -80,7 +80,7 @@ class HomeDataOwner(application: Application) : AndroidViewModel(application) {
     // C：学校适配器（E 约定应用级同一实例交给协调器）与登录流程控制器。
     // 适配器经 SchoolAdapterHolder 按进程持有单例：ViewModel 会随返回键退出销毁，
     // 每次新建实例会撞上数据层的 require（D 复核：启动崩溃）。
-    val schoolAdapter = SchoolAdapterHolder.get(application)
+    val schoolAdapter = SchoolAdapterHolder.get(application, data.repository::knownSourceCourseIds)
     val sync = data.syncCoordinator(schoolAdapter)
     val homeSync = HomeSyncController(viewModelScope, sync::onForeground) { sync.synchronize(force=true) }
     val disconnecting = MutableStateFlow(false)

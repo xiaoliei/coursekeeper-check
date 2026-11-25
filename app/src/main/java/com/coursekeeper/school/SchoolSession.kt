@@ -91,8 +91,19 @@ object SchoolHttp {
      */
     private const val MAX_REDIRECTS = 6
 
-    suspend fun get(url: String, cookie: String?): HttpReply = withContext(Dispatchers.IO) {
+    /**
+     * 超时可按请求覆盖：作业索引页补抓（C 2026-11-25）是每课一次的附加请求，
+     * 用更短的连接/读取超时把它限制在模块超时预算内；阻塞读不会响应协程取消，
+     * 只能靠 socket 超时兜底。
+     */
+    suspend fun get(
+        url: String,
+        cookie: String?,
+        connectTimeoutMillis: Int = SchoolRule.CONNECT_TIMEOUT_MILLIS,
+        readTimeoutMillis: Int = SchoolRule.READ_TIMEOUT_MILLIS,
+    ): HttpReply = withContext(Dispatchers.IO) {
         require(url.startsWith("https://")) { "学校数据地址必须为 HTTPS" }
+        require(connectTimeoutMillis > 0 && readTimeoutMillis > 0) { "超时必须为正数" }
         val originHost = SchoolRule.hostOf(url)
         var current = url
         var reply: HttpReply? = null
@@ -100,8 +111,8 @@ object SchoolHttp {
         while (reply == null && hop <= MAX_REDIRECTS) {
             val connection = URL(current).openConnection() as HttpURLConnection
             try {
-                connection.connectTimeout = SchoolRule.CONNECT_TIMEOUT_MILLIS
-                connection.readTimeout = SchoolRule.READ_TIMEOUT_MILLIS
+                connection.connectTimeout = connectTimeoutMillis
+                connection.readTimeout = readTimeoutMillis
                 connection.instanceFollowRedirects = false
                 if (hop == 0 || SchoolRule.hostOf(current) == originHost) {
                     cookie?.takeIf { it.isNotBlank() }?.let { connection.setRequestProperty("Cookie", it) }

@@ -32,6 +32,16 @@ import java.time.format.DateTimeFormatter
 interface SchoolPageParser {
     fun parseSchedule(html: String): ScheduleParse
     fun parseTasks(html: String): TaskParse
+
+    /**
+     * 解析单门课的“作业索引页”（如 Moodle `mod/assign/index.php?id=<课程ID>`，C 2026-11-25 P2）。
+     *
+     * 首页只列“需要留意的作业”，已提交或较早的作业会整条移出；索引页按课程列全部作业，
+     * 用于补抓首页已不再展示的历史作业。默认实现表示该解析器不支持索引页：返回空结果 +
+     * 警告，适配器据此跳过补抓，不影响首页结果。
+     */
+    fun parseTaskIndex(html: String, courseId: String, courseName: String?): TaskParse =
+        TaskParse(emptyList(), 0, listOf("解析器不支持作业索引页"), emptySet())
 }
 
 data class ScheduleParse(
