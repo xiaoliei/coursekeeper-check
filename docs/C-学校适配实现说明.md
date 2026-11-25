@@ -554,3 +554,41 @@ D 复核了 1 必修 + 2 建议的修复后，确认三项均真修好（单例�
 | 3. P2 历史作业 | 本轮 P2 未实现，不做声明 |
 
 全仓单元测试 **319 项 / 0 失败 / 0 跳过**；`:app:assembleDebug` 通过。**本轮未跑真机**。
+
+## 20. CBE-01 自动课程映射与 P2 历史作业补抓（2026-11-25）
+
+基线 main `7d04477`。§19.3 的“暂缓/待定”两项本轮落地；C-01／C-02／双模块解析未改动。
+
+### 20.1 CBE-01：规范化课程名唯一命中
+
+**新增** `data/sync/CourseLinker.kt`（纯对象，无 Android 依赖）：输入学校侧课程名与本地同步课程的 `(externalId, title)`，输出唯一命中的教务课程编号或 null。规则：
+
+1. 去掉开头学期标签（`[2026秋]`、`［］`、`【】`、`（）`、`()`）；
+2. 候选 = 完整名 + 去掉末尾空白分隔教师名；**括号内教师不剥离**；
+3. 规范化（去空白与常见标点、统一小写）后**完全相等**才命中，不做模糊匹配；
+4. 命中 0 条或多条不同课程 → null（歧义不猜）。
+
+**接入**（`data/sync/SyncMerge.kt` 的 `mergeTasks`）：适配器仍只透传来源信息，不读库；映射在合并层执行，候选来自本次事务内的本地同步课程。显式 `courseExternalId` 优先；`manualDirty` / `completedAt` 保护覆盖“用户手动改关联”；改名校验不命中时保留原关联，不清空。
+
+**测试**：`CourseLinkerTest` 9 例 + `TaskSubmissionSyncTest` 4 例（唯一同名关联、改名保留、同名不同课不关联、数字来源编号不冒充教务编号）。
+
+### 20.2 P2：每课索引页补抓
+
+**配置**：`SchoolInfo.taskIndexUrlTemplate`（汕头大学 `…/mod/assign/index.php?id={id}`）；null 的学校不补抓。
+
+**编排**（`school/WebViewSchoolAdapter.kt`）：
+
+- 补抓对象 = 本次首页课程 ∪ `knownSourceCourseIds(schoolId)`（E v5 缓存），首页本次没出现的课程优先；
+- 预算：≤12 门课/次、总 6s、单请求连接 3s/读取 4s（`SchoolHttp.get` 新增超时参数）；仍是一次打开一次拉取，不轮询；
+- 合并：`mergeTaskPages` 按 `externalId` 去重，首页优先，缺 ID 条目按内容折叠；
+- 降级：单课失败跳过；连续 2 门课无作业行即停；首页结果照常成功。
+
+**解析**（`MyStuTaskParser.parseTaskIndex`）：按行内 `mod/assign(ment)?/view.php?id=` 链接定位（与首页同规则），链接文本为标题、行内其余文本解析到期日期与提交状态；不依赖表格类名/列顺序。
+
+**尚未校准**：真实索引页样例未取得（D 已真机确认索引页存在且含本学期全部历史作业）；结构不同则 0 条 + 停止，不误导入。拿到脱敏样例后补 fixture 并复核列语义；老模块 `mod/assignment/index.php` 路径待确认。
+
+**测试**：`MyStuTaskIndexParserTest` 4 例、`WebViewSchoolAdapterBackfillTest` 6 例（含 12 门上限、连续空即停、单课失败降级、首页优先）。
+
+### 20.3 本轮验证
+
+全仓 JVM 单测 **441 项 / 0 失败 / 0 跳过**（rebase 到 main `7d2d359` 后复跑）；`:app:assembleDebug` 通过。**本轮未跑真机**（无设备/模拟器/学校会话），C-01、C-02 的手机复验仍待补。回报见《C-问题处理回报-2026-11-25.md》，证据见 `docs/evidence/c-cbe01-p2/`。

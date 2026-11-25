@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.school.MyStuTaskIndexParserTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:15:31.545Z" hostname="他方旅" time="0.005">
+  <properties/>
+  <testcase name="sourceCourseIdentityIsCarriedForLinkerAndDedup" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.003"/>
+  <testcase name="loginPageIsNotMistakenForAnEmptyIndex" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.0"/>
+  <testcase name="allIndexRowsWithStableViewIdsAreParsedWithDueDateAndStatus" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.001"/>
+  <testcase name="pageWithoutAssignmentRowsYieldsWarningInsteadOfGuessing" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:15:31.826Z" hostname="他方旅" time="0.046">
+  <properties/>
+  <testcase name="cachedCourseMissingFromHomepageIsStillBackfilled" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.018"/>
+  <testcase name="homepageWinsWhenIndexRepeatsTheSameAssignment" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.008"/>
+  <testcase name="unrecognizedIndexStructureStopsAfterTwoMissesInsteadOfWastingRequests" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.007"/>
+  <testcase name="indexRequestsAreCappedByCourseBudget" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.005"/>
+  <testcase name="failingIndexRequestDegradesToHomepageResult" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.005"/>
+  <testcase name="indexBackfillAddsAssignmentsThatHomepageNoLongerShows" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.school.MyStuTaskParserTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:15:31.551Z" hostname="他方旅" time="0.016">
+  <properties/>
+  <testcase name="parserExposesCourseBoxIdsForSnapshotConvergence" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.002"/>
+  <testcase name="assignmentsMapTitleDueTypeAndStableId" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001"/>
+  <testcase name="dueDateWithWeekdayAndTimeIsParsedNotDefaulted" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001"/>
+  <testcase name="myAssignmentPrefixAndGradeSuffixAreStrippedBeforeNormalization" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.002"/>
+  <testcase name="sourceCourseIdentityIsCarriedForLaterMapping" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001"/>
+  <testcase name="assignModuleWithoutViewIdIsDeferredLikeAssignmentModule" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.0"/>
+  <testcase name="pageWithoutAssignmentsReportsWarning" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.0"/>
+  <testcase name="draftsAndReopenedStatesAreDistinguished" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001"/>
+  <testcase name="newAssignModuleEntriesAreParsedWithIdDueAndSubmission" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.005"/>
+  <testcase name="submissionStatusIsExposedWithoutDecidingLocallyCompleted" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.coursekeeper.data.TaskSubmissionSyncTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:15:29.273Z" hostname="他方旅" time="0.823">
+  <properties/>
+  <testcase name="autoCompletionCancelsPreviouslyScheduledReminderOnSnapshotReconcile" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.102"/>
+  <testcase name="parserSubmissionReachesTaskFiltersAndCompletionStatistics" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.043"/>
+  <testcase name="staleBaselineCannotAutoCompleteNewerUnprotectedRecord" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.036"/>
+  <testcase name="malformedBatchRollsBackAutoCompletionAndPreservesLastSuccess" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.04"/>
+  <testcase name="firstSubmittedImportIsCompletedAtLocalSyncTimeWithoutManualDirty" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.03"/>
+  <testcase name="existingTaskCompletesAndUpdatesFieldsInOneVersionThenRepeatedSyncIsStable" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.045"/>
+  <testcase name="submittedTaskDoesNotResurrectAfterUserDeletionOrTouchManualOrAgentTasks" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.042"/>
+  <testcase name="numericSourceCourseIdIsNeverTreatedAsTeachingSystemCourseNumber" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.035"/>
+  <testcase name="schoolFieldsAndCompletionSurviveDatabaseReopen" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.068"/>
+  <testcase name="onlyExactSubmittedStatusCompletesAndOtherStatusesArePersistedIdempotently" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.044"/>
+  <testcase name="exactCourseNameLinksSyncedCourseAndUnmatchedNameKeepsExistingLink" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.054"/>
+  <testcase name="autoLinkedCourseIsKeptWhenLocalCourseIsMissingFromThisSnapshot" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.048"/>
+  <testcase name="sameCourseNameInTwoSyncedCoursesIsAmbiguousAndStaysUnlinked" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.041"/>
+  <testcase name="userRestoreToPendingPreventsAnyLaterSchoolAutoCompletion" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.038"/>
+  <testcase name="manualCompletionAndSchoolCompletionNeverRevertWhenSchoolReopens" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.064"/>
+  <testcase name="manualEditDuringFetchProtectsWholeTaskIncludingItsAssociationAndProvenance" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.048"/>
+  <testcase name="conflictingSubmissionStatusesRejectWholeModule" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.04"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
