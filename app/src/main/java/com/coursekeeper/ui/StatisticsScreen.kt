@@ -50,7 +50,7 @@ fun StatisticsScreen(state: StatisticsUi?, modifier: Modifier = Modifier, onRetr
         }
         KeeperCard {
             Text("截止分布", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text("已逾期 ${ui.dueDist.overdue} · 本周 ${ui.dueDist.thisWeek} · 下周 ${ui.dueDist.next7Days}",
+            Text("已过截止 ${ui.dueDist.overdue} · 本周 ${ui.dueDist.thisWeek} · 下周 ${ui.dueDist.next7Days}",
                 fontSize = 13.sp)
         }
         KeeperCard {
