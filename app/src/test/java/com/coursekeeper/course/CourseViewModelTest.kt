@@ -1,4 +1,4 @@
-﻿package com.coursekeeper.course
+package com.coursekeeper.course
 
 import com.coursekeeper.data.CourseDraft
 import com.coursekeeper.data.DataError
