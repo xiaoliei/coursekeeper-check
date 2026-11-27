@@ -21,6 +21,14 @@ import java.util.UUID
  * - 凭证只存内存（[pending]），绑定工具/任务/预期版本/变更指纹，5 分钟过期、用一次即失效；
  * - 确认先原子取出凭证再调 [TaskWriteGateway]，requestId 由 token 派生，重复请求不会二次生效。
  *
+ * 单实例约束（Q-3）：凭证只存本实例内存，**必须应用级单例持有**（如 CourseKeeperData）；
+ * 旋转/每页新建实例会使屏上预览的凭证全部失效（confirm 恒报 TOKEN_MISMATCH）。
+ * 关闭 AI / 切换会话时调 [revokeAll] 作废全部在途预览（R08/R11）。
+ *
+ * 接线红线（Q-1）：模型工具只注册 `preview*`；[confirm] 仅由确认 UI 回调调用；
+ * 给模型只传 [TaskWriteModelView]（[TaskWritePreview.toModelView] 裁剪），不得透出 token/binding。
+ * wire 级参数/错误码规格见 [TaskWriteWire]（Q-2）。
+ *
  * 时间口径：预览与过期判断共用 [now]（设备本地时区）；completedAt 由 Repository 用其 clock 写入，
  * 本类不自行拼时间。
  */
@@ -75,14 +83,37 @@ class TaskWriteTools(
         val fieldChanges = buildList {
             if (clean.title != old.title) add(TaskWriteChange(FIELD_TITLE, old.title, clean.title))
             if (clean.type != old.type) add(TaskWriteChange(FIELD_TYPE, old.type.label, clean.type.label))
-            if (clean.dueAt != old.dueAt) add(TaskWriteChange(FIELD_DUE, dueLabel(old.dueAt), dueLabel(clean.dueAt)))
+            // after=null 表示"将被清空"（Q-4）：确认 UI 据此醒目提示，不依赖风险文案。
+            if (clean.dueAt != old.dueAt) {
+                add(TaskWriteChange(FIELD_DUE, dueLabel(old.dueAt), clean.dueAt?.let(::dueLabel)))
+            }
             if (clean.courseId != old.courseId) {
-                add(TaskWriteChange(FIELD_COURSE, courseLabel(old.courseId, snapshot.courses), courseLabel(clean.courseId, snapshot.courses)))
+                add(
+                    TaskWriteChange(
+                        FIELD_COURSE,
+                        courseLabel(old.courseId, snapshot.courses),
+                        clean.courseId?.let { courseLabel(it, snapshot.courses) },
+                    ),
+                )
             }
         }
+        // 全量替换语义（保持不变）：漏传字段 = 清空该字段，因此逐项给出后果明确的文案。
         val risks = buildList {
-            if (clean.dueAt != old.dueAt) add("截止时间变更后，提醒将按新时间重排")
+            when {
+                old.dueAt != null && clean.dueAt == null ->
+                    add("将清空截止时间：该任务不再产生到点提醒，已登记的提醒将取消")
+                old.dueAt == null && clean.dueAt != null -> add("将新增截止时间")
+                clean.dueAt != old.dueAt -> add("截止时间变更后，提醒将按新时间重排")
+            }
             if (clean.dueAt != null && clean.dueAt != old.dueAt) addAll(dueRisks(clean.dueAt, now()))
+            when {
+                old.courseId != null && clean.courseId == null ->
+                    add("将解除课程关联（任务本身保留）")
+                old.courseId == null && clean.courseId != null ->
+                    add("将关联课程「${courseLabel(clean.courseId, snapshot.courses)}」")
+                clean.courseId != old.courseId && clean.courseId != null ->
+                    add("课程关联将更换为「${courseLabel(clean.courseId, snapshot.courses)}」")
+            }
             if (fieldChanges.isEmpty()) add("内容与当前一致；确认仍会生成新版本（version+1）")
         }
         return issue(
@@ -183,6 +214,19 @@ class TaskWriteTools(
         TaskWriteResult.Failure(error.toFailure())
     }
 
+    // ---------------------------------------------------------------- 撤销
+
+    /**
+     * 撤销一张在途预览的凭证（Q-5）。返回是否撤到；false = 已使用/已过期/本来不存在——
+     * 撤没撤到，后续 confirm 都得 TOKEN_MISMATCH，调用方无需区分。
+     */
+    fun revoke(token: String): Boolean = synchronized(pending) { pending.remove(token) != null }
+
+    /** 作废全部在途预览凭证（R08/R11：关闭 AI、切换会话时调用）。进程死亡等价于 revokeAll——凭证不落盘。 */
+    fun revokeAll() {
+        synchronized(pending) { pending.clear() }
+    }
+
     // ---------------------------------------------------------------- 内部
 
     private fun issue(
@@ -230,7 +274,8 @@ class TaskWriteTools(
         retainedCourseId: String?,
     ): TaskWriteFailure? = when {
         draft.title.isBlank() -> TaskWriteFailure(TaskWriteError.INVALID_FIELD, "任务名称不能为空")
-        draft.title.length > MAX_TITLE -> TaskWriteFailure(TaskWriteError.INVALID_FIELD, "任务名称过长（≤$MAX_TITLE 字）")
+        draft.title.length > TaskWriteWire.TITLE_MAX_LENGTH ->
+            TaskWriteFailure(TaskWriteError.INVALID_FIELD, "任务名称过长（≤${TaskWriteWire.TITLE_MAX_LENGTH} 字）")
         draft.courseId != null && draft.courseId != retainedCourseId && courses.none { it.id == draft.courseId } ->
             TaskWriteFailure(TaskWriteError.INVALID_FIELD, "关联的课程不存在")
         else -> null
@@ -305,7 +350,6 @@ class TaskWriteTools(
     private companion object {
         const val TOKEN_TTL_MILLIS = 5L * 60 * 1000
         const val MAX_PENDING = 64
-        const val MAX_TITLE = 60
         const val REQUEST_PREFIX = "agent-write:"
 
         const val FIELD_TITLE = "title"

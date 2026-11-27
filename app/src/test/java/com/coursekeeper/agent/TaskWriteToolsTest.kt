@@ -3,6 +3,7 @@ package com.coursekeeper.agent
 import com.coursekeeper.data.CourseDraft
 import com.coursekeeper.data.DataTestBase
 import com.coursekeeper.data.TaskDraft
+import com.coursekeeper.data.model.RecordSource
 import com.coursekeeper.data.model.TaskType
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -339,5 +340,171 @@ class TaskWriteToolsTest : DataTestBase() {
             TaskWriteError.INVALID_FIELD,
             (reject as TaskWritePreviewResult.Rejected).failure.error,
         )
+    }
+
+    // ------------------------------------------------- 附加二：接线前置（Q-1/Q-2/Q-4/Q-5/Q-7）
+
+    // Q-1：模型视图必须真正剔除凭证（字段集防漂移 + toString 不带 token）
+
+    @Test
+    fun `model view strips token expiry and binding`() = runTest {
+        val t = tools()
+        val preview = ready(t.previewCreate(draft("视图")))
+        val view = preview.toModelView()
+
+        assertEquals(preview.tool, view.tool)
+        assertEquals(preview.changes, view.changes)
+        assertEquals(preview.risks, view.risks)
+        assertEquals(
+            listOf("changes", "risks", "target", "tool"),
+            TaskWriteModelView::class.java.declaredFields
+                // Compose 编译器会注入静态 $$stable 等生成字段，只数实例字段。
+                .filter { !it.isSynthetic && !java.lang.reflect.Modifier.isStatic(it.modifiers) }
+                .map { it.name }
+                .sorted(),
+        )
+        // data class 默认 toString 不得带出 token（Q-1 的原始隐患）。
+        assertFalse(view.toString().contains(preview.token))
+    }
+
+    // Q-5：撤销在途凭证
+
+    @Test
+    fun `revoke invalidates a pending confirmation`() = runTest {
+        val t = tools()
+        val preview = ready(t.previewCreate(draft("撤销")))
+        assertTrue(t.revoke(preview.token))
+
+        assertEquals(TaskWriteError.TOKEN_MISMATCH, failure(t.confirm(preview.token)).error)
+        assertTrue(repository.snapshot().tasks.isEmpty())
+        assertFalse(t.revoke(preview.token))
+        assertFalse(t.revoke("no-such-token"))
+    }
+
+    @Test
+    fun `revokeAll invalidates every pending confirmation`() = runTest {
+        val task = repository.createTask(draft("既有"))
+        val t = tools()
+        val create = ready(t.previewCreate(draft("新建")))
+        val update = ready(t.previewUpdate(task.id, 1, draft("改名")))
+        t.revokeAll()
+
+        assertEquals(TaskWriteError.TOKEN_MISMATCH, failure(t.confirm(create.token)).error)
+        assertEquals(TaskWriteError.TOKEN_MISMATCH, failure(t.confirm(update.token, update.binding)).error)
+        assertEquals("既有", repository.getTask(task.id)!!.title)
+        assertEquals(1, repository.snapshot().tasks.size)
+
+        // 作废只影响在途凭证：后续新预览照常确认
+        val fresh = ready(t.previewCreate(draft("再来")))
+        success(t.confirm(fresh.token))
+        assertEquals(2, repository.snapshot().tasks.size)
+    }
+
+    // Q-7：Agent 新建落库 source=AGENT
+
+    @Test
+    fun `agent created tasks are stored with source AGENT`() = runTest {
+        val t = tools()
+        val receipt = success(t.confirm(ready(t.previewCreate(draft("agent来源"))).token))
+
+        assertEquals(RecordSource.AGENT, repository.getTask(receipt.id)!!.source)
+        // 对照：手工入口保持 MANUAL（Repository 默认未变）
+        val manual = repository.createTask(draft("手工"))
+        assertEquals(RecordSource.MANUAL, repository.getTask(manual.id)!!.source)
+    }
+
+    // Q-4：清空截止 / 解除课程的风险文案与 after=null 语义
+
+    @Test
+    fun `clearing the due date emits a null after and a cancel warning`() = runTest {
+        val task = repository.createTask(draft("有截止").copy(dueAt = now().plusDays(2)))
+        val t = tools()
+        val preview = ready(t.previewUpdate(task.id, 1, draft("有截止").copy(dueAt = null)))
+
+        val change = preview.changes.single { it.field == "dueAt" }
+        assertNull(change.after)
+        assertTrue(preview.risks.any { "清空截止时间" in it })
+        assertTrue(preview.risks.any { "提醒将取消" in it })
+
+        success(t.confirm(preview.token))
+        assertNull(repository.getTask(task.id)!!.dueAt)
+    }
+
+    @Test
+    fun `detaching the course emits a null after and a detach warning`() = runTest {
+        val course = repository.createCourse(CourseDraft("大学英语"))
+        val task = repository.createTask(draft("作业").copy(courseId = course.id))
+        val t = tools()
+        val preview = ready(t.previewUpdate(task.id, 1, draft("作业")))
+
+        val change = preview.changes.single { it.field == "courseId" }
+        assertEquals("大学英语", change.before)
+        assertNull(change.after)
+        assertTrue(preview.risks.any { "解除课程关联" in it })
+
+        success(t.confirm(preview.token))
+        assertNull(repository.getTask(task.id)!!.courseId)
+    }
+
+    @Test
+    fun `setting a due date on an undated task warns about slots`() = runTest {
+        val task = repository.createTask(draft("无截止"))
+        val preview = ready(tools().previewUpdate(task.id, 1, draft("无截止").copy(dueAt = now().plusMinutes(30))))
+
+        assertFalse(preview.risks.any { "重排" in it })
+        assertTrue(preview.risks.any { "新增截止" in it })
+        assertTrue(preview.risks.any { "不会到点提醒" in it })
+    }
+
+    // Q-2：wire 契约与三工具参数一致（防漂移断言）
+
+    @Test
+    fun `wire specs cover the three tools with confirmation required`() {
+        assertEquals(TaskWriteTool.entries.map { it.wireName }, TaskWriteWire.TOOLS.map { it.name })
+        TaskWriteTool.entries.forEach { assertEquals(it, TaskWriteWire.spec(it).tool) }
+        assertTrue(TaskWriteWire.TOOLS.all { it.requiresConfirmation })
+        assertTrue(TaskWriteWire.REQUIRES_CONFIRMATION)
+        assertEquals("yyyy-MM-dd'T'HH:mm", TaskWriteWire.DUE_AT_FORMAT)
+        assertEquals(60, TaskWriteWire.TITLE_MAX_LENGTH)
+    }
+
+    @Test
+    fun `wire parameters match TaskDraft and preview signatures`() {
+        val draftFields = listOf(
+            TaskDraft::title.name,
+            TaskDraft::type.name,
+            TaskDraft::dueAt.name,
+            TaskDraft::courseId.name,
+        )
+        // create：draft 字段平铺，可选参数可空
+        val create = TaskWriteWire.CREATE_TASK.parameters
+        assertEquals(draftFields, create.map { it.name })
+        assertEquals(listOf(true, true, false, false), create.map { it.required })
+        assertEquals(listOf(false, false, true, true), create.map { it.nullable })
+
+        // update：全量替换语义 → draft 四字段全部必填（nullable 的传 null = 显式清空）
+        val update = TaskWriteWire.UPDATE_TASK.parameters
+        assertEquals(listOf("id", "expectedVersion") + draftFields, update.map { it.name })
+        assertTrue(update.all { it.required })
+        assertEquals(listOf(false, false, false, false, true, true), update.map { it.nullable })
+
+        // complete：三个参数全部必填
+        val complete = TaskWriteWire.COMPLETE_TASK.parameters
+        assertEquals(listOf("id", "completed", "expectedVersion"), complete.map { it.name })
+        assertTrue(complete.all { it.required })
+        assertEquals("boolean", complete.first { it.name == "completed" }.type)
+        assertEquals("integer", complete.first { it.name == "expectedVersion" }.type)
+
+        // type 参数的允许值来自 TaskType 枚举
+        val typeSpec = create.first { it.name == "type" }
+        assertEquals(TaskType.entries.map { it.name }, typeSpec.enumValues)
+    }
+
+    @Test
+    fun `wire error codes and task type values are enum backed`() {
+        val codes = TaskWriteError.entries.map { TaskWriteWire.wireError(it) }
+        assertEquals(TaskWriteError.entries.size, codes.distinct().size)
+        assertTrue(codes.all { it.isNotBlank() })
+        assertEquals(TaskType.entries.map { it.name }, TaskWriteWire.TASK_TYPE_VALUES)
     }
 }

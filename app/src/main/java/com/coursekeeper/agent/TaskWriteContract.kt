@@ -33,7 +33,11 @@ enum class TaskWriteError {
 /** 错误 + 给模型/用户看的中文原因。 */
 data class TaskWriteFailure(val error: TaskWriteError, val detail: String)
 
-/** 单个字段的前后值。before 为 null 表示"原本不存在"（create），显示值一律是代码计算的文本。 */
+/**
+ * 单个字段的前后值，显示值一律是代码计算的文本：
+ * - `before == null`：字段为新增（create，或原无值改为有值）；
+ * - `after == null`：**字段将被清空**（update 清掉已有值时才出现）——确认 UI 据此醒目提示（Q-4）。
+ */
 data class TaskWriteChange(val field: String, val before: String?, val after: String?)
 
 /** 操作目标：更新/完成才有；create 为 null。 */
@@ -52,7 +56,12 @@ data class TaskWriteBinding(
     val changeFingerprint: String,
 )
 
-/** 预览：对象＋拟变更前后值＋风险提示＋单次确认凭证。 */
+/**
+ * 预览：对象＋拟变更前后值＋风险提示＋单次确认凭证。
+ *
+ * **只在本进程内流转**（确认 UI ↔ 工具）：含 token/binding，不得序列化给模型、不得写日志——
+ * data class 默认 toString() 会带出 token。给模型只传 [TaskWriteModelView]。
+ */
 data class TaskWritePreview(
     val tool: TaskWriteTool,
     val target: TaskWriteTarget?,
@@ -68,6 +77,31 @@ sealed interface TaskWritePreviewResult {
     data class Ready(val preview: TaskWritePreview) : TaskWritePreviewResult
     data class Rejected(val failure: TaskWriteFailure) : TaskWritePreviewResult
 }
+
+/**
+ * 给模型看的预览视图（Q-1）：[TaskWritePreview] 的安全子集，**不含 token/expiresAt/binding**。
+ *
+ * 接线红线（违反即升级 P0，见质检 Q-1）：
+ * - 模型工具只注册 `preview*`；[TaskWriteTools.confirm] 只能由确认 UI 的点击回调调用，
+ *   **不得注册为模型工具**；
+ * - 传给模型的只能是本视图（或按 [TaskWriteWire] 规格编码的结果），不得把 [TaskWritePreview]
+ *   原样序列化或写日志给模型；
+ * - 凭证有效期不进视图：过期由 confirm 兜底拒绝（EXPIRED_TOKEN），UI 从完整预览自取。
+ */
+data class TaskWriteModelView(
+    val tool: TaskWriteTool,
+    val target: TaskWriteTarget?,
+    val changes: List<TaskWriteChange>,
+    val risks: List<String>,
+)
+
+/** 从完整预览裁剪出模型视图：只保留无凭证字段，其余（token/有效期/绑定）一律不外传。 */
+fun TaskWritePreview.toModelView(): TaskWriteModelView = TaskWriteModelView(
+    tool = tool,
+    target = target,
+    changes = changes,
+    risks = risks,
+)
 
 /** 确认结果：成功回执或结构化错误。 */
 sealed interface TaskWriteResult {
