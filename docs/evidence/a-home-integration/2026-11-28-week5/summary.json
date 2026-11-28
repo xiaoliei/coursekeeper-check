@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-28",
+  "baseline": "60a8d19877a78b5293125d147749b43a8891b9ea",
+  "changesCommittedAtCapture": false,
+  "productionCodeChangedThisRound": false,
+  "jdk": "21.0.13+9",
+  "gradle": "9.6.0",
+  "buildTools": "36.0.0",
+  "unitTests": {
+    "tests": 441,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "deviceTests": {
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "name": "CourseKeeperATest",
+    "serial": "emulator-5556",
+    "api": 37,
+    "physical": false
+  },
+  "debugBuild": "passed",
+  "androidTestBuild": "passed",
+  "apkSignatureV2": "verified",
+  "apk": "课程管家_A第5周验收_2026-11-28.apk",
+  "apkBytes": 13880915,
+  "apkSha256": "D90D3F4FE728FDF89111E998BEAE0E456FDA3314EBE4E4AE905A50481F87CC3B",
+  "phoneChecks": "phone-checks.json",
+  "physicalDevice": {
+    "manufacturer": "vivo",
+    "model": "V2505A",
+    "android": "16",
+    "api": 36,
+    "physical": true
+  },
+  "expiredRelogin": true,
+  "partialSuccess": "pending",
+  "weakNetwork": "pending",
+  "week4Status": "代码与本地验证完成；正常刷新、断网恢复有历史用户反馈，过期重登本轮真机通过，部分成功和真实弱网待补",
+  "week5Status": "A 自测、交接和 B 验收材料已准备；B 交叉验收待执行",
+  "crossReviewByB": "pending",
+  "boundaryProbes": {
+    "isolatedSyntheticTests": 3,
+    "unmetExpectations": 3,
+    "realSchoolReproduced": false
+  },
+  "uploadedToGitHubAtCapture": false,
+  "publicationStatusSource": "Git 提交记录与远端引用；采集时状态不表示当前发布状态"
+}

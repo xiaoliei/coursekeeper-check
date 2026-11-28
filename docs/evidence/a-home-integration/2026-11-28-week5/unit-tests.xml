@@ -1,0 +1,755 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites tests="441" failures="0" errors="0" skipped="0">
+  <testsuite name="com.coursekeeper.agent.TaskWriteToolsTest" tests="32" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:06.619Z" hostname="LAPTOP-CJQ77CDT" time="6.997">
+    <properties />
+    <testcase name="setting a due date on an undated task warns about slots" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="5.948" />
+    <testcase name="same token cannot be used against another task" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.051" />
+    <testcase name="confirmed update writes and bumps version with manualDirty" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.033" />
+    <testcase name="detaching the course emits a null after and a detach warning" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.037" />
+    <testcase name="confirmed create writes the previewed values" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.033" />
+    <testcase name="too long title is rejected at preview" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.027" />
+    <testcase name="stale expected version is rejected already at preview" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.034" />
+    <testcase name="model view strips token expiry and binding" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.025" />
+    <testcase name="completing an already completed task is a no-op" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.042" />
+    <testcase name="agent created tasks are stored with source AGENT" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.028" />
+    <testcase name="wire parameters match TaskDraft and preview signatures" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.019" />
+    <testcase name="confirm after the task was deleted returns NOT_FOUND" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.03" />
+    <testcase name="complete preview keeps store untouched" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.023" />
+    <testcase name="revokeAll invalidates every pending confirmation" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.03" />
+    <testcase name="wire error codes and task type values are enum backed" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.015" />
+    <testcase name="unknown task is rejected at preview" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.022" />
+    <testcase name="complete writes clock instant and restore clears it" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.028" />
+    <testcase name="restore preview carries an explicit risk hint" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.023" />
+    <testcase name="token is single use" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.028" />
+    <testcase name="clearing the due date emits a null after and a cancel warning" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.024" />
+    <testcase name="create preview does not write anything" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.021" />
+    <testcase name="token expires after five minutes" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.022" />
+    <testcase name="blank title is rejected at preview" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.02" />
+    <testcase name="update keeps a dangling course association but rejects a new unknown one" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.028" />
+    <testcase name="wire specs cover the three tools with confirmation required" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.012" />
+    <testcase name="create preview warns about due times with no or one reminder slot" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.021" />
+    <testcase name="repeating the same confirmation never writes twice" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.021" />
+    <testcase name="unknown course is rejected at preview" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.02" />
+    <testcase name="revoke invalidates a pending confirmation" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.019" />
+    <testcase name="same token cannot be used with a different change fingerprint" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.024" />
+    <testcase name="stale expected version is rejected without overwriting" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.023" />
+    <testcase name="update preview lists only changed fields and keeps store untouched" classname="com.coursekeeper.agent.TaskWriteToolsTest" time="0.02" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.ConflictDetectorTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.619Z" hostname="LAPTOP-CJQ77CDT" time="0.007">
+    <properties />
+    <testcase name="同一课程同时段但地点不同按数据异常提示" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.006" />
+    <testcase name="同课程完全重复的条目去重 不报冲突" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.0" />
+    <testcase name="课程已删除的排课不进入冲突判定" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.0" />
+    <testcase name="部分周重叠时只报重叠周次" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.001" />
+    <testcase name="不同课程同一天节次相交即为冲突" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.0" />
+    <testcase name="不同星期或节次不相交都不算冲突" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.0" />
+    <testcase name="周次不相交不算冲突 4-7 与 8-16 分段" classname="com.coursekeeper.course.ConflictDetectorTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.CourseProjectionTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.630Z" hostname="LAPTOP-CJQ77CDT" time="0.012">
+    <properties />
+    <testcase name="同步来源的课程与手动课程显示一致" classname="com.coursekeeper.course.CourseProjectionTest" time="0.007" />
+    <testcase name="跨节次条目按条计 按节累加" classname="com.coursekeeper.course.CourseProjectionTest" time="0.001" />
+    <testcase name="已配学期但今天不在教学周内是 NOT_IN_TERM" classname="com.coursekeeper.course.CourseProjectionTest" time="0.001" />
+    <testcase name="下一节课取当前时刻之后最近的一条" classname="com.coursekeeper.course.CourseProjectionTest" time="0.001" />
+    <testcase name="课表按天分组 空周返回空表" classname="com.coursekeeper.course.CourseProjectionTest" time="0.0" />
+    <testcase name="同名不同编号算两门" classname="com.coursekeeper.course.CourseProjectionTest" time="0.0" />
+    <testcase name="四个课程数字统计契约符合固定期望" classname="com.coursekeeper.course.CourseProjectionTest" time="0.002" />
+    <testcase name="未设学期是 NO_SEMESTER 不是 0" classname="com.coursekeeper.course.CourseProjectionTest" time="0.0" />
+    <testcase name="同课程多条排课按条目计 按门去重" classname="com.coursekeeper.course.CourseProjectionTest" time="0.0" />
+    <testcase name="冲突按周返回 同课程重复条目已去重" classname="com.coursekeeper.course.CourseProjectionTest" time="0.0" />
+    <testcase name="非连续周 第10周没有课 第11周有课" classname="com.coursekeeper.course.CourseProjectionTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.CourseSelfCheckTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.644Z" hostname="LAPTOP-CJQ77CDT" time="0.006">
+    <properties />
+    <testcase name="打印自查报告并校验" classname="com.coursekeeper.course.CourseSelfCheckTest" time="0.006" />
+    <system-out>────────────────────────────────────────────────────────────────────────
+B 课程服务自查（第 0—2 步）
+────────────────────────────────────────────────────────────────────────
+
+① 周次文本解析
+  9,11-13        → 9,11-13                    位图=7424   OK
+  9,11-13(周)     → 9,11-13                    位图=7424   OK
+  4-7,8-16       → 4-16                       位图=65528  OK
+  1-16(单)        → 1,3,5,7,9,11,13,15         位图=21845  OK
+  1-16（双）        → 2,4,6,8,10,12,14,16        位图=43690  OK
+  abc,3-4        → 3-4                        位图=12     OK  ⚠ 无法识别的周次段：abc
+  7424 的含义：9,11-13（第 9、11、12、13 周）
+
+② 教学周换算（第 1 周 = 2026-09-07 周一）
+  2026-11-10 → 第 10 周  OK
+  2026-11-16 → 第 11 周  OK
+  2026-09-06 → 第 — 周  OK
+  2027-01-28 → 第 — 周  OK
+
+③ 冲突判定
+  3 条排课检出 1 条冲突（期望 1 条：c1 与 c2 抢第 1-2 节）
+  · c1 × c2 周 1-16 第 1-2 节 (DIFFERENT_COURSE)
+
+④ 四个课程数字投影（now = 2026-11-10T10:00）
+  夹具                               实际                      期望                      结果
+  跨节次                              条1 节4 门1 周1             条1 节4 门1 周1             OK
+  同课多条目                            条1 节2 门1 周2             条1 节2 门1 周2             OK
+  同名不同编号                           条1 节2 门2 周2             条1 节2 门2 周2             OK
+  单双周                              条0 节0 门0 周0             条0 节0 门0 周0             OK
+  无学期                              条0 节0 门0 周0             条0 节0 门0 周0             OK
+  有学期无排课                           条0 节0 门0 周0             条0 节0 门0 周0             OK
+
+⑤ 非连续周（9,11-13）
+  第  9 周 2026-11-03 → 今日课程 1 条、2 节  OK
+  第 10 周 2026-11-10 → 今日课程 0 条、0 节  OK
+  第 11 周 2026-11-17 → 今日课程 1 条、2 节  OK
+
+────────────────────────────────────────────────────────────────────────
+结论：全部通过 ✅
+────────────────────────────────────────────────────────────────────────
+
+</system-out>
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.CourseViewModelTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.653Z" hostname="LAPTOP-CJQ77CDT" time="0.116">
+    <properties />
+    <testcase name="页签切换今日上周下周" classname="com.coursekeeper.course.CourseViewModelTest" time="0.043" />
+    <testcase name="翻到下一周再回到本周" classname="com.coursekeeper.course.CourseViewModelTest" time="0.003" />
+    <testcase name="版本冲突转成人话" classname="com.coursekeeper.course.CourseViewModelTest" time="0.005" />
+    <testcase name="未设学期时是 NO_SEMESTER" classname="com.coursekeeper.course.CourseViewModelTest" time="0.004" />
+    <testcase name="新建学期默认起始日为今天所在周的周一" classname="com.coursekeeper.course.CourseViewModelTest" time="0.001" />
+    <testcase name="保存课程把草稿交给写侧" classname="com.coursekeeper.course.CourseViewModelTest" time="0.006" />
+    <testcase name="保存学期时一并写入节次时间" classname="com.coursekeeper.course.CourseViewModelTest" time="0.007" />
+    <testcase name="空标题被拦下 不调用写侧" classname="com.coursekeeper.course.CourseViewModelTest" time="0.004" />
+    <testcase name="跨零点后今日列表按新日期刷新" classname="com.coursekeeper.course.CourseViewModelTest" time="0.004" />
+    <testcase name="初始显示当前教学周与本周课程" classname="com.coursekeeper.course.CourseViewModelTest" time="0.004" />
+    <testcase name="结束节超过本学期节次数被拦下" classname="com.coursekeeper.course.CourseViewModelTest" time="0.005" />
+    <testcase name="设置学期成功后进入 READY" classname="com.coursekeeper.course.CourseViewModelTest" time="0.004" />
+    <testcase name="只改周数时起始日保持不变" classname="com.coursekeeper.course.CourseViewModelTest" time="0.003" />
+    <testcase name="最后一周点下周不会越界" classname="com.coursekeeper.course.CourseViewModelTest" time="0.003" />
+    <testcase name="边界周不能继续翻" classname="com.coursekeeper.course.CourseViewModelTest" time="0.006" />
+    <testcase name="删除课程调用写侧并移除课程" classname="com.coursekeeper.course.CourseViewModelTest" time="0.004" />
+    <testcase name="节次时间非法被拦下 不调用写侧" classname="com.coursekeeper.course.CourseViewModelTest" time="0.003" />
+    <testcase name="已有学期回填保存的起始日" classname="com.coursekeeper.course.CourseViewModelTest" time="0.003" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.HomeCourseProjectionTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.771Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="有节次时刻表时算下一节课与分钟提示" classname="com.coursekeeper.course.HomeCourseProjectionTest" time="0.001" />
+    <testcase name="当天课程全部结束后给出结束提示" classname="com.coursekeeper.course.HomeCourseProjectionTest" time="0.0" />
+    <testcase name="未设学期映射为 NoSemester" classname="com.coursekeeper.course.HomeCourseProjectionTest" time="0.0" />
+    <testcase name="跨节次课程按条目计数 并给出节次文案" classname="com.coursekeeper.course.HomeCourseProjectionTest" time="0.0" />
+    <testcase name="教学周内即使没课也是 Ready 且计数为 0" classname="com.coursekeeper.course.HomeCourseProjectionTest" time="0.0" />
+    <testcase name="已配学期但不在教学周映射为 NotInTerm" classname="com.coursekeeper.course.HomeCourseProjectionTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.WeekCalculatorTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.773Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="起始日缺失时不做任何猜测" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.0" />
+    <testcase name="当前学期取包含今天的那个" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.001" />
+    <testcase name="起始日不是周一时仍按该周周一起算" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.0" />
+    <testcase name="第 10 周对应 11 月 9 日到 15 日" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.0" />
+    <testcase name="任意日期归一化到所在周的周一" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.0" />
+    <testcase name="最近配置学期用于不在教学周内时仍能看课表" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.0" />
+    <testcase name="学期开始前与结束后都返回 null" classname="com.coursekeeper.course.WeekCalculatorTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.course.WeekTextTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.775Z" hostname="LAPTOP-CJQ77CDT" time="0.002">
+    <properties />
+    <testcase name="位图与文本往返一致" classname="com.coursekeeper.course.WeekTextTest" time="0.001" />
+    <testcase name="非连续周 9,11-13 解析为位图 7424" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="兼容导出里的 周 后缀与全角符号" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="相邻分段会合并成一段 4-7 加 8-16" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="第 0 周被忽略并记警告" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="全部非法时返回空位图而不是抛异常" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="连续区间 1-16 解析为低 16 位全 1" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="单双周是位图子集" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="兼容方括号包住的周次写法" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <testcase name="超出本学期周数只丢弃该段并记警告" classname="com.coursekeeper.course.WeekTextTest" time="0.001" />
+    <testcase name="非法段不影响整条 其他段仍然生效" classname="com.coursekeeper.course.WeekTextTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.CourseScheduleV3Test" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.781Z" hostname="LAPTOP-CJQ77CDT" time="0.209">
+    <properties />
+    <testcase name="statisticsAdapterDoesNotFillNonConsecutiveWeekGaps" classname="com.coursekeeper.data.CourseScheduleV3Test" time="0.018" />
+    <testcase name="aggregateEditKeepsUnchangedEntryIdsAndIncrementsCourseVersionOnce" classname="com.coursekeeper.data.CourseScheduleV3Test" time="0.026" />
+    <testcase name="invalidSecondCourseRollsBackTheEntireImportedModule" classname="com.coursekeeper.data.CourseScheduleV3Test" time="0.048" />
+    <testcase name="syncDetectsTeacherAndWeekChangesButIgnoresResponseOrder" classname="com.coursekeeper.data.CourseScheduleV3Test" time="0.054" />
+    <testcase name="inconsistentWeekTextEmptyWeeksAndSemesterOverflowFailAtomically" classname="com.coursekeeper.data.CourseScheduleV3Test" time="0.025" />
+    <testcase name="nonConsecutiveWeeksAndTeacherOverridesRoundTripWithoutIdCollisions" classname="com.coursekeeper.data.CourseScheduleV3Test" time="0.035" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.MigrationV3Test" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:13.997Z" hostname="LAPTOP-CJQ77CDT" time="0.809">
+    <properties />
+    <testcase name="upgradedReceiptsAndTombstonesStillBlockDuplicateWritesAndResurrection" classname="com.coursekeeper.data.MigrationV3Test" time="0.077" />
+    <testcase name="invalidUnrepresentableLegacyWeeksLeaveTheV2DatabaseIntact" classname="com.coursekeeper.data.MigrationV3Test" time="0.54" />
+    <testcase name="v2UpgradePreservesBusinessDataParityHighestBitAndSqliteConstraints" classname="com.coursekeeper.data.MigrationV3Test" time="0.07" />
+    <testcase name="firstAggregateEditAfterMigrationKeepsEveryUnchangedLegacyScheduleId" classname="com.coursekeeper.data.MigrationV3Test" time="0.04" />
+    <testcase name="legacyParityWithNoTeachingWeekIsPreservedWithoutInventingOne" classname="com.coursekeeper.data.MigrationV3Test" time="0.042" />
+    <testcase name="emptyV2DatabaseOpensAtCurrentVersionWithoutInventingRecords" classname="com.coursekeeper.data.MigrationV3Test" time="0.037" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.MigrationV4Test" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:14.812Z" hostname="LAPTOP-CJQ77CDT" time="0.093">
+    <properties />
+    <testcase name="emptyV3UpgradeCanPersistNewSchoolFields" classname="com.coursekeeper.data.MigrationV4Test" time="0.045" />
+    <testcase name="v3UpgradePreservesAllTablesAndAddsNullableSchoolFieldsWithoutGuessingCompletion" classname="com.coursekeeper.data.MigrationV4Test" time="0.047" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.RepositoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:14.910Z" hostname="LAPTOP-CJQ77CDT" time="0.219">
+    <properties />
+    <testcase name="completionUsesLocalInstantAndUndoIncrementsVersion" classname="com.coursekeeper.data.RepositoryTest" time="0.024" />
+    <testcase name="manualTasksUseUuidNullableDatesAndAllFiveTypes" classname="com.coursekeeper.data.RepositoryTest" time="0.022" />
+    <testcase name="semesterAndPeriodsUpdateAsOneVersionedAggregate" classname="com.coursekeeper.data.RepositoryTest" time="0.023" />
+    <testcase name="requestReceiptsReplayCreateUpdateAndDeleteWithoutAnotherWrite" classname="com.coursekeeper.data.RepositoryTest" time="0.024" />
+    <testcase name="snapshotFlowPublishesCommittedData" classname="com.coursekeeper.data.RepositoryTest" time="0.028" />
+    <testcase name="deletingCourseRemovesSchedulesButRetainsTaskAssociation" classname="com.coursekeeper.data.RepositoryTest" time="0.026" />
+    <testcase name="invalidWritesDoNotConsumeRequestIdAndReturnAgreedErrors" classname="com.coursekeeper.data.RepositoryTest" time="0.025" />
+    <testcase name="concurrentWritersOnlyOneCanUseTheSameVersion" classname="com.coursekeeper.data.RepositoryTest" time="0.023" />
+    <testcase name="staleVersionFailsWithoutPartialWrite" classname="com.coursekeeper.data.RepositoryTest" time="0.021" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.ScheduleWeeksTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:15.130Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="oldParityPreservesTheActualTeachingWeeks" classname="com.coursekeeper.data.ScheduleWeeksTest" time="0.0" />
+    <testcase name="invalidLegacyRangesAreRejectedInsteadOfTruncated" classname="com.coursekeeper.data.ScheduleWeeksTest" time="0.001" />
+    <testcase name="nonConsecutiveWeeksKeepTheirGapAndCanonicalText" classname="com.coursekeeper.data.ScheduleWeeksTest" time="0.0" />
+    <testcase name="highestSignedBitAndAll64WeeksRemainValid" classname="com.coursekeeper.data.ScheduleWeeksTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.SchoolCourseCacheTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:15.132Z" hostname="LAPTOP-CJQ77CDT" time="0.242">
+    <properties />
+    <testcase name="discoveryDoesNotOverwriteProtectedTasksOrResurrectDeletedOnes" classname="com.coursekeeper.data.SchoolCourseCacheTest" time="0.04" />
+    <testcase name="cacheSurvivesCloseAndReopen" classname="com.coursekeeper.data.SchoolCourseCacheTest" time="0.043" />
+    <testcase name="failedBatchAndNetworkFailureDoNotPolluteCacheOrAdvanceSuccess" classname="com.coursekeeper.data.SchoolCourseCacheTest" time="0.048" />
+    <testcase name="v4MigrationPreservesCompletedTaskAndStartsWithEmptyDiscoveryHistory" classname="com.coursekeeper.data.SchoolCourseCacheTest" time="0.039" />
+    <testcase name="unionRetainsAbsentCoursesIncludingBlocksWithoutAssignments" classname="com.coursekeeper.data.SchoolCourseCacheTest" time="0.048" />
+    <testcase name="schoolMismatchCannotWriteAndQueriesAreIsolated" classname="com.coursekeeper.data.SchoolCourseCacheTest" time="0.022" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.SettingsStoreTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:15.378Z" hostname="LAPTOP-CJQ77CDT" time="0.124">
+    <properties />
+    <testcase name="schoolAndSkippedOnboardingSurviveStoreRecreation" classname="com.coursekeeper.data.SettingsStoreTest" time="0.123" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.StorageRecoveryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:15.504Z" hostname="LAPTOP-CJQ77CDT" time="0.153">
+    <properties />
+    <testcase name="emptyBaselineV1MigratesWithoutInventingRecords" classname="com.coursekeeper.data.StorageRecoveryTest" time="0.038" />
+    <testcase name="persistedWritesReceiptsAndTombstonesSurviveReopenAndBusinessBackupRestore" classname="com.coursekeeper.data.StorageRecoveryTest" time="0.059" />
+    <testcase name="baselineV1MigrationPreservesIdsVersionsCompletionAndDeletedCourseAssociation" classname="com.coursekeeper.data.StorageRecoveryTest" time="0.055" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.sync.CourseLinkerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.769Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="sameTitleInTwoCoursesIsAmbiguousAndStaysUnlinked" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.001" />
+    <testcase name="candidatesExposeOnlyDeterministicVariants" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="whitespaceWidthAndPunctuationAreNormalized" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="fuzzyNamesAreNeverMatched" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="fullNameWithoutTeacherStillMatches" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="unknownOrBlankInputStaysUnlinked" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="semesterTagAndTrailingTeacherAreStrippedBeforeMatching" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="parenthesizedTeacherIsNotStrippedAndStaysUnlinked" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <testcase name="candidatesContradictingEachOtherAreAmbiguous" classname="com.coursekeeper.data.sync.CourseLinkerTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.SyncCoordinatorTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:15.666Z" hostname="LAPTOP-CJQ77CDT" time="0.59">
+    <properties />
+    <testcase name="retriesStopAfterTwoAndOnlyFailedModuleIsFetchedNextTime" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.023" />
+    <testcase name="eachFetchTimeoutIsBoundedAndParseFailuresNeverRetry" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.028" />
+    <testcase name="resyncAfterDeletingImportedCourseRetainsItsTaskAssociation" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.031" />
+    <testcase name="onlyNonemptyCompleteSnapshotsCanDeleteAbsentCoursesInTheirScope" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.05" />
+    <testcase name="failedManualRefreshIsRetriedEvenWithRecentSuccess" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.032" />
+    <testcase name="throttleBoundaryForcedRefreshAndSessionChecksAreIndependent" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.029" />
+    <testcase name="switchingSchoolCannotMergeIntoExistingSchoolCache" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.024" />
+    <testcase name="changedRemoteFieldsIncrementVersionsAndEmptySuccessNeverClearsCache" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.032" />
+    <testcase name="networkFailurePreservesDataAndLastSuccessfulTime" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.025" />
+    <testcase name="conflictingRemoteIdentitiesRejectWholeModuleAndMissingIdentityIsDeferred" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.028" />
+    <testcase name="staleCoursesAbsentFromRemoteAreRemovedOnSyncAndUserEditsSurvive" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.03" />
+    <testcase name="staleSyncBaselineRejectsALateResponseAfterAnotherSyncCommitted" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.032" />
+    <testcase name="lateCourseSnapshotCannotPruneCoursesCommittedAfterItsBaseline" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.03" />
+    <testcase name="expiryWithinThrottleShowsBannerAndManualWritesStillWork" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.027" />
+    <testcase name="manualWriteDuringNetworkRequestIsNeverOverwritten" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.027" />
+    <testcase name="overlappingRefreshIsCoalescedAndCancellationLeavesNoSyncingState" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.028" />
+    <testcase name="duplicateImportsAndUnchangedRefreshKeepIdsVersionsAndSchedulesStable" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.027" />
+    <testcase name="malformedModuleRollsBackAllRowsWhileOtherModuleCommits" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.023" />
+    <testcase name="removedStaleCourseLeavesNoTombstoneSoSchoolCanBringItBack" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.03" />
+    <testcase name="userEditsCompletionsAndDeletedImportedTasksAreProtected" classname="com.coursekeeper.data.SyncCoordinatorTest" time="0.03" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.data.TaskSubmissionSyncTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.264Z" hostname="LAPTOP-CJQ77CDT" time="0.503">
+    <properties />
+    <testcase name="autoCompletionCancelsPreviouslyScheduledReminderOnSnapshotReconcile" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.077" />
+    <testcase name="parserSubmissionReachesTaskFiltersAndCompletionStatistics" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.029" />
+    <testcase name="staleBaselineCannotAutoCompleteNewerUnprotectedRecord" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.026" />
+    <testcase name="malformedBatchRollsBackAutoCompletionAndPreservesLastSuccess" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.027" />
+    <testcase name="firstSubmittedImportIsCompletedAtLocalSyncTimeWithoutManualDirty" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.019" />
+    <testcase name="existingTaskCompletesAndUpdatesFieldsInOneVersionThenRepeatedSyncIsStable" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.029" />
+    <testcase name="submittedTaskDoesNotResurrectAfterUserDeletionOrTouchManualOrAgentTasks" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.025" />
+    <testcase name="numericSourceCourseIdIsNeverTreatedAsTeachingSystemCourseNumber" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.019" />
+    <testcase name="schoolFieldsAndCompletionSurviveDatabaseReopen" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.048" />
+    <testcase name="onlyExactSubmittedStatusCompletesAndOtherStatusesArePersistedIdempotently" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.028" />
+    <testcase name="exactCourseNameLinksSyncedCourseAndUnmatchedNameKeepsExistingLink" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.033" />
+    <testcase name="autoLinkedCourseIsKeptWhenLocalCourseIsMissingFromThisSnapshot" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.024" />
+    <testcase name="sameCourseNameInTwoSyncedCoursesIsAmbiguousAndStaysUnlinked" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.018" />
+    <testcase name="userRestoreToPendingPreventsAnyLaterSchoolAutoCompletion" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.023" />
+    <testcase name="manualCompletionAndSchoolCompletionNeverRevertWhenSchoolReopens" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.031" />
+    <testcase name="manualEditDuringFetchProtectsWholeTaskIncludingItsAssociationAndProvenance" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.025" />
+    <testcase name="conflictingSubmissionStatusesRejectWholeModule" classname="com.coursekeeper.data.TaskSubmissionSyncTest" time="0.019" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.DemoHomeGatewayTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:06.258Z" hostname="LAPTOP-CJQ77CDT" time="0.165">
+    <properties />
+    <testcase name="localActionsWorkInAllFailureStates" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.145" />
+    <testcase name="invalidTitleAndImpossibleDateAreRejected" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.004" />
+    <testcase name="nextWeekTaskDoesNotChangeThisWeeksDenominator" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002" />
+    <testcase name="completionIsIdempotentAndCanBeUndone" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002" />
+    <testcase name="connectingSchoolRetainsManualTasks" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.003" />
+    <testcase name="unknownTaskDoesNotMutateState" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.001" />
+    <testcase name="reloginPreservesExistingUserChanges" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.001" />
+    <testcase name="initialCountsAndDailyFiltersAgree" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.001" />
+    <testcase name="emptyStateAcceptsTasksWithDistinctIds" classname="com.coursekeeper.DemoHomeGatewayTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.fakedata.BoundaryFixtureTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.771Z" hostname="LAPTOP-CJQ77CDT" time="0.008">
+    <properties />
+    <testcase name="crossPeriodCourseIsSingleEntrySpanningFourPeriods" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.0" />
+    <testcase name="sameTitleDistinctCodesAreTwoCourses" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.0" />
+    <testcase name="alternatingWeeksStayExpressibleInCurrentModel" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.0" />
+    <testcase name="semesterBoundariesDistinguishNoSemesterFromConfigured" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.005" />
+    <testcase name="taskDateBoundaryLocksWeekWindowAsHalfOpenInterval" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.003" />
+    <testcase name="nonConsecutiveWeeksAreRepresentedWithoutFillingTheGap" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.0" />
+    <testcase name="sameCourseMultipleEntriesKeepOneDistinctCourse" classname="com.coursekeeper.fakedata.BoundaryFixtureTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.home.HomeProjectionTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.781Z" hostname="LAPTOP-CJQ77CDT" time="0.003">
+    <properties />
+    <testcase name="endedCourseKeepsItsDailyCountAndEndHint" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="dailyCountsMatchDateFiltersIncludingCompletedAndUndatedBoundaries" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="syncFailureReasonsAreReadableAndUnknownCodeIsNotExposed" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001" />
+    <testcase name="syncUsesModuleSummaryAndDoesNotClaimSuccessWithoutTimestamp" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="missingCoursesAndPressureNeverBorrowFixtureValues" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001" />
+    <testcase name="homePressureIncludesBPeriodLoadAndFLevelAndExplanation" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="weekStartsOnMondayAndExcludesUndatedPreviousAndNextWeek" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="teachingWeekUsesBMondayNormalisationAndDistinguishesOutsideTerm" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="homeUsesCourseProjectionForTodayWeekAndNextCourse" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="partialSyncDetailsRetainBothSuccessAndFailureAndCachedTasks" classname="com.coursekeeper.home.HomeProjectionTest" time="0.001" />
+    <testcase name="deletedCourseAssociationRemainsVisibleAsDeleted" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="dayRolloverChangesCountersAndLabelsWithoutChangingRecords" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="importedCoursesWithoutSemesterBindingAppearAfterSemesterSetup" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="partialSyncWithExpiredModuleStillRequestsSchoolLogin" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <testcase name="taskOnlyPressureExplainsMissingSemesterInsteadOfInventingCourseLoad" classname="com.coursekeeper.home.HomeProjectionTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.home.HomeSyncControllerTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.786Z" hostname="LAPTOP-CJQ77CDT" time="0.043">
+    <properties />
+    <testcase name="repeatedManualRequestsShareOneActiveRequest" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.01" />
+    <testcase name="manualMessagesDescribeSuccessPartialFailureAndCoordinatorRejections" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.006" />
+    <testcase name="cancellingLoginAlsoCancelsOwnerScopeRequestAndClearsSpinner" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.004" />
+    <testcase name="loginCancelsForegroundAndItsQueuedManualPassBeforeForcingNewSession" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.003" />
+    <testcase name="unexpectedFailureHasSafeMessageAndDoesNotCancelOwnerOrFutureRefresh" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.003" />
+    <testcase name="ownerCancellationClearsBusyStateAndDoesNotRunQueuedForceRequest" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.002" />
+    <testcase name="stopDropsPendingForcePassAndWaitsForActiveCancellation" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.003" />
+    <testcase name="stopDuringLoginReplacementWaitsForPreviousRequestCleanup" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.004" />
+    <testcase name="loginReplacesAnActiveManualRequestWithItsOwnForceRequest" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.002" />
+    <testcase name="automaticModuleFailuresStayInModuleStateWithoutManualSuccessMessage" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.004" />
+    <testcase name="manualDuringForegroundQueuesOneForcePassAndRepeatedClicksDoNotDuplicateIt" classname="com.coursekeeper.home.HomeSyncControllerTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.home.HomeSyncIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.831Z" hostname="LAPTOP-CJQ77CDT" time="0.093">
+    <properties />
+    <testcase name="offlineRefreshPreservesCachedTaskAndRecoveryBypassesRecentSuccessThrottle" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.033" />
+    <testcase name="expiredSessionPreservesCachedTasksDuringManualRefresh" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.02" />
+    <testcase name="logoutStopWaitsForCancellationAndPreventsLateTaskImport" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.019" />
+    <testcase name="partialRefreshRetainsCachedTasksAndImportsSchoolCompletion" classname="com.coursekeeper.home.HomeSyncIntegrationTest" time="0.019" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.home.HomeSyncLifecycleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.925Z" hostname="LAPTOP-CJQ77CDT" time="0.015">
+    <properties />
+    <testcase name="dismissedWebViewStepDoesNotDisableHomeRefresh" classname="com.coursekeeper.home.HomeSyncLifecycleTest" time="0.002" />
+    <testcase name="eachResumeSyncsOnceAndPauseDoesNotStartNetworkWork" classname="com.coursekeeper.home.HomeSyncLifecycleTest" time="0.011" />
+    <testcase name="connectionChangesWhileResumedStartSyncAndLogoutDisablesIt" classname="com.coursekeeper.home.HomeSyncLifecycleTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.home.HomeViewModelTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.941Z" hostname="LAPTOP-CJQ77CDT" time="0.008">
+    <properties />
+    <testcase name="versionConflictHasNoUndoAndGenericErrorsDoNotLeakInternals" classname="com.coursekeeper.home.HomeViewModelTest" time="0.005" />
+    <testcase name="completionUsesShownVersionAndUndoUsesReceiptVersion" classname="com.coursekeeper.home.HomeViewModelTest" time="0.003" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.home.RepositoryHomeGatewayTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:16.951Z" hostname="LAPTOP-CJQ77CDT" time="0.168">
+    <properties />
+    <testcase name="homePressureRecomputesOnClockTicksWithoutDatabaseWrites" classname="com.coursekeeper.home.RepositoryHomeGatewayTest" time="0.051" />
+    <testcase name="skippingOnboardingUsesPersistentSettingsAndDoesNotSeedTasks" classname="com.coursekeeper.home.RepositoryHomeGatewayTest" time="0.023" />
+    <testcase name="homeTeachingWeekRollsOverOnTickWithoutEditingSemester" classname="com.coursekeeper.home.RepositoryHomeGatewayTest" time="0.024" />
+    <testcase name="unknownDeadlineAndFiveTypeLabelsArePersistedWithoutFixtureData" classname="com.coursekeeper.home.RepositoryHomeGatewayTest" time="0.021" />
+    <testcase name="homeObservesTasksCreatedByDAndCompletionChangesFromBothDirections" classname="com.coursekeeper.home.RepositoryHomeGatewayTest" time="0.03" />
+    <testcase name="staleAndMissingVersionsCannotOverwriteAConcurrentEdit" classname="com.coursekeeper.home.RepositoryHomeGatewayTest" time="0.017" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.reminder.BootHintDecisionTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.120Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="no hint when receiver never ran (fresh install)" classname="com.coursekeeper.reminder.BootHintDecisionTest" time="0.0" />
+    <testcase name="no hint without pending reminder tasks" classname="com.coursekeeper.reminder.BootHintDecisionTest" time="0.0" />
+    <testcase name="no hint when receiver ran during this boot" classname="com.coursekeeper.reminder.BootHintDecisionTest" time="0.0" />
+    <testcase name="no hint when already shown this boot" classname="com.coursekeeper.reminder.BootHintDecisionTest" time="0.0" />
+    <testcase name="hint again after another reboot even if shown last boot" classname="com.coursekeeper.reminder.BootHintDecisionTest" time="0.0" />
+    <testcase name="hints when handled before this boot and reminders pending" classname="com.coursekeeper.reminder.BootHintDecisionTest" time="0.001" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.reminder.BootStateStoreTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.124Z" hostname="LAPTOP-CJQ77CDT" time="0.075">
+    <properties />
+    <testcase name="markBootHandled writes wall and elapsed markers" classname="com.coursekeeper.reminder.BootStateStoreTest" time="0.019" />
+    <testcase name="markers default to zero when receiver never ran" classname="com.coursekeeper.reminder.BootStateStoreTest" time="0.012" />
+    <testcase name="hasPendingReminder follows the registry of scheduled tasks" classname="com.coursekeeper.reminder.BootStateStoreTest" time="0.016" />
+    <testcase name="markBaseline writes a marker for a clean install" classname="com.coursekeeper.reminder.BootStateStoreTest" time="0.012" />
+    <testcase name="markBootHintShown persists the boot time for same-boot dedup" classname="com.coursekeeper.reminder.BootStateStoreTest" time="0.014" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.reminder.ReminderContractTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.200Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="completed task and task without due need no reminder" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="reminder text contains title and formatted due time" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.001" />
+    <testcase name="next slot is the earliest future one" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="notification fires only for existing open task with unchanged due" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="slots are 24h and 1h before due" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="slot exactly at now is treated as past" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="no slots remain when both are past" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="overdue task has no slots" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <testcase name="past slots are dropped" classname="com.coursekeeper.reminder.ReminderContractTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.reminder.ReminderCoordinatorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.202Z" hostname="LAPTOP-CJQ77CDT" time="0.006">
+    <properties />
+    <testcase name="callback fires immediately when dated tasks already exist at attach" classname="com.coursekeeper.reminder.ReminderCoordinatorTest" time="0.003" />
+    <testcase name="first dated task triggers callback exactly once regardless of entry" classname="com.coursekeeper.reminder.ReminderCoordinatorTest" time="0.002" />
+    <testcase name="every snapshot is reconciled" classname="com.coursekeeper.reminder.ReminderCoordinatorTest" time="0.001" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.reminder.ReminderSchedulerTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.213Z" hostname="LAPTOP-CJQ77CDT" time="0.217">
+    <properties />
+    <testcase name="reconcile cancels alarms of deleted tasks that vanished from the snapshot" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.015" />
+    <testcase name="cancel without prior schedule is a no-op" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.012" />
+    <testcase name="scheduled intent carries task identity for the receiver" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.013" />
+    <testcase name="schedule registers one exact alarm at the slot time" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.013" />
+    <testcase name="a new scheduler instance cancels alarms of a task deleted by an earlier instance" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.015" />
+    <testcase name="reconcile cancels alarms of tasks that no longer need them" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.016" />
+    <testcase name="cancellations do not wipe ids registered after the pass started" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.025" />
+    <testcase name="registered set merges by delta so concurrent registrations survive" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.012" />
+    <testcase name="cancel removes the alarm" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.013" />
+    <testcase name="reconcile is idempotent" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.013" />
+    <testcase name="rescheduling the same task replaces the alarm instead of adding" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.028" />
+    <testcase name="exact alarm usage follows sdk and system switch" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.013" />
+    <testcase name="reconcile keeps reminders only for open tasks with a future slot" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.014" />
+    <testcase name="a new scheduler instance keeps alarms for tasks still present" classname="com.coursekeeper.reminder.ReminderSchedulerTest" time="0.013" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.CourseSyncResultTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.433Z" hostname="LAPTOP-CJQ77CDT" time="0.014">
+    <properties />
+    <testcase name="skippedWeekInAnOtherwiseValidPagePreventsMirrorCleanup" classname="com.coursekeeper.school.CourseSyncResultTest" time="0.014" />
+    <testcase name="emptyOrIncompleteScheduleLeavesPreviousDataInPlace" classname="com.coursekeeper.school.CourseSyncResultTest" time="0.0" />
+    <testcase name="cleanNonemptyScheduleAuthorizesMirrorCleanup" classname="com.coursekeeper.school.CourseSyncResultTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.MyStuPageMergeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.449Z" hostname="LAPTOP-CJQ77CDT" time="0.002">
+    <properties />
+    <testcase name="unionOfTwoSnapshotsKeepsFirstSeenContentAndAddsMissingCourses" classname="com.coursekeeper.school.MyStuPageMergeTest" time="0.001" />
+    <testcase name="sameIdWithDifferentContentKeepsFirstSnapshot" classname="com.coursekeeper.school.MyStuPageMergeTest" time="0.0" />
+    <testcase name="unidentifiedEntriesAreFoldedByContentAndCountedOnce" classname="com.coursekeeper.school.MyStuPageMergeTest" time="0.001" />
+    <testcase name="warningsAndCourseIdsAreUnionedAcrossPages" classname="com.coursekeeper.school.MyStuPageMergeTest" time="0.0" />
+    <testcase name="singlePageIsReturnedAsIsWithoutRecounting" classname="com.coursekeeper.school.MyStuPageMergeTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.MyStuTaskIndexParserTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.452Z" hostname="LAPTOP-CJQ77CDT" time="0.003">
+    <properties />
+    <testcase name="sourceCourseIdentityIsCarriedForLinkerAndDedup" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.002" />
+    <testcase name="loginPageIsNotMistakenForAnEmptyIndex" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.0" />
+    <testcase name="allIndexRowsWithStableViewIdsAreParsedWithDueDateAndStatus" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.0" />
+    <testcase name="pageWithoutAssignmentRowsYieldsWarningInsteadOfGuessing" classname="com.coursekeeper.school.MyStuTaskIndexParserTest" time="0.001" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.MyStuTaskParserTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.456Z" hostname="LAPTOP-CJQ77CDT" time="0.007">
+    <properties />
+    <testcase name="parserExposesCourseBoxIdsForSnapshotConvergence" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <testcase name="assignmentsMapTitleDueTypeAndStableId" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <testcase name="dueDateWithWeekdayAndTimeIsParsedNotDefaulted" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <testcase name="myAssignmentPrefixAndGradeSuffixAreStrippedBeforeNormalization" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <testcase name="sourceCourseIdentityIsCarriedForLaterMapping" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <testcase name="assignModuleWithoutViewIdIsDeferredLikeAssignmentModule" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.0" />
+    <testcase name="pageWithoutAssignmentsReportsWarning" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.0" />
+    <testcase name="draftsAndReopenedStatesAreDistinguished" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.0" />
+    <testcase name="newAssignModuleEntriesAreParsedWithIdDueAndSubmission" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <testcase name="submissionStatusIsExposedWithoutDecidingLocallyCompleted" classname="com.coursekeeper.school.MyStuTaskParserTest" time="0.001" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.SchoolAdapterHolderTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.467Z" hostname="LAPTOP-CJQ77CDT" time="0.068">
+    <properties />
+    <testcase name="recreatedOwnerCanRebindCoordinatorsWithHolderInstance" classname="com.coursekeeper.school.SchoolAdapterHolderTest" time="0.021" />
+    <testcase name="debugDumpDirIsOnlyCreatedForDebuggableBuilds" classname="com.coursekeeper.school.SchoolAdapterHolderTest" time="0.01" />
+    <testcase name="bypassingHolderWouldViolateTheInvariant" classname="com.coursekeeper.school.SchoolAdapterHolderTest" time="0.011" />
+    <testcase name="debugDumpDirForFollowsApplicationDebugFlag" classname="com.coursekeeper.school.SchoolAdapterHolderTest" time="0.014" />
+    <testcase name="returnsSameInstanceAcrossRecreations" classname="com.coursekeeper.school.SchoolAdapterHolderTest" time="0.01" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.SchoolLoginControllerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.536Z" hostname="LAPTOP-CJQ77CDT" time="0.012">
+    <properties />
+    <testcase name="openAndResetMoveBetweenWebViewAndSelectSchoolSteps" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.001" />
+    <testcase name="successFlowImportsThenFinishes" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.002" />
+    <testcase name="cancellationDuringImportResetsToRecoverableStep" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.002" />
+    <testcase name="cancellationDuringFeedbackResetsToRecoverableStep" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.002" />
+    <testcase name="userClosingDuringImportIsNotOverwrittenByCancellation" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.001" />
+    <testcase name="syncFailureAfterLoginShowsFailureAndKeepsSchoolForRetry" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.002" />
+    <testcase name="feedbackTransitionWaitsFullDurationBeforeImporting" classname="com.coursekeeper.school.SchoolLoginControllerTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.SchoolLoginSheetRuleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.549Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="terminalStepsResetOnDismiss" classname="com.coursekeeper.school.SchoolLoginSheetRuleTest" time="0.001" />
+    <testcase name="failureWithoutSchoolStillResets" classname="com.coursekeeper.school.SchoolLoginSheetRuleTest" time="0.0" />
+    <testcase name="inFlightStepsKeepState" classname="com.coursekeeper.school.SchoolLoginSheetRuleTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.SchoolLogoutTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.552Z" hostname="LAPTOP-CJQ77CDT" time="0.018">
+    <properties />
+    <testcase name="logoutClearsSchoolSessionCookies" classname="com.coursekeeper.school.SchoolLogoutTest" time="0.017" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.SchoolPageParserTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.571Z" hostname="LAPTOP-CJQ77CDT" time="0.006">
+    <properties />
+    <testcase name="dueDateParsingCoversCommonSchoolFormats" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.0" />
+    <testcase name="courseWithoutStableCodeIsSkippedAndCounted" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.003" />
+    <testcase name="termTagPrefixesCourseIdsAndTaskCourseLinks" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.001" />
+    <testcase name="homeworkFixtureParsesTasksStableIdsDueDatesAndMissingIdentity" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.001" />
+    <testcase name="htmlWithoutScheduleTableReportsWarningInsteadOfThrowing" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.0" />
+    <testcase name="scheduleFixtureParsesCoursesWeeksLocationsAndSemesterStart" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.001" />
+    <testcase name="entryWithoutPeriodInformationIsSkippedInsteadOfDefaultingToOne" classname="com.coursekeeper.school.SchoolPageParserTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.SchoolSessionRuleTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.578Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="jsRedirectShellPageClassifiesAsExpiredNotOffline" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.0" />
+    <testcase name="loginCompletionRequiresHttpsAndPortalHostWithoutLoginPageMarker" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.001" />
+    <testcase name="serverErrorsClassifyAsOfflineNotExpired" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.0" />
+    <testcase name="validPortalResponseClassifiesAsValid" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.0" />
+    <testcase name="taskSourceReadyOnlyOnNonLoginPageOfTaskHost" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.0" />
+    <testcase name="loginFormOrAuthFailuresClassifyAsExpired" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.0" />
+    <testcase name="insecurePortalCallbackIsAcceptedOnlyForAllowlistedHosts" classname="com.coursekeeper.school.SchoolSessionRuleTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.StuJwParserTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.580Z" hostname="LAPTOP-CJQ77CDT" time="0.008">
+    <properties />
+    <testcase name="termTagPrefixesCourseIds" classname="com.coursekeeper.school.StuJwParserTest" time="0.002" />
+    <testcase name="periodsComeFromEntryBracketNotRowLabel" classname="com.coursekeeper.school.StuJwParserTest" time="0.001" />
+    <testcase name="coursesUseCodeFromListTableAndKeepTitle" classname="com.coursekeeper.school.StuJwParserTest" time="0.002" />
+    <testcase name="pageWithoutTimetableReportsWarningInsteadOfThrowing" classname="com.coursekeeper.school.StuJwParserTest" time="0.0" />
+    <testcase name="coTaughtEntriesInSameSlotKeepBothTeacherNames" classname="com.coursekeeper.school.StuJwParserTest" time="0.0" />
+    <testcase name="repeatedBlockAcrossRowsIsDeduplicated" classname="com.coursekeeper.school.StuJwParserTest" time="0.001" />
+    <testcase name="nestedBracketWeekFormatIsParsed" classname="com.coursekeeper.school.StuJwParserTest" time="0.0" />
+    <testcase name="multipleEntriesInOneCellAreAllParsed" classname="com.coursekeeper.school.StuJwParserTest" time="0.001" />
+    <testcase name="entryFieldsMapDayPeriodsWeeksTeacherAndRoom" classname="com.coursekeeper.school.StuJwParserTest" time="0.001" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.589Z" hostname="LAPTOP-CJQ77CDT" time="0.022">
+    <properties />
+    <testcase name="cachedCourseMissingFromHomepageIsStillBackfilled" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.009" />
+    <testcase name="homepageWinsWhenIndexRepeatsTheSameAssignment" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.004" />
+    <testcase name="unrecognizedIndexStructureStopsAfterTwoMissesInsteadOfWastingRequests" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.002" />
+    <testcase name="indexRequestsAreCappedByCourseBudget" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.002" />
+    <testcase name="failingIndexRequestDegradesToHomepageResult" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.003" />
+    <testcase name="indexBackfillAddsAssignmentsThatHomepageNoLongerShows" classname="com.coursekeeper.school.WebViewSchoolAdapterBackfillTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.statistics.RuleEngineTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.613Z" hostname="LAPTOP-CJQ77CDT" time="0.005">
+    <properties />
+    <testcase name="rule6TriggersAfterMidweekWithLowCompletion" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.002" />
+    <testcase name="rule7SuppressedWhenSemesterNotConfigured" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule7SilentWhenCoursesExistWithoutSchedules" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule4SilentAtFivePeriods" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="undatedTasksExcludedFromTimeRules" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="mergedEntryKeepsTasksOnlyCoveredByOtherRules" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule1DueTodayUncompleted" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.001" />
+    <testcase name="rule3SilentWithTwoTasks" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="sameTaskHitsMergedIntoOneEntry" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule8SilentWhenNoUncompletedDatedTask" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule5NamesTruncatedWithRemainder" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule2ExcludesBeyond24h" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule4TriggersAtSixPeriods" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.001" />
+    <testcase name="overdueTodayTaskMergesRule5AndRule1" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule8TriggersWhenNoCompletionInThreeDays" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule3TriggersAtThreeTasks" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="noticesSortedByPriorityAndCappedAtFour" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule2DueWithin24hRendersActualTime" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule6SilentAtExactlyFiftyPercent" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule8SilentWhenCompletedYesterday" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule6SilentBeforeMidweek" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule5OverdueUncompletedTasks" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <testcase name="rule7TriggersOnEmptySemesterConfigured" classname="com.coursekeeper.statistics.RuleEngineTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.statistics.StatisticsServiceTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.620Z" hostname="LAPTOP-CJQ77CDT" time="0.001">
+    <properties />
+    <testcase name="undatedTasksAreExcludedFromWeeklyMetrics" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseSourceCountsCrossPeriodAsOneEntryFourPeriods" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseSourceAppliesWeekParityToCurrentWeek" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="dueDistributionPerformsMutuallyExclusiveSplit" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseSourceDeduplicatesCourseWhileCountingEntries" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseLoadWeightUsesPeriodCountFromCourseStats" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="pressureScoreIsDeterministicWithDominantFactors" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseSourceCountsSameTitleDistinctCodesAsTwoCourses" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="emptySnapshotShowsNoData" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="typeDistributionGroupsWeekTasksByType" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.001" />
+    <testcase name="courseSourceIgnoresUnattachedSchedulesOutsideSemester" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseSourceShowsZeroOutsideEverySemester" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="courseSourceUsesSemesterThatContainsToday" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <testcase name="weekWindowAndCompletionMatchHomeProjection" classname="com.coursekeeper.statistics.StatisticsServiceTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.statistics.StatisticsViewModelTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.624Z" hostname="LAPTOP-CJQ77CDT" time="0.159">
+    <properties />
+    <testcase name="vmMapsSnapshotToStatisticsUiWithFixtureClock" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.027" />
+    <testcase name="vmRollsWeekWindowAcrossWeekBoundaryWithoutWrites" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.024" />
+    <testcase name="vmShowsErrorAndRetryRecoversAfterInitialSourceFailure" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.019" />
+    <testcase name="vmKeepsLastSuccessAndErrorWhenTickHitsSourceFailure" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.021" />
+    <testcase name="vmEmitsRuleNoticesFromSameSnapshotAndClock" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.02" />
+    <testcase name="vmRecalculatesOverdueWhenDeadlinePassesWithoutWrites" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.02" />
+    <testcase name="vmKeepsLastSuccessWhenCourseSourceFails" classname="com.coursekeeper.statistics.StatisticsViewModelTest" time="0.025" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.SyncFailureTextTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:06.426Z" hostname="LAPTOP-CJQ77CDT" time="0.01">
+    <properties />
+    <testcase name="humanReadableForSingleModule" classname="com.coursekeeper.SyncFailureTextTest" time="0.004" />
+    <testcase name="singleModuleFailureIsReported" classname="com.coursekeeper.SyncFailureTextTest" time="0.005" />
+    <testcase name="humanReadableForMultipleModules" classname="com.coursekeeper.SyncFailureTextTest" time="0.0" />
+    <testcase name="inProgressIsNotSilentSuccess" classname="com.coursekeeper.SyncFailureTextTest" time="0.0" />
+    <testcase name="unknownErrorCodeFallsBack" classname="com.coursekeeper.SyncFailureTextTest" time="0.0" />
+    <testcase name="allModulesSucceededMeansNoMessage" classname="com.coursekeeper.SyncFailureTextTest" time="0.0" />
+    <testcase name="partialFailureStillCountsAsFailure" classname="com.coursekeeper.SyncFailureTextTest" time="0.001" />
+    <testcase name="schoolMismatchPointsToClearableAction" classname="com.coursekeeper.SyncFailureTextTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.task.TaskAnomalyTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.786Z" hostname="LAPTOP-CJQ77CDT" time="0.017">
+    <properties />
+    <testcase name="all visible selected needs every row not just one" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.001" />
+    <testcase name="due label handles the last and first minute across a year boundary" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="equal due times keep insertion order" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="empty view is never reported as fully selected" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="date filter uses the local day boundary not a rolling 24 hours" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="due exactly at now is not treated as overdue" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="title length counts utf16 units so surrogate pairs cost two" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.016" />
+    <testcase name="title of only ascii whitespace is rejected" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="all completed still sort after every open task" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="title length boundary is exactly sixty" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="far future due label omits the year" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="status type and date filters stack as and" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="title of only ideographic spaces is rejected" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="overdue and pending share the due time ordering" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="due text with seconds is rejected with the friendly message" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="undated task stays undated even when the due text is garbage" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="title trims surrounding ideographic spaces but keeps inner ones" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <testcase name="invalid calendar date is rejected instead of rolled over" classname="com.coursekeeper.task.TaskAnomalyTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.task.TaskBatchDeleteTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.806Z" hostname="LAPTOP-CJQ77CDT" time="0.034">
+    <properties />
+    <testcase name="delete selected with nothing deletable posts a hint" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.009" />
+    <testcase name="toggling one row updates selection" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.004" />
+    <testcase name="delete selected continues past a failing item and reports partial" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.005" />
+    <testcase name="filter change clears selection" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.004" />
+    <testcase name="selection prunes when a task leaves the visible list" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.004" />
+    <testcase name="delete selected submits snapshot versions and posts summary" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.004" />
+    <testcase name="toggle select all selects visible tasks and toggles back" classname="com.coursekeeper.task.TaskBatchDeleteTest" time="0.004" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.task.TaskBatchSelectionContractTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.841Z" hostname="LAPTOP-CJQ77CDT" time="0.0">
+    <properties />
+    <testcase name="prune selection drops ids that left the visible list" classname="com.coursekeeper.task.TaskBatchSelectionContractTest" time="0.0" />
+    <testcase name="batch select entry only in done and all views" classname="com.coursekeeper.task.TaskBatchSelectionContractTest" time="0.0" />
+    <testcase name="toggled selection clears visible ids when everything visible is selected" classname="com.coursekeeper.task.TaskBatchSelectionContractTest" time="0.0" />
+    <testcase name="toggled selection on empty visible list does nothing" classname="com.coursekeeper.task.TaskBatchSelectionContractTest" time="0.0" />
+    <testcase name="toggled selection selects all visible and keeps unrelated ids" classname="com.coursekeeper.task.TaskBatchSelectionContractTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.task.TaskContractTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.842Z" hostname="LAPTOP-CJQ77CDT" time="0.0">
+    <properties />
+    <testcase name="input validation matches repository error messages" classname="com.coursekeeper.task.TaskContractTest" time="0.0" />
+    <testcase name="status derives from completedAt then dueAt" classname="com.coursekeeper.task.TaskContractTest" time="0.0" />
+    <testcase name="due label covers undated today tomorrow overdue and other dates" classname="com.coursekeeper.task.TaskContractTest" time="0.0" />
+    <testcase name="sort puts undated first then due time then completed last" classname="com.coursekeeper.task.TaskContractTest" time="0.0" />
+    <testcase name="filters combine status and type" classname="com.coursekeeper.task.TaskContractTest" time="0.0" />
+    <testcase name="course label distinguishes missing course from deleted course" classname="com.coursekeeper.task.TaskContractTest" time="0.0" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.task.TaskViewModelAnomalyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.843Z" hostname="LAPTOP-CJQ77CDT" time="0.024">
+    <properties />
+    <testcase name="date filter re-evaluates itself after midnight" classname="com.coursekeeper.task.TaskViewModelAnomalyTest" time="0.004" />
+    <testcase name="replayed completion posts no message and offers no undo" classname="com.coursekeeper.task.TaskViewModelAnomalyTest" time="0.006" />
+    <testcase name="deleting an already deleted task reports not found" classname="com.coursekeeper.task.TaskViewModelAnomalyTest" time="0.006" />
+    <testcase name="minute tick refreshes the due label across midnight" classname="com.coursekeeper.task.TaskViewModelAnomalyTest" time="0.003" />
+    <testcase name="selecting an id outside the current view never shows selection mode" classname="com.coursekeeper.task.TaskViewModelAnomalyTest" time="0.003" />
+    <testcase name="undo on a task deleted meanwhile reports not found and offers no undo" classname="com.coursekeeper.task.TaskViewModelAnomalyTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+  <testsuite name="com.coursekeeper.task.TaskViewModelTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-28T13:59:17.868Z" hostname="LAPTOP-CJQ77CDT" time="0.032">
+    <properties />
+    <testcase name="version conflict surfaces repository message and creates no undo" classname="com.coursekeeper.task.TaskViewModelTest" time="0.004" />
+    <testcase name="create failure reports through onResult without saved event" classname="com.coursekeeper.task.TaskViewModelTest" time="0.003" />
+    <testcase name="update success also reports onResult null" classname="com.coursekeeper.task.TaskViewModelTest" time="0.003" />
+    <testcase name="create and delete report saved and deleted events with receipts" classname="com.coursekeeper.task.TaskViewModelTest" time="0.004" />
+    <testcase name="toggle submits current version and offers undo with receipt version" classname="com.coursekeeper.task.TaskViewModelTest" time="0.005" />
+    <testcase name="filters drive the visible list" classname="com.coursekeeper.task.TaskViewModelTest" time="0.003" />
+    <testcase name="callback exception must not be reported as write failure" classname="com.coursekeeper.task.TaskViewModelTest" time="0.002" />
+    <testcase name="generic failure surfaces generic text not internal message" classname="com.coursekeeper.task.TaskViewModelTest" time="0.002" />
+    <testcase name="undo submits the receipt version not the latest version in data" classname="com.coursekeeper.task.TaskViewModelTest" time="0.004" />
+    <testcase name="toggle on completed task reopens it" classname="com.coursekeeper.task.TaskViewModelTest" time="0.002" />
+    <system-out />
+    <system-err />
+  </testsuite>
+</testsuites>

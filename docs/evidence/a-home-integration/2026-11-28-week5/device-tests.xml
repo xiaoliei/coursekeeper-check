@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="A-API37-60a8d19" tests="28" failures="0" errors="0" skipped="0" time="40.243">
+  <testcase classname="com.coursekeeper.HomeCourseUiTest" name="finishedCoursesKeepTodayCountAndOfferTimetableInsteadOfLogin" />
+  <testcase classname="com.coursekeeper.HomeCourseUiTest" name="freeDayKeepsOtherDaysCoursesAndDoesNotAskForLogin" />
+  <testcase classname="com.coursekeeper.HomeCourseUiTest" name="emptyWeekOffersCourseMaintenance" />
+  <testcase classname="com.coursekeeper.HomeIntegrationTest" name="homeCountersOpenExactDateFiltersInsteadOfOnlyOpenOrDone" />
+  <testcase classname="com.coursekeeper.HomeIntegrationTest" name="homeCreateCompletionUndoAndActivityRecreationUseTheSameDatabase" />
+  <testcase classname="com.coursekeeper.HomeSummaryUiTest" name="teachingWeekAndPressureSummaryIncludeExplanation" />
+  <testcase classname="com.coursekeeper.HomeSummaryUiTest" name="offlineDetailsCanCloseWithoutChangingCachedCounts" />
+  <testcase classname="com.coursekeeper.HomeSummaryUiTest" name="noSemesterAndNoPressureDoNotShowExampleValues" />
+  <testcase classname="com.coursekeeper.HomeSummaryUiTest" name="partialExpiredModuleCanRequestLoginFromDetails" />
+  <testcase classname="com.coursekeeper.HomeSummaryUiTest" name="partialFailureDetailsPreserveSuccessTimeAndManualTaskEntry" />
+  <testcase classname="com.coursekeeper.HomeSummaryUiTest" name="syncingDetailsRetainPreviousSuccessAndDoNotOfferLogin" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="expiredModuleOpensSchoolLoginWithoutRefreshing" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="offlineRetryKeepsTaskVisibleWhenSyncStarts" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="refreshWithoutSchoolConnectionOpensLoginWithoutRefreshing" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="swipeDownAtTopInvokesRefresh" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="schoolButtonCannotReopenLoginWhileLogoutRuns" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="refreshButtonSuppressesAnotherTapUntilRefreshEnds" />
+  <testcase classname="com.coursekeeper.HomeSyncUiTest" name="partialSyncCanRetryFromDetailsWithoutClearingCachedTasks" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="tappingNavigationItemDismissesUndoSnackbarEvenOnSameTab" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="partialExpiredDetailsOpenRealSchoolSlotInsteadOfDemoDialog" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="shellTaskButtonPreservesQueryOnTaskPageAndRoutesOtherPagesToPending" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="fourDestinationsAreReachable" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="offlineStillAllowsTaskCreation" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="firstLaunchExposesReservedExcelAndNoticeEntries" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="topBarImportMenuExposesReservedExcelAndNoticeEntries" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="suppliedCourseSlotReplacesOnlyCoursesAndKeepsNavigation" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="firstLaunchCanEnterManualMode" />
+  <testcase classname="com.coursekeeper.NavigationTest" name="realSchoolEntryAndImportMenuRemainAvailableTogether" />
+</testsuite>

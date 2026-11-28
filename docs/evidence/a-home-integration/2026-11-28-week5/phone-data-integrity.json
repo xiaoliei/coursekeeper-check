@@ -1,0 +1,281 @@
+{
+  "method": "sha256 of sorted full task-row JSON; task IDs are hashed separately",
+  "snapshots": {
+    "before-install-snapshot": {
+      "counts": {
+        "tasks": 10,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-25T09:32:55.265586Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-25T09:32:57.073154Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "after-install-snapshot": {
+      "counts": {
+        "tasks": 10,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "EXPIRED",
+          "lastSuccessAt": "2026-11-25T09:32:55.265586Z",
+          "errorCode": "EXPIRED"
+        },
+        {
+          "module": "TASKS",
+          "status": "EXPIRED",
+          "lastSuccessAt": "2026-11-25T09:32:57.073154Z",
+          "errorCode": "EXPIRED"
+        }
+      ]
+    },
+    "after-relogin-snapshot": {
+      "counts": {
+        "tasks": 12,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:07:07.795577Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:07:08.625268Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "rotation-live-start": {
+      "counts": {
+        "tasks": 12,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "TASKS",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:08:49.350563Z",
+          "errorCode": null
+        },
+        {
+          "module": "COURSES",
+          "status": "SYNCING",
+          "lastSuccessAt": "2026-11-28T14:08:48.364276Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "rotation-live-end": {
+      "counts": {
+        "tasks": 12,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:18.961796Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "SYNCING",
+          "lastSuccessAt": "2026-11-28T14:08:49.350563Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "background-live-start": {
+      "counts": {
+        "tasks": 14,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:23.271915Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "SYNCING",
+          "lastSuccessAt": "2026-11-28T14:12:20.088558Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "background-live-end": {
+      "counts": {
+        "tasks": 14,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:23.271915Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:24.033713Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "logout-before": {
+      "counts": {
+        "tasks": 14,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:23.271915Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:24.033713Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "logout-after": {
+      "counts": {
+        "tasks": 14,
+        "courses": 10,
+        "schedules": 13,
+        "semesters": 1
+      },
+      "sync": [
+        {
+          "module": "COURSES",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:23.271915Z",
+          "errorCode": null
+        },
+        {
+          "module": "TASKS",
+          "status": "IDLE",
+          "lastSuccessAt": "2026-11-28T14:12:24.033713Z",
+          "errorCode": null
+        }
+      ]
+    }
+  },
+  "originalProtectedTasks": [
+    {
+      "taskIdSha256": "51172b211d3eb9b40e5880defac4dfc3178791ef42daad47d57d1abb103bb040",
+      "rowSha256BySnapshot": {
+        "before-install-snapshot": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "after-install-snapshot": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "after-relogin-snapshot": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "rotation-live-start": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "rotation-live-end": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "background-live-start": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "background-live-end": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "logout-before": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70",
+        "logout-after": "60d9c084025fb47c9670a14ebbd67ae656df54ccc9f18f22f1be3170d8b6ce70"
+      },
+      "unchangedEverySnapshot": true
+    },
+    {
+      "taskIdSha256": "26081315fffd4d17165cea1a8ce1506258a29b68b7eaa61c63469f9cedb62b29",
+      "rowSha256BySnapshot": {
+        "before-install-snapshot": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "after-install-snapshot": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "after-relogin-snapshot": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "rotation-live-start": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "rotation-live-end": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "background-live-start": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "background-live-end": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "logout-before": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590",
+        "logout-after": "773bfa0913dcfc0681767bbe9e34e010309236dd17dccc1341812eba3d733590"
+      },
+      "unchangedEverySnapshot": true
+    },
+    {
+      "taskIdSha256": "e9297b54dd32567591f7255e2178d7d5b34ea546fa0abd36e8b4fd91db920e63",
+      "rowSha256BySnapshot": {
+        "before-install-snapshot": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "after-install-snapshot": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "after-relogin-snapshot": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "rotation-live-start": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "rotation-live-end": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "background-live-start": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "background-live-end": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "logout-before": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61",
+        "logout-after": "657aa6cb650a1fa840c6f9270686797702b315a48c2c4260616e583d0f0eaf61"
+      },
+      "unchangedEverySnapshot": true
+    },
+    {
+      "taskIdSha256": "af210c8b0b592cdc7de7eb568dd17af436c7bba356888f71f59fbfb707aa6e1e",
+      "rowSha256BySnapshot": {
+        "before-install-snapshot": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "after-install-snapshot": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "after-relogin-snapshot": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "rotation-live-start": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "rotation-live-end": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "background-live-start": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "background-live-end": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "logout-before": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2",
+        "logout-after": "57b41d46cb4c9d967717bb969f4271c2021c2da7abf6a4950c9efea25d7c6ce2"
+      },
+      "unchangedEverySnapshot": true
+    },
+    {
+      "taskIdSha256": "b1673095a0ee8ff3153556882bb0d444ecdb5a33d7e05f5c5bbc8770ee7b90c0",
+      "rowSha256BySnapshot": {
+        "before-install-snapshot": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "after-install-snapshot": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "after-relogin-snapshot": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "rotation-live-start": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "rotation-live-end": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "background-live-start": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "background-live-end": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "logout-before": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f",
+        "logout-after": "c18d049a7d69fece31b717be1e93941c76620eab65af5bfbab7b7f747a1e520f"
+      },
+      "unchangedEverySnapshot": true
+    }
+  ],
+  "originalTaskIdsRetainedAtEnd": true
+}

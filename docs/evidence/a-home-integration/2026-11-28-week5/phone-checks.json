@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-28",
+  "device": {
+    "manufacturer": "vivo",
+    "model": "V2505A",
+    "android": "16",
+    "api": 36,
+    "physical": true
+  },
+  "baseline": "60a8d19877a78b5293125d147749b43a8891b9ea",
+  "preservingDataInstall": {
+    "passed": true,
+    "countsBefore": {
+      "tasks": 10,
+      "courses": 10,
+      "schedules": 13,
+      "semesters": 1
+    },
+    "countsAfter": {
+      "tasks": 10,
+      "courses": 10,
+      "schedules": 13,
+      "semesters": 1
+    }
+  },
+  "expiredRelogin": {
+    "passed": true,
+    "countsAfter": {
+      "tasks": 12,
+      "courses": 10,
+      "schedules": 13,
+      "semesters": 1
+    },
+    "protectedCount": 5,
+    "protectedUnchanged": true
+  },
+  "partialSuccess": "pending",
+  "weakNetwork": "pending",
+  "evidenceFiles": [
+    "initial-screen.png",
+    "after-relogin.png",
+    "home-after-relogin.png",
+    "rotated-home.png",
+    "background-return-home.png",
+    "repeat-refresh-finished.png",
+    "rotation-syncing.png",
+    "background-syncing.png",
+    "logout-home.png",
+    "logout-refresh-selection.png",
+    "final-logged-out-home.png"
+  ],
+  "rotation": {
+    "syncingObservedBeforeRotation": true,
+    "landscapeObserved": true,
+    "imageSize": [
+      3168,
+      1440
+    ],
+    "modulesSuccessfulAfter": true,
+    "protectedUnchanged": true,
+    "initialEndSnapshotStillSyncing": true,
+    "successfulTimestampsObservedBeforeOrAtNextPass": {
+      "TASKS": "2026-11-28T14:12:20.088558Z",
+      "COURSES": "2026-11-28T14:12:18.961796Z"
+    },
+    "completionEvidence": "课程成功见 rotation-live-end；作业成功时间由后续采样保留的 lastSuccessAt 确认"
+  },
+  "backgroundReturn": {
+    "syncingObservedBeforeBackground": true,
+    "backgroundSeconds": 5,
+    "modulesSuccessfulAfter": true,
+    "protectedUnchanged": true
+  },
+  "repeatRefresh": {
+    "taps": 3,
+    "modulesSuccessfulAfter": true,
+    "taskCount": 12,
+    "sameTaskIdsAsAfterRelogin": true,
+    "protectedUnchanged": true,
+    "httpRequestCountVerified": false
+  },
+  "rotationSettingsRestored": {
+    "accelerometer_rotation": true,
+    "user_rotation": true
+  },
+  "logout": {
+    "passed": true,
+    "duringActiveSync": false,
+    "countsBefore": {
+      "tasks": 14,
+      "courses": 10,
+      "schedules": 13,
+      "semesters": 1
+    },
+    "countsAfter": {
+      "tasks": 14,
+      "courses": 10,
+      "schedules": 13,
+      "semesters": 1
+    },
+    "allTaskRowsUnchanged": true,
+    "protectedUnchanged": true,
+    "refreshRoutesToSchoolSelection": true,
+    "finalSession": "logged_out",
+    "cachedTaskListVisible": true
+  },
+  "finalCounts": {
+    "tasks": 14,
+    "courses": 10,
+    "schedules": 13,
+    "semesters": 1
+  },
+  "protectedOriginalTasksUnchangedAtEnd": true,
+  "appCrashFound": false,
+  "installedApkSha256": "D90D3F4FE728FDF89111E998BEAE0E456FDA3314EBE4E4AE905A50481F87CC3B",
+  "installedApkMatchesDelivered": true,
+  "localOnlyEvidence": [
+    {
+      "file": "logged-out-cached-tasks.png",
+      "reason": "包含真实任务内容，仅保存在本机和本地交接包"
+    }
+  ]
+}

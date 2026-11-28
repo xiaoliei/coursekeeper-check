@@ -18,6 +18,20 @@
   "apkBytes": 13938159,
   "apkSha256": "A417D87EEC7EFBD8179F9F1E0B53FF648396437CF7ABA712E60100D0466614AC",
   "realSchoolAccountVerified": false,
-  "week4Status": "代码接入与本地验证完成，真实学校手机验收待完成",
+  "realSchoolAccountStatus": "正常刷新与断网恢复获用户手机通过反馈，完整验收待完成",
+  "userPhoneFeedback": {
+    "date": "2026-11-25",
+    "source": "本次对话用户反馈",
+    "normalRefresh": "passed_user_report",
+    "offlineRecovery": "passed_user_report",
+    "expiredRelogin": "pending",
+    "partialSuccess": "pending",
+    "weakNetwork": "pending",
+    "deviceModel": null,
+    "androidVersion": null,
+    "installedVersionConfirmed": false,
+    "screenshotsProvided": false
+  },
+  "week4Status": "代码接入与本地验证完成，用户手机反馈正常刷新及断网恢复通过，其余真实场景待验证",
   "week5CrossReview": "B 交叉检查待安排"
 }
